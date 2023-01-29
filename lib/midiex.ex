@@ -13,6 +13,7 @@ alias Hex.API.Key
   # ##########
 
   # MIDI port functions
+  def list_ports(direction), do: filter_port_direction(list_ports(), direction)
   def list_ports(), do: err()
   def count_ports(), do: err()
   def connect(_midi_port), do: err()
@@ -23,7 +24,6 @@ alias Hex.API.Key
 
   # Midiex callback functions
   def subscribe(), do: err()
-
 
   defp err(), do: :erlang.nif_error(:nif_not_loaded)
 
@@ -52,13 +52,12 @@ alias Hex.API.Key
 
   def play_note(midi_out_conn, note, duration \\ 1) do
     midi_note_on_msg = <<0x90, note, 127>>
-    res =
-      midi_out_conn
-      |> send_msg(midi_note_on_msg)
-      |> tap(fn _ -> :timer.sleep(duration * 150) end)
-      |> stop_note(note)
 
-    res
+    midi_out_conn
+    |> send_msg(midi_note_on_msg)
+    |> tap(fn _ -> :timer.sleep(duration * 150) end)
+    |> stop_note(note)
+
   end
 
   def stop_note(midi_out_conn, note) do
@@ -67,7 +66,7 @@ alias Hex.API.Key
   end
 
 
-  def test_song(midi_out_conn) do
+  def example_song(midi_out_conn) do
     midi_out_conn
     |> play_note(66, 4)
     |> play_note(65, 3)
