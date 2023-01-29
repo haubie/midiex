@@ -50,6 +50,35 @@ alias Hex.API.Key
     |> List.first()
   end
 
+  def play_note(midi_out_conn, note, duration \\ 1) do
+    midi_note_on_msg = <<0x90, note, 127>>
+    res =
+      midi_out_conn
+      |> send_msg(midi_note_on_msg)
+      |> tap(fn _ -> :timer.sleep(duration * 150) end)
+      |> stop_note(note)
+
+    res
+  end
+
+  def stop_note(midi_out_conn, note) do
+    midi_note_off_msg = <<0x80, note, 127>>
+    send_msg(midi_out_conn, midi_note_off_msg)
+  end
+
+
+  def test_song(midi_out_conn) do
+    midi_out_conn
+    |> play_note(66, 4)
+    |> play_note(65, 3)
+    |> play_note(63, 1)
+    |> play_note(61, 6)
+    |> play_note(59, 2)
+    |> play_note(58, 4)
+    |> play_note(56, 4)
+    |> play_note(54, 4)
+  end
+
 
   # ##########
   # OLD API
