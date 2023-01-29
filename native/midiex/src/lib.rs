@@ -126,7 +126,7 @@ fn connect(midi_port: MidiPort) -> Result<OutConn, Error>{
 
         // let mut port_ref = midi_port.port_ref.0;
 
-        if let MidiexMidiSimplePortRef::Output(port) = &midi_port.port_ref.0 { 
+        if let MidiexMidiPortRef::Output(port) = &midi_port.port_ref.0 { 
 
             println!("OUTPUT PORT");
 
@@ -159,7 +159,7 @@ fn connect(midi_port: MidiPort) -> Result<OutConn, Error>{
 
         // let mut port_ref = midi_port.port_ref.0;
 
-        if let MidiexMidiSimplePortRef::Input(port) = &midi_port.port_ref.0 { 
+        if let MidiexMidiPortRef::Input(port) = &midi_port.port_ref.0 { 
 
             println!("INPUT PORT");
 
@@ -187,62 +187,6 @@ fn connect(midi_port: MidiPort) -> Result<OutConn, Error>{
 }
 
 
-#[rustler::nif(schedule = "DirtyCpu")]
-fn play() -> Result<(), Error>{
- 
-    // let midi_output = midi_io.resource_output.0.lock().unwrap();
-
-    let midi_output_result: Result<MidiOutput, InitError> = MidiOutput::new("MIDIex");
-    
-
-    let midi_output = match midi_output_result {
-        Ok(midi_device) => midi_device,
-        Err(error) => panic!("Problem getting midi output devices. Error: {:?}", error)
-    };
-
-
-    let out_ports = midi_output.ports();
-    let out_port: &MidiOutputPort = &out_ports[1];
-
-    let mut conn_out_result = midi_output.connect(&out_port, "MIDIex");
-
-    let mut conn_out = match conn_out_result {
-        Ok(conn_out) => conn_out,
-        Err(error) => panic!("Midi Output Connection Error: Problem getting midi output connection. Error: {:?}", error)
-    };
-
-    println!("Connection open. Listen!");
-    {
-        // Define a new scope in which the closure `play_note` borrows conn_out, so it can be called easily
-        let mut play_note = |note: u8, duration: u64| {
-            const NOTE_ON_MSG: u8 = 0x90;
-            const NOTE_OFF_MSG: u8 = 0x80;
-            const VELOCITY: u8 = 0x64;
-            // We're ignoring errors in here
-            let _ = conn_out.send(&[NOTE_ON_MSG, note, VELOCITY]);
-            sleep(Duration::from_millis(duration * 150));
-            let _ = conn_out.send(&[NOTE_OFF_MSG, note, VELOCITY]);
-        };
-
-        sleep(Duration::from_millis(4 * 150));
-        
-        play_note(66, 4);
-        play_note(65, 3);
-        play_note(63, 1);
-        play_note(61, 6);
-        play_note(59, 2);
-        play_note(58, 4);
-        play_note(56, 4);
-        play_note(54, 4);
-    }
-    sleep(Duration::from_millis(150));
-    println!("\nClosing connection");
-    // This is optional, the connection would automatically be closed as soon as it goes out of scope
-    conn_out.close();
-    println!("Connection closed");
-  
-    Ok(())
-}
 
 
 
@@ -259,23 +203,12 @@ pub fn get_first_midi_out_device(midi_out: &mut MidiOutput) -> Result<MidiOutput
 
 
 #[rustler::nif(schedule = "DirtyCpu")]
-fn play_two(midi_out_conn: OutConn) -> Result<(), Error>{
+fn play(midi_out_conn: OutConn) -> Result<(), Error>{
  
 
     let mut midi_output = MidiOutput::new("MIDIex").expect("Midi output");
 
-
-    // let out_port = get_first_midi_out_device(&mut midi_output).expect("Midi output port");
     let mut conn_out = midi_out_conn.conn_ref.0.lock().unwrap();
-
-
-    // let mut conn_out_result = midi_output.connect(&out_port, "MIDIex");
-
-    // let mut conn_out = match conn_out_result {
-    //     Ok(conn_out) => conn_out,
-    //     Err(error) => panic!("Midi Output Connection Error: Problem getting midi output connection. Error: {:?}", error)
-    // };
-
     
 
     println!("Connection open. Listen!");
@@ -303,95 +236,9 @@ fn play_two(midi_out_conn: OutConn) -> Result<(), Error>{
         play_note(54, 4);
     }
     sleep(Duration::from_millis(150));
-    println!("\nClosing connection");
-    // This is optional, the connection would automatically be closed as soon as it goes out of scope
-    // conn_out.close();
-    println!("Connection closed");
-
-
-
-
-
-    // thread::spawn(move || {
-    //     // let mut midi = Midi {
-    //     //     sender: ch_in,
-    //     //     input: MidiInput::new("ports").expect("Midi input should work"),
-    //     //     active_connections: Vec::new(),
-    //     // };
-    //     // loop {
-    //     //     midi.tick();
-    //     //     thread::sleep(Duration::from_millis(1000));
-    //     // }
-    //     // let mut midi_output = midi_io.resource_output.0.lock().unwrap();
-    //     // let mut midi_output = &mut *midi_output;
-
-    //     // let mut s = s.lock().expect("mutex error");
-       
-
-    //     // let lock = midi_io.resource_output.0.lock().expect("Failed to obtain a lock");
-
-    //     // let mut midi_output = lock.clone();
-
-
-    //     let midi_output_result: Result<MidiOutput, InitError> = MidiOutput::new("MIDIex");
-
-    //     let mut midi_output = match midi_output_result {
-    //         Ok(midi_device) => midi_device,
-    //         Err(error) => panic!("Problem getting midi output devices. Error: {:?}", error)
-    //     };
-    
-    
-    //     let out_port = get_first_midi_out_device(&mut midi_output).expect("Midi output port");
-
-    //     // let out_ports = midi_output.ports();
-    //     // let out_port: &MidiOutputPort = &out_ports[1];
-
-    //     // let mut conn_out_result = midi_output.connect(&out_port, "MIDIex");
-
-
-    //     let mut conn_out_result = midi_output.connect(&out_port, "MIDIex");
-
-    //     let mut conn_out = match conn_out_result {
-    //         Ok(conn_out) => conn_out,
-    //         Err(error) => panic!("Midi Output Connection Error: Problem getting midi output connection. Error: {:?}", error)
-    //     };
-
-    //     println!("Connection open. Listen!");
-    //     {
-    //         // Define a new scope in which the closure `play_note` borrows conn_out, so it can be called easily
-    //         let mut play_note = |note: u8, duration: u64| {
-    //             const NOTE_ON_MSG: u8 = 0x90;
-    //             const NOTE_OFF_MSG: u8 = 0x80;
-    //             const VELOCITY: u8 = 0x64;
-    //             // We're ignoring errors in here
-    //             let _ = conn_out.send(&[NOTE_ON_MSG, note, VELOCITY]);
-    //             sleep(Duration::from_millis(duration * 150));
-    //             let _ = conn_out.send(&[NOTE_OFF_MSG, note, VELOCITY]);
-    //         };
-
-    //         sleep(Duration::from_millis(4 * 150));
-            
-    //         play_note(66, 4);
-    //         play_note(65, 3);
-    //         play_note(63, 1);
-    //         play_note(61, 6);
-    //         play_note(59, 2);
-    //         play_note(58, 4);
-    //         play_note(56, 4);
-    //         play_note(54, 4);
-    //     }
-    //     sleep(Duration::from_millis(150));
-    //     println!("\nClosing connection");
-    //     // This is optional, the connection would automatically be closed as soon as it goes out of scope
-    //     conn_out.close();
-    //     println!("Connection closed");
-
-
-    // });
 
 
     
-  
     Ok(())
 }
 
@@ -454,50 +301,21 @@ impl OutConnRef {
 
 
 
-
+// ==========
 // MIDI Ports
-
-
-// pub struct MidiexMidiInputPortRef(pub MidiInputPort);
-
-// impl MidiexMidiInputPortRef {
-//     pub fn new(data: MidiInputPort) -> Self {
-//         // Self(Mutex::new(data))
-//         Self(data)
-//     }
-// }
-
-// pub struct MidiexMidiOutputPortRef(pub MidiOutputPort);
-
-// impl MidiexMidiOutputPortRef {
-//     pub fn new(data: MidiOutputPort) -> Self {
-//         //  Self(Mutex::new(data))
-//          Self(data)
-
-//     }
-// }
-
-// pub enum MidiexMidiPortRef {
-//     Input(MidiexMidiInputPortRef), 
-//     Output(MidiexMidiOutputPortRef), 
-//   }
-
-
-pub enum MidiexMidiSimplePortRef {
+// ==========
+pub enum MidiexMidiPortRef {
     Input(MidiInputPort), 
     Output(MidiOutputPort), 
   }
 
-
-pub struct FlexiPort(pub MidiexMidiSimplePortRef);
+pub struct FlexiPort(pub MidiexMidiPortRef);
 
 impl FlexiPort {
-    pub fn new(data: MidiexMidiSimplePortRef) -> Self {
+    pub fn new(data: MidiexMidiPortRef) -> Self {
         Self(data)
     }
 }
-  
-
 
 #[derive(NifStruct)]
 #[module = "Midiex.MidiPort"]
@@ -505,12 +323,8 @@ pub struct MidiPort {
     direction: Atom,
     name: String,
     num: usize,
-    // port_ref: ResourceArc<MidiexMidiPortRef>,
     port_ref: ResourceArc<FlexiPort>,
 }
-
-
-
 
 #[derive(NifMap)]
 pub struct NumPorts {
@@ -570,176 +384,16 @@ impl MidiexMidiIO {
         }
     }
 
-    // pub fn connect_first_port(&mut self) -> MidiOutputConnection {
-         
-    //     let mut midi_output = self.resource_output.0.lock().expect("mutex error");
-    //     let out_port = get_first_midi_out_device(&mut midi_output).expect("Midi output port");
-
-    //     midi_output.connect(&out_port, "MIDIex").expect("Midi output connection to port")
-
-    // }
-
-    // pub fn refresh_connections(&mut self) -> Self {
-
-
-
-    // }
-
-    // fn refresh_connections(&mut self) {
-
-    //     let mut midi_input = self.resource_input.0.lock().unwrap();
-    //     midi_input.ignore(Ignore::None);
-
-    //     // Drop connections that are no longer active.
-    //     self.active_connections
-    //         .drain_filter(|connection| midi_input.port_name(&connection.input_port).is_err())
-    //         .for_each(|connection| {
-    //             println!("`{}` was disconnected", connection.name);
-    //         });
-
-    //     // If active connections count is equal to count of available ports
-    //     // we shall consider it as if we are not in need to open new ones.
-    //     if self.active_connections.len() == self.midi_input.port_count() {
-    //         return;
-    //     }
-
-    //     for (i, port) in self.midi_input.ports() {
-    //         // First grab name of the connection
-    //         //
-    //         // Its a requirement to check if this port is valid, because
-    //         // CoreMIDI may hold some kind of phantom connection
-    //         // even after all devices will be disconnected.
-    //         let name = match self.midi_input.port_name(&port) {
-    //             Ok(name) => name,
-    //             Err(_) => {
-    //                 println!("Failed to retrieve a port name for a new port");
-    //                 continue;
-    //             }
-    //         };
-
-    //         // midir does not allow to compare unique id of ports so i use it's name
-    //         let already_connected = self.active_connections.iter().any(|x| x.name == name);
-
-    //         if !already_connected {
-    //             let input = MidiInput::new("MIDIex").expect("Midi input should work");
-    //             // let conn_in = input
-    //             //     .connect(&port, "midir-read-input", listener, self.sender.clone())
-    //             //     .unwrap();
-    //             println!("Opened input connection to '{}'", name);
-    //             // self.active_connections.push(Connection {
-    //             //     input_port: port,
-    //             //     _keep_alive: conn_in,
-    //             //     name,
-    //             // });
-
-    //             self.active_connections.push(
-    //                 MidiPort{
-    //                     direction: atoms::input(),
-    //                     name: name,
-    //                     num: i,
-    //                     input_port: port
-    //             });
-            
-
-    //         }
-    //     }
-    // }
-
 }
 
 
-
-
-#[rustler::nif(schedule = "DirtyCpu")]
-fn try_connect(midi_io: MidiexMidiIO) -> Result<(), Error> {
-
-    let mut vec_of_output_ports: Vec<&MidiOutputPort> = Vec::new();
-    let mut vec_of_input_ports: Vec<&MidiInputPort> = Vec::new();
-
-    let mut midi_input = midi_io.resource_input.0.lock().unwrap();
-    midi_input.ignore(Ignore::None);
-    let midi_output = midi_io.resource_output.0.lock().unwrap();
-
-    let in_ports = midi_input.ports();
-    let out_ports = midi_output.ports();
-    let num_ports = out_ports.len();
-
-    println!("\n{:?} MIDI output ports:\r", num_ports);
-
-    for (i, p) in midi_output.ports().iter().enumerate() {
-
-        let port_name = if let Ok(port_name) = midi_output.port_name(&p) { port_name } else { "No device name given".to_string() };
-
-        println!("\t{:?}\t {:?}\r", i, port_name);
-
-        let out_port: &MidiOutputPort = out_ports.get(i).unwrap();
-
-        // midi_io.active_connections
-        //     .drain_filter(|connection| self.input.port_name(&connection.input_port).is_err())
-        //     .for_each(|connection| {
-        //         println!("`{}` was disconnected", connection.name);
-        //     });   
-
-
-        println!("\t{} with name {:?} has an error: {:?}\r", i, midi_output.port_name(out_port), midi_output.port_name(out_port).is_err());
-        println!("\t{} with name {:?} has an error: {:?}\r\n", i, midi_output.port_name(p), midi_output.port_name(p).is_err());
-
-
-        // let mut new_conn = MidiOutput::connect(midi_output, p, "");
-        // let  new_conn = midi_output.connect(out_port, "");
-
-        // println!("\t{} Conn {:?}\r", i, new_conn);
-
-        vec_of_output_ports.push(out_port);
-
-        
-
-
-    }
-    // println!("\n{:?} MIDI output ports.\r", vec_of_output_ports.len());
-
-
-
-
-    println!("\n\r{:?} MIDI input ports:\r", num_ports);
-
-    for (i, p) in midi_input.ports().iter().enumerate() {
-
-        let port_name = if let Ok(port_name) = midi_input.port_name(&p) { port_name } else { "No device name given".to_string() };
-
-        println!("\t{:?}\t {:?}\r", i, port_name);
-
-        let in_port: &MidiInputPort = in_ports.get(i).unwrap();
-
-        // midi_io.active_connections
-        //     .drain_filter(|connection| self.input.port_name(&connection.input_port).is_err())
-        //     .for_each(|connection| {
-        //         println!("`{}` was disconnected", connection.name);
-        //     });   
-
-
-        println!("\t{} with name {:?} has an error: {:?}\r", i, midi_input.port_name(in_port), midi_input.port_name(in_port).is_err());
-        println!("\t{} with name {:?} has an error: {:?}\r\n", i, midi_input.port_name(p), midi_input.port_name(p).is_err());
-
-        vec_of_input_ports.push(in_port);
-
-
-    }
-    // println!("\n{:?} MIDI input ports.\r", vec_of_input_ports.len());
-
-
-    Ok(())
-}
 
 
 // List all the ports, taking midi_io as input
 #[rustler::nif(schedule = "DirtyCpu")]
 fn list_ports() -> Result<Vec<MidiPort>, Error> {
 
-    
-    // let midi_output = midi_io.resource_output.0.lock().unwrap();
-    // let mut midi_input = midi_io.resource_input.0.lock().unwrap();
-    // midi_input.ignore(Ignore::None);
+
 
     let mut vec_of_devices: Vec<MidiPort> = Vec::new();
 
@@ -761,9 +415,7 @@ fn list_ports() -> Result<Vec<MidiPort>, Error> {
                         direction: atoms::input(),
                         name: port_name,
                         num: i,
-                        port_ref:
-                        ResourceArc::new(FlexiPort::new(MidiexMidiSimplePortRef::Input(MidiInputPort::clone(p))))
-            
+                        port_ref: ResourceArc::new(FlexiPort::new(MidiexMidiPortRef::Input(MidiInputPort::clone(p))))         
                     });
         
         }
@@ -788,9 +440,7 @@ fn list_ports() -> Result<Vec<MidiPort>, Error> {
                         direction: atoms::output(),
                         name: port_name,
                         num: i,
-                        port_ref: ResourceArc::new(
-                                FlexiPort::new(MidiexMidiSimplePortRef::Output(MidiOutputPort::clone(p)))
-                            )
+                        port_ref: ResourceArc::new(FlexiPort::new(MidiexMidiPortRef::Output(MidiOutputPort::clone(p))))
                     });
     
         }
@@ -839,105 +489,6 @@ fn count_ports() -> Result<NumPorts, Error>{
 
 
 
-   
-// #[rustler::nif(schedule = "DirtyCpu")]
-// fn devices() -> Result<Vec<MidiDevice>, Error>{
-
-//     let mut vec_of_devices: Vec<MidiDevice> = Vec::new();
-
-//     GLOBAL_MIDI_INPUT_RESULT.with(|midi_input_result| {
-
-//         let midi_input = match midi_input_result {
-//             Ok(midi_device) => midi_device,
-//             Err(error) => panic!("Problem getting midi input devices. Error: {:?}", error)
-//         };
-
-//         println!("\nMidi input ports: {:?}\n\r", midi_input.port_count());
-
-//         for (i, p) in midi_input.ports().iter().enumerate() {
-      
-//             let port_name = if let Ok(port_name) = midi_input.port_name(&p) { port_name } else { "No device name given".to_string() };
-    
-//             vec_of_devices.push(
-//                 MidiDevice{
-//                     direction: atoms::input(),
-//                     name: port_name,
-//                     port: i
-//                 });
-        
-//         }
-    
-//     });
-
-//     GLOBAL_MIDI_OUTPUT_RESULT.with(|midi_output_result| {
-
-//         let midi_output = match midi_output_result {
-//             Ok(midi_device) => midi_device,
-//             Err(error) => panic!("Problem getting midi output devices. Error: {:?}", error)
-//         };
-
-//         println!("Midi output ports: {:?}\n\r", midi_output.port_count());
-
-//         for (i, p) in midi_output.ports().iter().enumerate() {  
-        
-//             let port_name = if let Ok(port_name) = midi_output.port_name(&p) { port_name } else { "No device name given".to_string() };
-          
-//             vec_of_devices.push(
-//                 MidiDevice{
-//                     direction: atoms::output(),
-//                     name: port_name,
-//                     port: i
-//                 });
-//         }
-
-//     });
-
-
-//     return Ok(vec_of_devices)
-
-// }
-
-// #[rustler::nif(schedule = "DirtyCpu")]
-// fn port_count() -> Result<NumPorts, Error>{
-
-//     let mut num_inputs = 0;
-//     let mut num_ouputs = 0;
-
-//     GLOBAL_MIDI_INPUT_RESULT.with(|midi_input_result| {
-
-//         // midi_input_result.ignore(Ignore::None);
-        
-//         let midi_input = match midi_input_result {
-//             Ok(midi_device) => midi_device,
-//             Err(error) => panic!("Problem getting midi input devices. Attempted creating new connection. Error: {:?}", error)
-//         };
-
-//         println!("\nMidi input ports: {:?}\n\r", midi_input.port_count());
-
-//         num_inputs = midi_input.port_count();
-
-//     });
-
-//     GLOBAL_MIDI_OUTPUT_RESULT.with(|midi_output_result| {
-
-//         let midi_output = match midi_output_result {
-//             Ok(midi_device) => midi_device,
-//             Err(error) => panic!("Problem getting midi output devices. Attempted creating new connection. Error: {:?}", error)
-//         };
-
-//         println!("Midi output ports: {:?}\n\r", midi_output.port_count());
-
-//         num_ouputs = midi_output.port_count();
-
-//     });
-
-//     return Ok( NumPorts { input: num_inputs, output: num_ouputs } )
-
-// }
-
-
-
-
 
 fn on_load(env: Env, _info: Term) -> bool {
     // rustler::resource!(MidiexMidiInputRef<'_>, env);
@@ -958,7 +509,7 @@ fn on_load(env: Env, _info: Term) -> bool {
     
     // MIDI ports (both input and output)
     rustler::resource!(FlexiPort, env);
-    rustler::resource!(MidiexMidiSimplePortRef, env);
+    rustler::resource!(MidiexMidiPortRef, env);
 
     // MIDI connection to a MIDI port
     // rustler::resource!(FlexiConn, env);
@@ -976,6 +527,6 @@ fn on_load(env: Env, _info: Term) -> bool {
 
 rustler::init!(
     "Elixir.Midiex",
-    [count_ports, list_ports, try_connect, try_core_midi, play, play_two, subscribe, connect],
+    [count_ports, list_ports, connect, try_core_midi, play, subscribe],
     load = on_load
 );
