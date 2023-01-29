@@ -1,0 +1,15 @@
+[package]
+name = "midiex"
+version = "0.1.0"
+authors = []
+edition = "2018"
+
+[lib]
+name = "midiex"
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+rustler = "0.26.0"
+midir = "0.8.0"
+coremidi = "0.7"
