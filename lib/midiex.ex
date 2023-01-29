@@ -19,6 +19,7 @@ alias Hex.API.Key
 
   # MIDI messaging functions
   def play(_conn), do: err()
+  def send_msg(_out_port_conn, _midi_msg), do: err()
 
   # Midiex callback functions
   def subscribe(), do: err()

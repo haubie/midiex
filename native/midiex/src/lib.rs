@@ -21,7 +21,7 @@ use std::io::{stdin, stdout, Write};
 
 use midir::{MidiInput, MidiOutput, MidiInputConnection, MidiOutputConnection, MidiInputPort, MidiOutputPort, Ignore, InitError};
 
-use rustler::{Atom, Env, Error, NifResult, NifStruct, NifMap, NifTuple, ResourceArc, Term};
+use rustler::{Atom, Env, Error, NifResult, NifStruct, NifMap, NifTuple, ResourceArc, Term, Binary};
 
 
 
@@ -186,28 +186,25 @@ fn connect(midi_port: MidiPort) -> Result<OutConn, Error>{
     )))
 }
 
+#[rustler::nif(schedule = "DirtyCpu")]
+fn send_msg(midi_out_conn: OutConn, message: Binary) -> Result<OutConn, Error>{
 
+    println!("Message recieved");
 
-
-
-pub fn get_first_midi_out_device(midi_out: &mut MidiOutput) -> Result<MidiOutputPort, Error> {
-    let out_ports = midi_out.ports();
-    if out_ports.len() == 0 {
-        panic!("No MIDI devices attached")
-    } else {
-        let device_name = midi_out.port_name(&out_ports[0]).expect("Device name not available");
-        println!("Chose MIDI device {device_name}");
-        Ok(out_ports[0].clone())
+    let mut midi_output = MidiOutput::new("MIDIex").expect("Midi output"); 
+    
+    {
+        let mut conn_out = midi_out_conn.conn_ref.0.lock().unwrap();
+        conn_out.send(&message);
     }
+    
+    Ok(midi_out_conn)
 }
-
 
 #[rustler::nif(schedule = "DirtyCpu")]
 fn play(midi_out_conn: OutConn) -> Result<(), Error>{
  
-
     let mut midi_output = MidiOutput::new("MIDIex").expect("Midi output");
-
     let mut conn_out = midi_out_conn.conn_ref.0.lock().unwrap();
     
 
@@ -527,6 +524,6 @@ fn on_load(env: Env, _info: Term) -> bool {
 
 rustler::init!(
     "Elixir.Midiex",
-    [count_ports, list_ports, connect, try_core_midi, play, subscribe],
+    [count_ports, list_ports, connect, try_core_midi, play, send_msg, subscribe],
     load = on_load
 );
