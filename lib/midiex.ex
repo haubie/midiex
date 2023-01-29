@@ -18,6 +18,9 @@ alias Hex.API.Key
   def count_ports(), do: err()
   def connect(_midi_port), do: err()
 
+
+  def create_virtual_output(), do: err()
+
   # MIDI messaging functions
   def play(_conn), do: err()
   def send_msg(_out_port_conn, _midi_msg), do: err()

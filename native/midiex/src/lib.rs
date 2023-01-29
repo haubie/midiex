@@ -21,6 +21,9 @@ use std::io::{stdin, stdout, Write};
 
 use midir::{MidiInput, MidiOutput, MidiInputConnection, MidiOutputConnection, MidiInputPort, MidiOutputPort, Ignore, InitError};
 
+use midir::os::unix::{VirtualInput, VirtualOutput};
+
+
 use rustler::{Atom, Env, Error, NifResult, NifStruct, NifMap, NifTuple, ResourceArc, Term, Binary};
 
 
@@ -186,13 +189,54 @@ fn connect(midi_port: MidiPort) -> Result<OutConn, Error>{
     )))
 }
 
+
+#[rustler::nif]
+fn create_virtual_output() -> Result<OutConn, Error>{
+
+    let mut midi_output = MidiOutput::new("MIDIex").expect("Midi output");
+
+    // Need to create a custom MidiOutputPort for this app :-) Using an existing port at the moment
+    let new_port: MidiOutputPort = midi_output.ports().into_iter().rev().next().unwrap();
+
+
+    // let new_port = MidiOutputPort {
+    //     name: "MIDIex output port"
+    // };
+
+    println!("Connecting to port '{}' ...", midi_output.port_name(&new_port).unwrap());
+
+
+
+
+
+    let mut conn_out = midi_output.create_virtual("MIDIex-virtual-output").expect("Midi MidiOutputConnection");
+
+
+    // let mut conn_out = midi_output.connect(&new_port, "MIDIex-virtual-output").unwrap();
+
+    return Ok(
+        OutConn {
+            conn_ref: ResourceArc::new(OutConnRef::new(conn_out)),
+            midi_port:
+                MidiPort{
+                direction: atoms::output(),
+                name: "MIDIex-virtual-output".to_string(),
+                num: 1,
+                port_ref: ResourceArc::new(FlexiPort::new(MidiexMidiPortRef::Output(MidiOutputPort::clone(&new_port))))         
+            },          
+        }
+    )
+
+}
+
+
 #[rustler::nif(schedule = "DirtyCpu")]
 fn send_msg(midi_out_conn: OutConn, message: Binary) -> Result<OutConn, Error>{
 
     println!("Message recieved");
 
     let mut midi_output = MidiOutput::new("MIDIex").expect("Midi output"); 
-    
+
     {
         let mut conn_out = midi_out_conn.conn_ref.0.lock().unwrap();
         conn_out.send(&message);
@@ -233,7 +277,6 @@ fn play(midi_out_conn: OutConn) -> Result<(), Error>{
         play_note(54, 4);
     }
     sleep(Duration::from_millis(150));
-
 
     
     Ok(())
@@ -524,6 +567,6 @@ fn on_load(env: Env, _info: Term) -> bool {
 
 rustler::init!(
     "Elixir.Midiex",
-    [count_ports, list_ports, connect, try_core_midi, play, send_msg, subscribe],
+    [count_ports, list_ports, connect, try_core_midi, play, send_msg, subscribe, create_virtual_output],
     load = on_load
 );
