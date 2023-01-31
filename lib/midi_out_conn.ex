@@ -1,3 +1,3 @@
 defmodule Midiex.OutConn do
-  defstruct ~w/conn_ref midi_port/a
+  defstruct ~w/conn_ref name port_num/a
 end

@@ -19,7 +19,7 @@ alias Hex.API.Key
   def connect(_midi_port), do: err()
 
 
-  def create_virtual_output(), do: err()
+  def create_virtual_output(_name \\ "MIDIex-virtual-output"), do: err()
 
   # MIDI messaging functions
   def play(_conn), do: err()

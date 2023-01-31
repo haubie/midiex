@@ -50,6 +50,7 @@ mod atoms {
 
 
 
+
 // Send message to Erlang
 #[rustler::nif]
 pub fn subscribe(env: Env) -> Atom {  
@@ -142,7 +143,9 @@ fn connect(midi_port: MidiPort) -> Result<OutConn, Error>{
                     return Ok(
                         OutConn {
                             conn_ref: ResourceArc::new(OutConnRef::new(conn_out)),
-                            midi_port: midi_port,          
+                            // midi_port: midi_port,   
+                            name: midi_port.name,
+                            port_num: midi_port.num,
                         }
                     )
 
@@ -191,39 +194,39 @@ fn connect(midi_port: MidiPort) -> Result<OutConn, Error>{
 
 
 #[rustler::nif]
-fn create_virtual_output() -> Result<OutConn, Error>{
+fn create_virtual_output(name: String) -> Result<OutConn, Error>{
 
     let mut midi_output = MidiOutput::new("MIDIex").expect("Midi output");
+    let mut midi_input = MidiInput::new("MIDIex").expect("Midi input");
 
-    // Need to create a custom MidiOutputPort for this app :-) Using an existing port at the moment
-    let new_port: MidiOutputPort = midi_output.ports().into_iter().rev().next().unwrap();
+    let mut conn_out = midi_output.create_virtual(&name).expect("Midi MidiOutputConnection");
 
+    // Even though we've created an output port, beacause it's a virtual port it is listed as an 'input' when querying the OS for available devices. 
+    let port_index = midi_input.port_count();
 
-    // let new_port = MidiOutputPort {
-    //     name: "MIDIex output port"
-    // };
+    // for (i, p) in midi_input.ports().iter().enumerate() {
+    
+    //     let port_name = if let Ok(port_name) = midi_input.port_name(&p) { port_name } else { "No device name given".to_string() };
 
-    println!("Connecting to port '{}' ...", midi_output.port_name(&new_port).unwrap());
+    //     println!("\nPort num {:?} with name {:?}\n\r", i, port_name);
+    
+    // }
 
+    // Just in case added port_ref vack into OutConn
+    // let new_port: MidiInputPort = midi_input.ports().into_iter().rev().next().unwrap();
 
-
-
-
-    let mut conn_out = midi_output.create_virtual("MIDIex-virtual-output").expect("Midi MidiOutputConnection");
-
-
-    // let mut conn_out = midi_output.connect(&new_port, "MIDIex-virtual-output").unwrap();
 
     return Ok(
         OutConn {
             conn_ref: ResourceArc::new(OutConnRef::new(conn_out)),
-            midi_port:
-                MidiPort{
-                direction: atoms::output(),
-                name: "MIDIex-virtual-output".to_string(),
-                num: 1,
-                port_ref: ResourceArc::new(FlexiPort::new(MidiexMidiPortRef::Output(MidiOutputPort::clone(&new_port))))         
-            },          
+            name: name,
+            port_num: port_index-1,
+            // midi_port: MidiPort{
+            //     direction: atoms::output(),
+            //     name: name,
+            //     num: port_index,
+            //     port_ref: ResourceArc::new(FlexiPort::new(MidiexMidiPortRef::Output(MidiOutputPort::clone(&new_port)))) 
+            // }   
         }
     )
 
@@ -325,10 +328,9 @@ fn play(midi_out_conn: OutConn) -> Result<(), Error>{
 #[module = "Midiex.OutConn"]
 pub struct OutConn {
     conn_ref: ResourceArc<OutConnRef>,
-    midi_port: MidiPort
-    // port_name: String,
-    // port_num: usize,
-    // port_ref: ResourceArc<FlexiPort>
+    // midi_port: MidiPort,
+    name: String,
+    port_num: usize,
 }
 
 pub struct OutConnRef(pub Mutex<MidiOutputConnection>);
