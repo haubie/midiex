@@ -61,12 +61,9 @@ pub fn subscribe(env: Env) -> Atom {
 
     the_message = the_message.map_put("message", "You recieved this message from Rust.").unwrap();
 
-
     env.send(&pid.clone(), the_message);
 
-    sleep(Duration::from_millis(1000));
- 
-        
+    sleep(Duration::from_millis(1000));    
 
     atoms::ok()
 }
@@ -87,36 +84,44 @@ pub fn subscribe(env: Env) -> Atom {
 // }
 
 
-
-
-
-// CORE MIDI
 #[rustler::nif(schedule = "DirtyCpu")]
-fn try_core_midi() -> Result<(), Error> {
-    println!("System destinations:");
+fn listen(midi_port: MidiPort) -> Atom {
 
-    for (i, destination) in Destinations.into_iter().enumerate() {
-        let display_name = get_display_name(&destination);
-        println!("System sources:");
+  
+    if midi_port.direction == atoms::input()  {
+
+        println!("\rIs an input port");
+
+        if let MidiexMidiPortRef::Input(in_port) = &midi_port.port_ref.0 { 
+            println!("\r\tIn connections section");
+            loop {
+
+                let mut midi_input = MidiInput::new("MIDIex").expect("Midi input"); 
+
+                let port_name = midi_input.port_name(in_port).unwrap();
+
+                // println!("\r\tPort is called {:?}", port_name);
+
+
+                // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
+                let _conn_in = midi_input.connect(&in_port, "MIDIex input port", move |stamp, message, _| {
+                     
+                    println!("\n{}: {:?} (len = {})\r", stamp, message, message.len());
+                }, ());   
+
+                sleep(Duration::from_millis(1000));    
+                
+            };
+          
+        };
+
+    } else {
+        println!("\nCannot listen to an output port - use the connect/1 function instead");
+        return atoms::error()
     }
 
-    println!();
-    println!("System sources:");
-
-    for (i, source) in Sources.into_iter().enumerate() {
-        let display_name = get_display_name(&source);
-        println!("[{}] {}", i, display_name);
-    }
-
-    Ok(())
+    atoms::ok()
 }
-
-fn get_display_name(endpoint: &Endpoint) -> String {
-    endpoint
-        .display_name()
-        .unwrap_or_else(|| "[Unknown Display Name]".to_string())
-}
-
 
 
 
@@ -198,29 +203,23 @@ fn create_virtual_output(name: String) -> Result<OutConn, Error>{
 
     let mut midi_output = MidiOutput::new("MIDIex").expect("Midi output");
     let mut midi_input = MidiInput::new("MIDIex").expect("Midi input");
+    midi_input.ignore(Ignore::None);
 
     let mut conn_out = midi_output.create_virtual(&name).expect("Midi MidiOutputConnection");
 
     // Even though we've created an output port, beacause it's a virtual port it is listed as an 'input' when querying the OS for available devices. 
     let port_index = midi_input.port_count();
 
-    // for (i, p) in midi_input.ports().iter().enumerate() {
-    
-    //     let port_name = if let Ok(port_name) = midi_input.port_name(&p) { port_name } else { "No device name given".to_string() };
-
-    //     println!("\nPort num {:?} with name {:?}\n\r", i, port_name);
-    
-    // }
-
     // Just in case added port_ref vack into OutConn
     // let new_port: MidiInputPort = midi_input.ports().into_iter().rev().next().unwrap();
-
 
     return Ok(
         OutConn {
             conn_ref: ResourceArc::new(OutConnRef::new(conn_out)),
             name: name,
             port_num: port_index-1,
+
+            // Just in case port_ref is added back in:
             // midi_port: MidiPort{
             //     direction: atoms::output(),
             //     name: name,
@@ -248,66 +247,11 @@ fn send_msg(midi_out_conn: OutConn, message: Binary) -> Result<OutConn, Error>{
     Ok(midi_out_conn)
 }
 
-#[rustler::nif(schedule = "DirtyCpu")]
-fn play(midi_out_conn: OutConn) -> Result<(), Error>{
- 
-    let mut midi_output = MidiOutput::new("MIDIex").expect("Midi output");
-    let mut conn_out = midi_out_conn.conn_ref.0.lock().unwrap();
-    
-
-    println!("Connection open. Listen!");
-    {
-        // Define a new scope in which the closure `play_note` borrows conn_out, so it can be called easily
-        let mut play_note = |note: u8, duration: u64| {
-            const NOTE_ON_MSG: u8 = 0x90;
-            const NOTE_OFF_MSG: u8 = 0x80;
-            const VELOCITY: u8 = 0x64;
-            // We're ignoring errors in here
-            let _ = conn_out.send(&[NOTE_ON_MSG, note, VELOCITY]);
-            sleep(Duration::from_millis(duration * 150));
-            let _ = conn_out.send(&[NOTE_OFF_MSG, note, VELOCITY]);
-        };
-
-        sleep(Duration::from_millis(4 * 150));
-        
-        play_note(66, 4);
-        play_note(65, 3);
-        play_note(63, 1);
-        play_note(61, 6);
-        play_note(59, 2);
-        play_note(58, 4);
-        play_note(56, 4);
-        play_note(54, 4);
-    }
-    sleep(Duration::from_millis(150));
-
-    
-    Ok(())
-}
-
 
 
 
 
 // MIDI Connection
-
-// pub struct MidexMidiInputConnectionRef(pub Mutex<MidiInputConnection>);
-// pub struct MidexMidiOutputConnectionRef(pub Mutex<MidiOutputConnection>);
-
-// impl MidexMidiInputConnectionRef {
-//     pub fn new(data: MidiInputConnection) -> Self {
-//         Self(Mutex::new(data))
-//     }
-// }
-
-// impl MidexMidiOutputConnectionRef {
-//     pub fn new(data: MidiOutputConnection) -> Self {
-//         Self(Mutex::new(data))
-//     }
-// }
-
-
-
 
 // pub enum MidiexConnRef {
 //     Input(MidiInputConnection), 
@@ -376,7 +320,6 @@ pub struct NumPorts {
 
 
 
-
 // MIDI IO related 
 
 pub struct MidiexMidiInputRef(pub Mutex<MidiInput>);
@@ -394,20 +337,6 @@ impl MidiexMidiOutputRef {
     }
 }
 
-// pub struct MidiexMidiInputRef(pub RwLock<MidiInput>);
-// pub struct MidiexMidiOutputRef(pub RwLock<MidiOutput>);
-
-// impl MidiexMidiInputRef {
-//     pub fn new(data: MidiInput) -> Self {
-//         Self(RwLock::new(data))
-//     }
-// }
-
-// impl MidiexMidiOutputRef {
-//     pub fn new(data: MidiOutput) -> Self {
-//         Self(RwLock::new(data))
-//     }
-// }
 
 #[derive(NifStruct)]
 #[module = "Midiex.MidiIO"]
@@ -434,8 +363,6 @@ impl MidiexMidiIO {
 // List all the ports, taking midi_io as input
 #[rustler::nif(schedule = "DirtyCpu")]
 fn list_ports() -> Result<Vec<MidiPort>, Error> {
-
-
 
     let mut vec_of_devices: Vec<MidiPort> = Vec::new();
 
@@ -489,7 +416,6 @@ fn list_ports() -> Result<Vec<MidiPort>, Error> {
 
     });
 
-
     return Ok(vec_of_devices)
 
 }
@@ -529,22 +455,8 @@ fn count_ports() -> Result<NumPorts, Error>{
 
 
 
-
-
-
 fn on_load(env: Env, _info: Term) -> bool {
-    // rustler::resource!(MidiexMidiInputRef<'_>, env);
-    // rustler::resource!(MidiexMidiOutputRef, env);
-    // rustler::resource!(MidiexMidiInputConnection<T>, env);
-
-
-    // rustler::resource!(MidiPort, env);
-    // rustler::resource!(MidiexMidiInputPortRef, env);
-    // rustler::resource!(MidiexMidiOutputPortRef, env);
-    // rustler::resource!(MidiexMidiPortRef, env);
-
-    
-
+  
     // MIDI Input and Output object for the OS
     rustler::resource!(MidiexMidiInputRef, env);
     rustler::resource!(MidiexMidiOutputRef, env);
@@ -558,17 +470,11 @@ fn on_load(env: Env, _info: Term) -> bool {
     // rustler::resource!(MidiexConnRef, env);
     rustler::resource!(OutConnRef, env);
 
-
-    
-
-    // rustler::resource!(MidexMidiInputConnectionRef, env);
-    // rustler::resource!(MidexMidiOutputConnectionRef, env);
-    
     true
 }
 
 rustler::init!(
     "Elixir.Midiex",
-    [count_ports, list_ports, connect, try_core_midi, play, send_msg, subscribe, create_virtual_output],
+    [count_ports, list_ports, connect, send_msg, subscribe, create_virtual_output, listen],
     load = on_load
 );

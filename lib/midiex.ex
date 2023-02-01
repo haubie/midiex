@@ -22,11 +22,12 @@ alias Hex.API.Key
   def create_virtual_output(_name \\ "MIDIex-virtual-output"), do: err()
 
   # MIDI messaging functions
-  def play(_conn), do: err()
   def send_msg(_out_port_conn, _midi_msg), do: err()
 
   # Midiex callback functions
   def subscribe(), do: err()
+  def listen(_input_port), do: err()
+
 
   defp err(), do: :erlang.nif_error(:nif_not_loaded)
 
@@ -69,7 +70,7 @@ alias Hex.API.Key
   end
 
 
-  def example_song(midi_out_conn) do
+  def play_example_song(midi_out_conn) do
     midi_out_conn
     |> play_note(66, 4)
     |> play_note(65, 3)
@@ -89,7 +90,8 @@ alias Hex.API.Key
   # def new(), do: get_midi_io()
   # def get_midi_io(), do: err()
   # def try_connect(_ref), do: err()
+  # def play(_conn), do: err()
 
-   def try_core_midi(), do: err()
+  #  def try_core_midi(), do: err()
   #  def play_test(), do: err()
 end
