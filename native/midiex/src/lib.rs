@@ -85,7 +85,12 @@ pub fn subscribe(env: Env) -> Atom {
 
 
 #[rustler::nif(schedule = "DirtyCpu")]
-fn listen(midi_port: MidiPort) -> Atom {
+fn listen(env: Env, midi_port: MidiPort) -> Atom {
+
+
+    let pid = env.pid();
+    // let mut the_message = Term::list_new_empty(env);
+    
 
   
     if midi_port.direction == atoms::input()  {
@@ -107,6 +112,13 @@ fn listen(midi_port: MidiPort) -> Atom {
                 let _conn_in = midi_input.connect(&in_port, "MIDIex input port", move |stamp, message, _| {
                      
                     println!("\n{}: {:?} (len = {})\r", stamp, message, message.len());
+
+                    let mut the_message = Term::list_new_empty(env);
+                    the_message.list_prepend(atoms::message().to_term(env));
+
+                    // the_message = the_message.map_put("message", "You recieved this message from Rust.").unwrap();
+
+                    // env.send(&pid.clone(), Term::map);
                 }, ());   
 
                 sleep(Duration::from_millis(1000));    

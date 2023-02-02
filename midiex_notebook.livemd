@@ -1,0 +1,138 @@
+# MIDIex notebook
+
+```elixir
+Mix.install([{:midiex, path: "/Users/haubie/Development/midiex"}])
+```
+
+## Setup
+
+```elixir
+import Midiex
+```
+
+## Finding devices (ports)
+
+### How many ports are there?
+
+```elixir
+Midiex.count_ports()
+```
+
+### List devices (ports)
+
+```elixir
+ports = Midiex.list_ports()
+```
+
+### Filter to show input or output ports
+
+```elixir
+ports |> Midiex.filter_port_direction(:output)
+```
+
+```elixir
+ports |> Midiex.filter_port_direction(:input)
+```
+
+### Filter by port name
+
+```elixir
+ports |> Midiex.filter_port_name_contains("MicroFreak")
+```
+
+```elixir
+ports |> Midiex.filter_port_name_contains("MicroFreak", direction: :output)
+```
+
+## Make a connection to a device
+
+### Connect to an output device and send a message
+
+```elixir
+out_conn =
+  ports
+  |> Midiex.filter_port_name_contains("MicroFreak", direction: :output)
+  |> List.first()
+  |> Midiex.connect()
+```
+
+```elixir
+Midiex.play_example_song(out_conn)
+```
+
+```elixir
+out_conn
+|> Midiex.play_note(60, 2)
+|> Midiex.play_note(90, 4)
+|> Midiex.play_note(30, 2)
+|> Midiex.play_note(100, 4)
+|> Midiex.play_note(22, 2)
+```
+
+### Connect and listen to an input device
+
+```elixir
+defmodule MyMidiServer do
+  use GenServer
+
+  @impl true
+  def init(state \\ []) do
+    IO.inspect(state, label: "INIT")
+    {:ok, state}
+  end
+
+  @impl true
+  def handle_info(msg, state) do
+    case msg do
+      msg ->
+        IO.inspect(msg, label: "FROM RUST")
+        msg
+
+      _ ->
+        msg
+    end
+
+    {:noreply, state}
+  end
+
+  def listen_to(device_name \\ "IAC Driver") do
+    Midiex.list_ports()
+    |> Midiex.filter_port_name_contains(device_name, direction: :input)
+    |> List.first()
+    |> Midiex.listen()
+  end
+
+  def listen(pid, device_name) do
+    GenServer.cast(pid, {:listen, device_name})
+  end
+
+  @impl true
+  def handle_cast({:listen, device_name}, state) do
+    listen_to(device_name)
+    {:noreply, state}
+  end
+
+  def subscribe(pid) do
+    GenServer.cast(pid, :subscribe)
+  end
+
+  @impl true
+  def handle_cast(:subscribe, state) do
+    Midiex.subscribe()
+    {:noreply, state}
+  end
+end
+```
+
+```elixir
+{:ok, pid} = GenServer.start_link(MyMidiServer, [])
+```
+
+```elixir
+# MyMidiServer.listen(pid, "KeyStep")
+# MyMidiServer.listen(pid, "MicroFreak")
+```
+
+```elixir
+MyMidiServer.subscribe(pid)
+```
