@@ -24,7 +24,7 @@ use midir::{MidiInput, MidiOutput, MidiInputConnection, MidiOutputConnection, Mi
 use midir::os::unix::{VirtualInput, VirtualOutput};
 
 
-use rustler::{Atom, Env, Error, NifResult, NifStruct, NifMap, NifTuple, ResourceArc, Term, Binary};
+use rustler::{Atom, Env, Error, NifResult, NifStruct, NifMap, NifTuple, ResourceArc, Term, Binary, OwnedBinary};
 
 
 
@@ -85,13 +85,11 @@ pub fn subscribe(env: Env) -> Atom {
 
 
 #[rustler::nif(schedule = "DirtyCpu")]
-fn listen(env: Env, midi_port: MidiPort) -> Atom {
+fn listen(midi_port: MidiPort) -> Result<Vec<u8>, Error> {
 
+    // let mut data: Binary = Binary::new();
 
-    let pid = env.pid();
-    // let mut the_message = Term::list_new_empty(env);
-    
-
+    let mut msg: Vec<u8> = Vec::new();
   
     if midi_port.direction == atoms::input()  {
 
@@ -99,8 +97,7 @@ fn listen(env: Env, midi_port: MidiPort) -> Atom {
 
         if let MidiexMidiPortRef::Input(in_port) = &midi_port.port_ref.0 { 
             println!("\r\tIn connections section");
-            loop {
-
+        
                 let mut midi_input = MidiInput::new("MIDIex").expect("Midi input"); 
 
                 let port_name = midi_input.port_name(in_port).unwrap();
@@ -109,30 +106,37 @@ fn listen(env: Env, midi_port: MidiPort) -> Atom {
 
 
                 // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
-                let _conn_in = midi_input.connect(&in_port, "MIDIex input port", move |stamp, message, _| {
+                let _conn_in = midi_input.connect(&in_port, "MIDIex input port", move |stamp, message, msg| {
                      
                     println!("\n{}: {:?} (len = {})\r", stamp, message, message.len());
 
-                    let mut the_message = Term::list_new_empty(env);
-                    the_message.list_prepend(atoms::message().to_term(env));
+                    // let mut bin_msg = OwnedBinary::new(message.len()).expect("Owned binary message created");
+                    let mut bin_msg =  message.to_vec();
 
-                    // the_message = the_message.map_put("message", "You recieved this message from Rust.").unwrap();
 
-                    // env.send(&pid.clone(), Term::map);
-                }, ());   
+                   
+                    
+
+
+                    *msg = bin_msg;
+
+                }, (msg).clone());   
 
                 sleep(Duration::from_millis(1000));    
                 
-            };
+         
           
         };
 
     } else {
         println!("\nCannot listen to an output port - use the connect/1 function instead");
-        return atoms::error()
+        // return atoms::error()
+        return Err(Error::RaiseTerm(Box::new(
+            "Not an input port.".to_string(),
+        ))) 
     }
 
-    atoms::ok()
+    Ok(msg)
 }
 
 
