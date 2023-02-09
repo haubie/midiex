@@ -13,12 +13,17 @@ alias Hex.API.Key
   # ##########
 
   # MIDI port functions
-  def list_ports(direction), do: filter_port_direction(list_ports(), direction)
+
   def list_ports(), do: err()
+  def list_ports(direction) when is_atom(direction), do: filter_port_direction(list_ports(), direction)
+  def list_ports(name, direction \\ nil) when is_binary(name) do
+    filter_port_name_contains(list_ports(), name, direction: direction)
+  end
   def count_ports(), do: err()
   def connect(_midi_port), do: err()
 
 
+  @spec create_virtual_output(any) :: any
   def create_virtual_output(_name \\ "MIDIex-virtual-output"), do: err()
 
   # MIDI messaging functions
@@ -35,7 +40,7 @@ alias Hex.API.Key
   # HELPERS
   # #######
   def filter_port_name_contains(ports_list, name, opts \\ []) do
-    direction = Keyword.get(opts, :direction)
+    direction = Keyword.get(opts, :direction, nil)
     ports_list
     |> Enum.filter(fn port -> String.contains?(port.name, name) end)
     |> filter_port_direction(direction)

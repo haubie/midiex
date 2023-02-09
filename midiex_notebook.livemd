@@ -28,6 +28,8 @@ ports = Midiex.list_ports()
 
 ```elixir
 ports |> Midiex.filter_port_direction(:output)
+
+# or Midiex.list_ports(:output)
 ```
 
 ```elixir
@@ -42,6 +44,20 @@ ports |> Midiex.filter_port_name_contains("MicroFreak")
 
 ```elixir
 ports |> Midiex.filter_port_name_contains("MicroFreak", direction: :output)
+```
+
+## Virtual devices
+
+```elixir
+virtual_conn = create_virtual_output("My Virtual Connection")
+```
+
+```elixir
+play_example_song(virtual_conn)
+```
+
+```elixir
+
 ```
 
 ## Make a connection to a device

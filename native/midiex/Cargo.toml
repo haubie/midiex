@@ -13,3 +13,5 @@ crate-type = ["cdylib"]
 rustler = "0.26.0"
 midir = "0.8.0"
 coremidi = "0.7"
+send_wrapper = "0.6.0"
+lazy_static = "1.4.0"
