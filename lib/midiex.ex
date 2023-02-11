@@ -2,7 +2,7 @@ defmodule Midiex do
   @moduledoc """
   Documentation for `Midiex`.
   """
-alias Hex.API.Key
+# alias Hex.API.Key
 
   use Rustler,
     otp_app: :midiex,

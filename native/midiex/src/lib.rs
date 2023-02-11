@@ -1,5 +1,5 @@
 #![allow(unused)]
-#![feature(drain_filter)]
+// #![feature(drain_filter)]
 extern crate midir;
 
 #[macro_use]
@@ -32,7 +32,6 @@ use midir::{MidiInput, MidiOutput, MidiInputConnection, MidiOutputConnection, Mi
 
 use midir::os::unix::{VirtualInput, VirtualOutput};
 
-
 use rustler::{Atom, Env, Error, NifResult, NifStruct, NifMap, NifTuple, ResourceArc, Term, Binary, OwnedBinary};
 
 
@@ -41,11 +40,16 @@ use rustler::{Atom, Env, Error, NifResult, NifStruct, NifMap, NifTuple, Resource
 thread_local!(static GLOBAL_MIDI_INPUT_RESULT: Result<MidiInput, InitError> = MidiInput::new("MIDIex"));
 thread_local!(static GLOBAL_MIDI_OUTPUT_RESULT: Result<MidiOutput, InitError> = MidiOutput::new("MIDIex"));
 
-thread_local!(static GLOBAL_MIDI_MESSAGES: Mutex<Vec<u8>> = Mutex::new(Vec::<u8>::new()));
+// thread_local!(static GLOBAL_MIDI_MESSAGES: Mutex<Vec<u8>> = Mutex::new(Vec::<u8>::new()));
 
 lazy_static!{
-    static ref MIDI_MSG: Mutex<Vec<u8>> = Mutex::new(Vec::<u8>::new());
+    static ref GLOBAL_MIDI_MESSAGES: Mutex<Vec<u8>> = Mutex::new(Vec::<u8>::new());
 }
+
+lazy_static!{
+    static ref GLOBAL_MIDI_BINARY_MESSAGES: Mutex<Vec<OwnedBinary>> = Mutex::new(Vec::<OwnedBinary>::new());
+}
+
 
 
 
@@ -102,41 +106,18 @@ pub fn subscribe(env: Env) -> Atom {
 
 
 #[rustler::nif(schedule = "DirtyCpu")]
-fn listen(midi_port: MidiPort) -> Result<Vec<u8>, Error> {
+fn listen(env: Env, midi_port: MidiPort) -> Result<Vec<Binary>, Error> {
 
     // let mut data: Binary = Binary::new();
 
-
-    // let mut msg_two: Vec<u8> = Vec::new();
-    let mut msg: Vec<u8> = Vec::new();
-    // let mut msg_ref = RwLock::new(msg_two);
-    msg.push(1);
-    msg.push(2);
-
-
-   
-    // let mut mutex = Mutex::new(Vec::<u8>::new());
-
-   
-
-    // let (sender, receiver) = channel();
-
-
-    let callback = |response: Vec<u8>| {response};
-
-    let mut cb = SendWrapper::new(callback(msg));
-
-    let value = cb.deref_mut();
-
-    println!("\nVALUE: {:?}\r", value);
    
   
     if midi_port.direction == atoms::input()  {
 
-        println!("\rIs an input port");
+        // println!("\rIs an input port");
 
         if let MidiexMidiPortRef::Input(in_port) = &midi_port.port_ref.0 { 
-            println!("\r\tIn connections section");
+            // println!("\r\tIn connections section");
         
                 let mut midi_input = MidiInput::new("MIDIex").expect("Midi input"); 
 
@@ -159,71 +140,35 @@ fn listen(midi_port: MidiPort) -> Result<Vec<u8>, Error> {
 
 
 
-                    // GLOBAL_MIDI_MESSAGES.with(|midi_msg_mutex| {
-
-                    //     *midi_msg_mutex.lock().unwrap() = vec_msg;
-
-                    //     // println!("\nMUTEX IN LOOP: {:?})\r", midi_msg_mutex.lock().unwrap());
+                    let mut bin_msg: OwnedBinary = OwnedBinary::new(message.len()).expect("Owned binary message created");
+                    bin_msg.as_mut_slice().copy_from_slice(&vec_msg);
 
 
-                    // });
+                    GLOBAL_MIDI_BINARY_MESSAGES.lock().unwrap().push(bin_msg);
 
+                    // let final_bin_msg: Binary = bin_msg.release(env);
 
-                    // GLOBAL_MIDI_MESSAGES.with(|midi_msg_mutex| {
-
-                    //     // *midi_msg_mutex.lock().unwrap() = vec_msg;
-
-                    //     println!("\nMUTEX IN LOOP: {:?})\r", midi_msg_mutex.lock().unwrap());
-
-
-                    // });
-
-                    *MIDI_MSG.lock().unwrap() = vec_msg;
+                    // Ok((atoms::ok(), bin_msg.release(env)).encode(env)) 
 
                     
 
-                    
+                    // *GLOBAL_MIDI_MESSAGES.lock().unwrap() = vec_msg;
+
+                    // GLOBAL_MIDI_MESSAGES.lock().unwrap().append(&mut vec_msg);
+
+                    // GLOBAL_MIDI_MESSAGES.lock().unwrap().append(&mut vec_msg);
 
 
 
-
-
-                    // let mut vec_msg =  message.to_vec();
-                    // let mut bin_msg = OwnedBinary::new(message.len()).expect("Owned binary message created");
-                    // let mut bin_msg = OwnedBinary::copy_from_slice(vec_msg);
-                    
-                    // *msg = vec_msg;
-
-                    // &msg.append(&mut vec_msg);
-                    // &msg_ref.replace(vec_msg.to_vec());
-
-                    // *msg_ref.get_mut().unwrap() = vec_msg.to_vec();
-
-                    // sender.send(cb).unwrap();
-
-                    // let data = cb.deref();
-
-                    // println!("\nDATA {:?}\r", data);                
+        
                    
-                    // *mutex.lock().unwrap() = vec_msg;
                 }, ());   
 
-                // println!("\n*msg AFTER LOOP: {:?})\r", msg);
-                // println!("\nSECOND MSG AFTER LOOP: {:?})\r", msg_ref.read().unwrap());
+            
 
-                // let cb = receiver.recv().unwrap();
-
+                sleep(Duration::from_millis(1));
                 
-                
-                // println!("\nMUTEX AFTER LOOP: {:?})\r", mutex.lock().unwrap());
 
-
-
-       
-
-
-
-                sleep(Duration::from_millis(1000));        
           
         };
 
@@ -236,17 +181,27 @@ fn listen(midi_port: MidiPort) -> Result<Vec<u8>, Error> {
     }
 
 
-//     GLOBAL_MIDI_MESSAGES.with(|midi_msg_mutex| {
 
-//         println!("\nMUTEX AFTER LOOP: {:?})\r", midi_msg_mutex.lock().unwrap());
-
-
-//    }); 
-
-    println!("\nMUTEX AFTER LOOP: {:?})\r", *MIDI_MSG.lock().unwrap());
+    // println!("\nGLOBAL VEC AFTER LOOP: {:?})\r", *GLOBAL_MIDI_MESSAGES.lock().unwrap());
    
+    // let msg = GLOBAL_MIDI_MESSAGES.lock().unwrap().to_vec();
 
-    Ok(MIDI_MSG.lock().unwrap().to_vec())
+
+    let vec_of_bin_msgs: Vec<Binary> = (*GLOBAL_MIDI_BINARY_MESSAGES.lock()
+                                                        .unwrap()
+                                                        .drain(..)
+                                                        .map(|owned_bin_msg| owned_bin_msg.release(env))
+                                                        .collect::<Vec<Binary>>()).to_vec();
+
+          
+
+    // let port = output.ports().drain(..).skip(port).next().unwrap();
+    
+
+    // clear it out
+    // *GLOBAL_MIDI_MESSAGES.lock().unwrap() = Vec::<u8>::new();
+
+    Ok(vec_of_bin_msgs)
 }
 
 
