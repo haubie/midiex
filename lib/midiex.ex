@@ -21,6 +21,7 @@ defmodule Midiex do
   end
   def count_ports(), do: err()
   def connect(_midi_port), do: err()
+  def close_out_conn(_out_conn), do: err()
 
   def create_virtual_output_conn(_name \\ "MIDIex-virtual-output"), do: err()
 

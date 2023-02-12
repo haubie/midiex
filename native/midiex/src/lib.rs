@@ -92,11 +92,20 @@ pub fn subscribe(env: Env) -> Atom {
 #[rustler::nif]
 fn close_out_conn(midi_out_conn: OutConn) -> Atom {
 
-    let mut binding = midi_out_conn.conn_ref.0.lock().unwrap();
-    let out_con = binding.deref_mut();
-    out_con.close();
+    // let mut binding = midi_out_conn.conn_ref.0.lock().unwrap();
+    // let out_con = binding.deref_mut();
+    // out_con.close();
 
-      
+
+
+
+    midi_out_conn.conn_ref.0
+    .lock()
+    .expect("lock should not be poisoned")
+    .take()
+    .expect("there should be a connection")
+    .close();
+
     atoms::ok()
 }
 
@@ -319,17 +328,33 @@ fn create_virtual_output_conn(name: String) -> Result<OutConn, Error>{
 #[rustler::nif(schedule = "DirtyCpu")]
 fn send_msg(midi_out_conn: OutConn, message: Binary) -> Result<OutConn, Error>{
 
+
+    // midi_out_conn.conn_ref.0
+    // .lock()
+    // .expect("lock should not be poisoned")
+    // .take()
+    // .expect("there should be a connection")
+    // .close();
+
     println!("Message recieved");
 
     let mut midi_output = MidiOutput::new("MIDIex").expect("Midi output"); 
 
     {
-        let mut conn_out = midi_out_conn.conn_ref.0.lock().unwrap();
-        conn_out.send(&message);
+        
+
+        let mut binding = midi_out_conn.conn_ref.0.lock().unwrap();
+        let out_conn = binding.deref_mut();
+
+
+        out_conn.as_mut().expect("REASON").send(&message);
+        
     }
     
     Ok(midi_out_conn)
 }
+
+
 
 
 
@@ -361,11 +386,22 @@ pub struct OutConn {
     port_num: usize,
 }
 
-pub struct OutConnRef(pub Mutex<MidiOutputConnection>);
+// pub struct OutConnRef(pub Mutex<MidiOutputConnection>);
+
+// impl OutConnRef {
+//     pub fn new(data: MidiOutputConnection) -> Self {
+//         Self(Mutex::new(data))
+//     }
+// }
+
+// WRAP IN AN OPTION AS WELL SO THE CONN CAN BE DESTROYED LATER
+// Use of Option mean ownership of the connection can be taken with .take() and then .closed() can be called.
+
+pub struct OutConnRef(pub Mutex<Option<MidiOutputConnection>>);
 
 impl OutConnRef {
     pub fn new(data: MidiOutputConnection) -> Self {
-        Self(Mutex::new(data))
+        Self(Mutex::new(Some(data)))
     }
 }
 
@@ -559,6 +595,6 @@ fn on_load(env: Env, _info: Term) -> bool {
 
 rustler::init!(
     "Elixir.Midiex",
-    [count_ports, list_ports, connect, send_msg, subscribe, create_virtual_output_conn, listen],
+    [count_ports, list_ports, connect, send_msg, subscribe, create_virtual_output_conn, listen, close_out_conn],
     load = on_load
 );
