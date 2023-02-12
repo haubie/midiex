@@ -328,27 +328,26 @@ fn create_virtual_output_conn(name: String) -> Result<OutConn, Error>{
 #[rustler::nif(schedule = "DirtyCpu")]
 fn send_msg(midi_out_conn: OutConn, message: Binary) -> Result<OutConn, Error>{
 
-
-    // midi_out_conn.conn_ref.0
-    // .lock()
-    // .expect("lock should not be poisoned")
-    // .take()
-    // .expect("there should be a connection")
-    // .close();
-
-    println!("Message recieved");
-
     let mut midi_output = MidiOutput::new("MIDIex").expect("Midi output"); 
 
-    {
-        
+    // {  
+    //     let mut binding = midi_out_conn.conn_ref.0.lock().unwrap();
+    //     let out_conn = binding.deref_mut();
 
+    //     out_conn.as_mut().expect("REASON").send(&message);  
+    // }
+
+    {
+    
         let mut binding = midi_out_conn.conn_ref.0.lock().unwrap();
         let out_conn = binding.deref_mut();
 
-
-        out_conn.as_mut().expect("REASON").send(&message);
-        
+        match out_conn {
+            Some(conn) => conn.send(&message),
+            None => return Err(Error::RaiseTerm(Box::new(
+                "No output connection available to send message to. Connection may have been closed.".to_string(),
+            ))),
+        };
     }
     
     Ok(midi_out_conn)
