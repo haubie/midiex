@@ -88,19 +88,18 @@ pub fn subscribe(env: Env) -> Atom {
 }
 
 
-// fn poll(env: Env, resource: ResourceArc<Ref>) -> (Atom, ResourceArc<Ref>) {
-//     send(resource.clone(), Msg::Poll(env.pid()));
 
-//     (ok(), resource)
-// }
+#[rustler::nif]
+fn close_out_conn(midi_out_conn: OutConn) -> Atom {
 
+    let mut binding = midi_out_conn.conn_ref.0.lock().unwrap();
+    let out_con = binding.deref_mut();
+    out_con.close();
 
+      
+    atoms::ok()
+}
 
-
-// fn deliver(env: Env, resource: ResourceArc<Ref>, msg: Message) -> (Atom, ResourceArc<Ref>) {
-//     send(resource.clone(), Msg::Send(env.pid(), msg));
-//     (ok(), resource)
-// }
 
 
 
@@ -201,6 +200,10 @@ fn listen(env: Env, midi_port: MidiPort) -> Result<Vec<Binary>, Error> {
     // clear it out
     // *GLOBAL_MIDI_MESSAGES.lock().unwrap() = Vec::<u8>::new();
 
+
+    // Ok((atoms::ok(), bin_msg.release(env)).encode(env)) 
+
+
     Ok(vec_of_bin_msgs)
 }
 
@@ -280,7 +283,7 @@ fn connect(midi_port: MidiPort) -> Result<OutConn, Error>{
 
 
 #[rustler::nif]
-fn create_virtual_output(name: String) -> Result<OutConn, Error>{
+fn create_virtual_output_conn(name: String) -> Result<OutConn, Error>{
 
     let mut midi_output = MidiOutput::new("MIDIex").expect("Midi output");
     let mut midi_input = MidiInput::new("MIDIex").expect("Midi input");
@@ -556,6 +559,6 @@ fn on_load(env: Env, _info: Term) -> bool {
 
 rustler::init!(
     "Elixir.Midiex",
-    [count_ports, list_ports, connect, send_msg, subscribe, create_virtual_output, listen],
+    [count_ports, list_ports, connect, send_msg, subscribe, create_virtual_output_conn, listen],
     load = on_load
 );

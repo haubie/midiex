@@ -22,9 +22,7 @@ defmodule Midiex do
   def count_ports(), do: err()
   def connect(_midi_port), do: err()
 
-
-  @spec create_virtual_output(any) :: any
-  def create_virtual_output(_name \\ "MIDIex-virtual-output"), do: err()
+  def create_virtual_output_conn(_name \\ "MIDIex-virtual-output"), do: err()
 
   # MIDI messaging functions
   def send_msg(_out_port_conn, _midi_msg), do: err()
