@@ -35,16 +35,16 @@ use midir::os::unix::{VirtualInput, VirtualOutput};
 use rustler::{Atom, Env, Error, NifResult, NifStruct, NifMap, NifTuple, ResourceArc, Term, Binary, OwnedBinary};
 
 
-
+// IS THIS NEEDED ANYMORE?
 // This version uses threadlocal to create the MidiInput and MidiOutput objects
 thread_local!(static GLOBAL_MIDI_INPUT_RESULT: Result<MidiInput, InitError> = MidiInput::new("MIDIex"));
 thread_local!(static GLOBAL_MIDI_OUTPUT_RESULT: Result<MidiOutput, InitError> = MidiOutput::new("MIDIex"));
 
 // thread_local!(static GLOBAL_MIDI_MESSAGES: Mutex<Vec<u8>> = Mutex::new(Vec::<u8>::new()));
 
-lazy_static!{
-    static ref GLOBAL_MIDI_MESSAGES: Mutex<Vec<u8>> = Mutex::new(Vec::<u8>::new());
-}
+// lazy_static!{
+//     static ref GLOBAL_MIDI_MESSAGES: Mutex<Vec<u8>> = Mutex::new(Vec::<u8>::new());
+// }
 
 lazy_static!{
     static ref GLOBAL_MIDI_BINARY_MESSAGES: Mutex<Vec<OwnedBinary>> = Mutex::new(Vec::<OwnedBinary>::new());
@@ -71,6 +71,11 @@ mod atoms {
 
 
 // Send message to Erlang
+// Refactor to spin off a thread which listens to input events and sends them to an Erlang process.
+// The rust side will need to keep a list of input connections being listened too. Ideally these will be identified by a key (string?)
+// There will also need to be a function to close and remove an input connection from the list.
+// REFERNCE: Look at this project to see how they did it: https://github.com/rrx/rust-synth/blob/b632bdd915979ad6d8e7973b5362dfdb9853fcb2/src/midi.rs
+
 #[rustler::nif]
 pub fn subscribe(env: Env) -> Atom {  
 
