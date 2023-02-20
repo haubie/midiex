@@ -2,6 +2,17 @@ defmodule Midiex.Scale do
 
   # See: https://photosounder.com/scales.html
 
+  def cycle(start_note, num_notes, intervals, callback_function) do
+    intervals
+    |> Enum.drop(1)
+    |> Stream.cycle()
+    |> Enum.take(num_notes)
+    |> Enum.map_reduce(start_note, fn offset, acc ->
+      ret = {offset, acc+offset};
+      callback_function.(acc);
+      ret end)
+  end
+
 
   # Pentatonic (5)
   def locrian_pentatonic_1, do: [0, 1, 3, 6, 8, 12]
@@ -10,6 +21,7 @@ defmodule Midiex.Scale do
   def phrygian_pentatonic, do: [0, 1, 3, 7, 8, 12]
   def syrian_pentatonic, do: [0, 1, 4, 5, 8, 12]
   def scriabin_pentatonic, do: [0, 1, 4, 7, 9, 12]
+  @spec altered_pentatonic :: [0 | 1 | 5 | 7 | 9 | 12, ...]
   def altered_pentatonic, do: [0, 1, 5, 7, 9, 12]
   def aeolian_pentatonic, do: [0, 2, 3, 7, 8, 12]
 
@@ -19,7 +31,6 @@ defmodule Midiex.Scale do
   def dominant_pentatonic, do: [0, 2, 4, 7, 10, 12]
 
   def scottish_pentatonic, do: [0, 2, 5, 7, 9, 12]
-  @spec blues_major :: [0 | 2 | 5 | 7 | 9 | 12, ...]
   def blues_major, do: scottish_pentatonic()
   def major_complement, do: scottish_pentatonic()
 
@@ -72,9 +83,12 @@ defmodule Midiex.Scale do
   def major_augmented, do: messiaen_truncated_mode_3_inverse()
   def genus_tertium, do: messiaen_truncated_mode_3_inverse()
   def blues_scale_i, do: [0, 3, 5, 6, 7, 10, 12]
+  @spec phrygian_hexatonic :: [0 | 3 | 5 | 7 | 8 | 10 | 12, ...]
   def phrygian_hexatonic, do: [0, 3, 5, 7, 8, 10, 12]
   def messiaen_mode_5_inverse, do: [0, 4, 5, 6, 10, 11, 12]
   def genus_secundum, do: [0, 4, 5, 7, 9, 11, 12]
+
+
 
   # Heptatonic (7)
 
