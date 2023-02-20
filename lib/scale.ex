@@ -14,6 +14,8 @@ defmodule Midiex.Scale do
   end
 
 
+
+
   # Pentatonic (5)
   def locrian_pentatonic_1, do: [0, 1, 3, 6, 8, 12]
   def locrian_pentatonic_2, do: [0, 3, 4, 6, 10, 12]
@@ -90,7 +92,40 @@ defmodule Midiex.Scale do
 
 
 
+  # Common
+  # def major, do: [0, 2, 2, 1, 2, 2, 2, 1]
+  def major, do: [0, 2, 4, 5, 7, 9, 11, 12]
+
+
+  # Intervals
+
+  def dorian, do: [2,1,2,2,2,1,2]
+  def phrygian, do: [1,2,2,2,1,2,2]
+  def lydian, do: [2,2,2,1,2,2,1]
+  def mixolydian, do: [2,2,1,2,2,1,2]
+  def aeolian, do: [2,1,2,2,1,2,2]
+  def locrian, do: [1,2,2,1,2,2,2]
+
+  def lydian_domiant, do: [2,2,2,1,2,1,2]
+  def super_locrian, do: [1,2,1,2,2,2,2]
+
+  def minor_pentatonic, do: [3,2,2,3,2]
+  def major_pentatonic, do: [2,2,3,2,3]
+  def minor_blues, do: [3,2,1,1,3,2]
+  def major_blues, do: [2,1,1,3,2,3]
+
+  def whole_half_diminished, do: [2,1,2,1,2,1,2,1]
+  def half_whole_diminished, do: [1,2,1,2,1,2,1,2]
+
+
+
+
   # Heptatonic (7)
+
+
+
+
+
 
 # [0, 1, 2, 4, 6, 8, 10, 12]	Leading Whole-tone inverse
 # [0, 1, 2, 4, 7, 8, 9, 12]	Chromatic Phrygian inverse
