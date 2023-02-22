@@ -1,10 +1,51 @@
 defmodule Midiex.Scale do
+alias Midiex.Scale
 
   # See: https://photosounder.com/scales.html
 
-  def cycle(start_note, num_notes, intervals, callback_function) do
+
+  def arp(midi_out_conn, start_note, scale, opts\\[]) when is_list(scale) do
+
+    duration  = Keyword.get(opts, :duration, 1)
+    direction = Keyword.get(opts, :direction, :asc)
+
+    scale = case direction do
+      :asc -> scale
+      :up -> scale
+
+      :desc -> Enum.reverse(scale)
+      :down -> Enum.reverse(scale)
+
+      :sweep -> scale ++ Enum.reverse(scale)
+      :sweep_up -> scale ++ Enum.reverse(scale)
+
+      :sweep_down -> Enum.reverse(scale) ++ scale
+
+      :shuffle -> Enum.shuffle(scale)
+      :random -> Enum.shuffle(scale)
+
+      _-> scale
+    end
+
+
+    scale
+    |> Enum.each(fn offset ->
+
+      Midiex.send_msg(midi_out_conn, <<0x90, start_note + offset, 127>>)
+      :timer.sleep(duration * 150)
+      Midiex.send_msg(midi_out_conn, <<0x80, start_note + offset, 127>>)
+
+    end)
+
+  end
+
+
+
+
+
+  def acc_cycle(start_note, num_notes, intervals, callback_function) do
     intervals
-    |> Enum.drop(1)
+    # |> Enum.drop(1)
     |> Stream.cycle()
     |> Enum.take(num_notes)
     |> Enum.map_reduce(start_note, fn offset, acc ->
@@ -93,29 +134,9 @@ defmodule Midiex.Scale do
 
 
   # Common
-  # def major, do: [0, 2, 2, 1, 2, 2, 2, 1]
   def major, do: [0, 2, 4, 5, 7, 9, 11, 12]
 
 
-  # Intervals
-
-  def dorian, do: [2,1,2,2,2,1,2]
-  def phrygian, do: [1,2,2,2,1,2,2]
-  def lydian, do: [2,2,2,1,2,2,1]
-  def mixolydian, do: [2,2,1,2,2,1,2]
-  def aeolian, do: [2,1,2,2,1,2,2]
-  def locrian, do: [1,2,2,1,2,2,2]
-
-  def lydian_domiant, do: [2,2,2,1,2,1,2]
-  def super_locrian, do: [1,2,1,2,2,2,2]
-
-  def minor_pentatonic, do: [3,2,2,3,2]
-  def major_pentatonic, do: [2,2,3,2,3]
-  def minor_blues, do: [3,2,1,1,3,2]
-  def major_blues, do: [2,1,1,3,2,3]
-
-  def whole_half_diminished, do: [2,1,2,1,2,1,2,1]
-  def half_whole_diminished, do: [1,2,1,2,1,2,1,2]
 
 
 
