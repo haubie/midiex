@@ -42,7 +42,6 @@ alias Midiex.Scale
 
 
 
-
   def acc_cycle(start_note, num_notes, intervals, callback_function) do
     intervals
     # |> Enum.drop(1)

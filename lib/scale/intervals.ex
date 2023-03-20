@@ -1,6 +1,22 @@
 defmodule Midiex.Scale.Interval do
 
-  def acc_cycle(start_note, num_notes, intervals, callback_function) do
+  def generate_notes(start_note, num_notes, intervals) do
+
+    {seq, _acc} =
+      intervals
+      |> Stream.cycle()
+      |> Enum.take(num_notes)
+      |> Enum.map_reduce(start_note, fn offset, acc ->
+
+        next_note = acc + offset
+        {acc, next_note}
+
+        end)
+
+    seq
+  end
+
+  def generate_notes(start_note, num_notes, intervals, callback_function) do
     intervals
     # |> Enum.drop(1)
     |> Stream.cycle()
@@ -10,6 +26,10 @@ defmodule Midiex.Scale.Interval do
       callback_function.(acc);
       ret end)
   end
+
+
+
+
 
    # Intervals
 
@@ -32,7 +52,5 @@ defmodule Midiex.Scale.Interval do
    def half_whole_diminished, do: [1,2,1,2,1,2,1,2]
 
    def major, do: [2,2,1,2,2,2,1]
-
-
 
 end
