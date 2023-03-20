@@ -1,5 +1,7 @@
 defmodule Midiex.Note do
 
+  alias Midiex.Note
+
   @notes_string_list [
     {"Ab9", 128},
     {"G#9", 128},
@@ -313,6 +315,10 @@ defmodule Midiex.Note do
     A0: 21,
   ]
 
+  def to_number(list) when is_list(list) do
+    Enum.map(list, fn note -> to_number(note) end)
+  end
+
   def to_number(atom) when is_atom(atom), do: Keyword.get(@notes_atom_list, atom, nil)
 
   def to_number(string) when is_binary(string) do
@@ -322,7 +328,14 @@ defmodule Midiex.Note do
     end
   end
 
+  def to_string(list) when is_list(list) do
+    Enum.map(list, fn note -> Note.to_string(note) end)
+  end
   def to_string(note_num), do: fetch_key_by_val(@notes_string_list, note_num)
+
+  def to_atom(list) when is_list(list) do
+    Enum.map(list, fn note -> to_atom(note) end)
+  end
   def to_atom(note_num), do: fetch_key_by_val(@notes_atom_list, note_num)
 
   defp fetch_key_by_val(notes_list, note_num) do
