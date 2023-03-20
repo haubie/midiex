@@ -321,4 +321,25 @@ defmodule Midiex.Note do
       _ -> nil
     end
   end
+
+  def to_string(num) do
+
+    case List.keyfind(@notes_string_list, num, 1) do
+      {string, _note_num} -> string
+      _ -> nil
+    end
+
+  end
+
+  def to_atom(num) do
+
+    case List.keyfind(@notes_atom_list, num, 1) do
+      {string, _note_num} -> string
+      _ -> nil
+    end
+
+  end
+
+  def octive(note, octive), do: note+(octive*12)
+
 end
