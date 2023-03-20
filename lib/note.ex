@@ -98,8 +98,8 @@ defmodule Midiex.Note do
     {"D4", 62},
     {"Db4", 61},
     {"C#4", 61},
-    {"MiddleC", 60},
     {"C4", 60},
+    {"MiddleC", 60},
     {"B3", 59},
     {"Bb3", 58},
     {"A#3", 58},
@@ -322,24 +322,16 @@ defmodule Midiex.Note do
     end
   end
 
-  def to_string(num) do
+  def to_string(note_num), do: fetch_key_by_val(@notes_string_list, note_num)
+  def to_atom(note_num), do: fetch_key_by_val(@notes_atom_list, note_num)
 
-    case List.keyfind(@notes_string_list, num, 1) do
-      {string, _note_num} -> string
+  defp fetch_key_by_val(notes_list, note_num) do
+    case List.keyfind(notes_list, note_num, 1) do
+      {key, _note_num} -> key
       _ -> nil
     end
-
   end
 
-  def to_atom(num) do
-
-    case List.keyfind(@notes_atom_list, num, 1) do
-      {string, _note_num} -> string
-      _ -> nil
-    end
-
-  end
-
-  def octive(note, octive), do: note+(octive*12)
+  def octave(note_num, octive_shift), do: note_num+(octive_shift*12)
 
 end
