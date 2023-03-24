@@ -71,7 +71,6 @@ defmodule Midiex do
   def chord(base_note, chord_type) when is_number(base_note) do
      Chord.generate_notes(base_note, chord_type)
   end
-
   def chord(base_note, chord_type) do
     Note.to_number(base_note) |> Chord.generate_notes(chord_type)
   end

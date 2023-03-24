@@ -1,13 +1,19 @@
 defmodule Midiex.Chord do
 
+  # Chord intervals ported from SonicPi
+  # https://github.com/sonic-pi-net/sonic-pi/blob/710107fe22c5977b9fa5e83b71e30f847610e240/app/server/ruby/lib/sonicpi/chord.rb
+  # which was ported from
+  # Overtone: https://github.com/overtone/overtone/blob/master/src/overtone/music/pitch.clj
   @chord_interverals [
     major: [0, 4, 7],
     M: [0, 4, 7],
     minor: [0, 3, 7],
     m: [0, 3, 7],
     major7: [0, 4, 7, 11],
+    M7: [0, 4, 7, 11],
     dom7: [0, 4, 7, 10],
     minor7: [0, 3, 7, 10],
+    m7: [0, 3, 7, 10],
     aug: [0, 4, 8],
     dim: [0, 3, 6],
     dim7: [0, 3, 6, 9],
@@ -72,23 +78,6 @@ defmodule Midiex.Chord do
 
     notes
     |> Enum.map(fn note -> <<0x80, note, 127>> end)
-    |> Enum.each(fn midi_note_off_msg -> Midiex.send_msg(midi_out_conn, midi_note_off_msg) end)
-  end
-
-
-  @spec play_interval(any, any, maybe_improper_list, non_neg_integer) :: :ok
-  def play_interval(midi_out_conn, start_note, chord_inverals, duration \\ 1) when is_list(chord_inverals) do
-
-    chord_inverals
-    |> Enum.map(fn interval -> <<0x90, start_note + interval, 127>> end)
-    |> IO.inspect(label: "on intervals")
-    |> Enum.each(fn midi_note_on_msg -> Midiex.send_msg(midi_out_conn, midi_note_on_msg) end )
-
-    :timer.sleep(duration * 150)
-
-    chord_inverals
-    |> Enum.map(fn interval -> <<0x80, start_note + interval, 127>> end)
-    |> IO.inspect(label: "off intervals")
     |> Enum.each(fn midi_note_off_msg -> Midiex.send_msg(midi_out_conn, midi_note_off_msg) end)
   end
 

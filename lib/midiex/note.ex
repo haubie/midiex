@@ -348,4 +348,15 @@ defmodule Midiex.Note do
 
   def octave(note_num, octive_shift), do: note_num+(octive_shift*12)
 
+
+  def midi_to_freq(n) do
+    (440.0 * (2 ** ((n - 69) / 12.0)))
+    |> Float.round(9)
+  end
+
+  def freq_to_midi(freq) do
+    ((12 * (:math.log(freq * 0.0022727272727) / :math.log(2))) + 69)
+    |> round()
+  end
+
 end

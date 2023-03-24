@@ -1,7 +1,235 @@
 defmodule Midiex.Scale do
-alias Midiex.Scale
 
   # See: https://photosounder.com/scales.html
+
+
+  # Ported from Sonic Pi
+  # https://github.com/sonic-pi-net/sonic-pi/blob/710107fe22c5977b9fa5e83b71e30f847610e240/app/server/ruby/lib/sonicpi/scale.rb
+  # which was ported from Overtine
+  # https://github.com/overtone/overtone/blob/master/src/overtone/music/pitch.clj
+
+
+
+  # Most of makams consists of one "besli" and one "dortlu"
+  # In addition they make 22 + 31 = 53 koma, which is one octave.
+  # Since scales consists (54 / 9) * 2 = 12 steps, we need correction.
+  # So, an error corrected koma should be 12.0 / 53 not 2.0 / 9.
+  # This creates a little amount of dissonance for notes which are not octave of the base note.
+
+  @koma            12.0 / 53
+  @bakiyye         4 * @koma
+  @kucuk_mucenneb  5 * @koma
+  @buyuk_mucenneb  8 * @koma
+  @tanini          9 * @koma
+  @artik_ikili     12 * @koma
+
+  @ionian_sequence     [2, 2, 1, 2, 2, 2, 1]
+  @hex_sequence        [2, 2, 1, 2, 2, 3]
+  @pentatonic_sequence [3, 2, 2, 3, 2]
+  # Basic "dortlu"
+  @cargah_dortlusu        [@tanini, @tanini, @bakiyye]
+  @buselik_dortlusu       [@tanini, @bakiyye, @tanini]
+  @kurdi_dortlusu         [@bakiyye, @tanini, @tanini]
+  @rast_dortlusu          [@tanini, @buyuk_mucenneb, @kucuk_mucenneb]
+  @ussak_dortlusu         [@buyuk_mucenneb, @kucuk_mucenneb, @tanini]
+  @hicaz_dortlusu         [@kucuk_mucenneb, @artik_ikili, @kucuk_mucenneb]
+  # Basic "besli"
+  @cargah_beslisi         @cargah_dortlusu ++ [@tanini]
+  @buselik_beslisi        @buselik_dortlusu ++ [@tanini]
+  @rast_beslisi           @rast_dortlusu ++ [@tanini]
+  @huseyni_beslisi        [@buyuk_mucenneb, @kucuk_mucenneb, @tanini, @tanini]
+  @hicaz_beslisi          @hicaz_dortlusu ++ [@tanini]
+  # Other "dortlu" and "besli"
+  @segah_dortlusu         [@kucuk_mucenneb, @tanini, @buyuk_mucenneb]
+  @tam_segah_beslisi      @segah_dortlusu ++ [@tanini]
+  @eksik_segah_beslisi    @segah_dortlusu ++ [@kucuk_mucenneb]
+  @mustear_dortlusu       [@tanini, @kucuk_mucenneb, @buyuk_mucenneb]
+  @huzzam_beslisi         [@kucuk_mucenneb, @tanini, @kucuk_mucenneb, @artik_ikili]
+  @nikriz_beslisi         [@tanini, @kucuk_mucenneb, @artik_ikili, @kucuk_mucenneb]
+  @tam_ferahnak_beslisi   [@kucuk_mucenneb, @tanini, @tanini, @buyuk_mucenneb]
+  @eksik_ferahnak_beslisi [@kucuk_mucenneb, @tanini, @tanini, @bakiyye]
+  @nisabur_dortlusu       [@buyuk_mucenneb, @kucuk_mucenneb, @tanini]
+
+
+  @rotate fn seq, num ->
+    {h, t} = Enum.split(seq, num)
+    t ++ h
+  end
+
+  @scale_intervals [
+
+      diatonic:           @ionian_sequence,
+      ionian:             @ionian_sequence,
+      major:              @ionian_sequence,
+      dorian:             @rotate.(@ionian_sequence, 1),
+      phrygian:           @rotate.(@ionian_sequence, 2),
+      lydian:             @rotate.(@ionian_sequence, 3),
+      mixolydian:         @rotate.(@ionian_sequence, 4),
+      aeolian:            @rotate.(@ionian_sequence, 5),
+      minor:              @rotate.(@ionian_sequence, 5),
+      locrian:            @rotate.(@ionian_sequence, 6),
+      hex_major6:         @hex_sequence,
+      hex_dorian:         @rotate.(@hex_sequence, 1),
+      hex_phrygian:       @rotate.(@hex_sequence, 2),
+      hex_major7:         @rotate.(@hex_sequence, 3),
+      hex_sus:            @rotate.(@hex_sequence, 4),
+      hex_aeolian:        @rotate.(@hex_sequence, 5),
+      minor_pentatonic:   @pentatonic_sequence,
+      yu:                 @pentatonic_sequence,
+      major_pentatonic:   @rotate.(@pentatonic_sequence, 1),
+      gong:               @rotate.(@pentatonic_sequence, 1),
+      egyptian:           @rotate.(@pentatonic_sequence, 2),
+      shang:              @rotate.(@pentatonic_sequence, 2),
+      jiao:               @rotate.(@pentatonic_sequence, 3),
+      zhi:                @rotate.(@pentatonic_sequence, 4),
+      ritusen:            @rotate.(@pentatonic_sequence, 4),
+      whole_tone:         [2, 2, 2, 2, 2, 2],
+      whole:              [2, 2, 2, 2, 2, 2],
+      chromatic:          [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      harmonic_minor:     [2, 1, 2, 2, 1, 3, 1],
+      melodic_minor_asc:  [2, 1, 2, 2, 2, 2, 1],
+      hungarian_minor:    [2, 1, 3, 1, 1, 3, 1],
+      octatonic:          [2, 1, 2, 1, 2, 1, 2, 1],
+      messiaen1:          [2, 2, 2, 2, 2, 2],
+      messiaen2:          [1, 2, 1, 2, 1, 2, 1, 2],
+      messiaen3:          [2, 1, 1, 2, 1, 1, 2, 1, 1],
+      messiaen4:          [1, 1, 3, 1, 1, 1, 3, 1],
+      messiaen5:          [1, 4, 1, 1, 4, 1],
+      messiaen6:          [2, 2, 1, 1, 2, 2, 1, 1],
+      messiaen7:          [1, 1, 1, 2, 1, 1, 1, 1, 2, 1],
+      super_locrian:      [1, 2, 1, 2, 2, 2, 2],
+      hirajoshi:          [2, 1, 4, 1, 4],
+      kumoi:              [2, 1, 4, 2, 3],
+      neapolitan_major:   [1, 2, 2, 2, 2, 2, 1],
+      bartok:             [2, 2, 1, 2, 1, 2, 2],
+      bhairav:            [1, 3, 1, 2, 1, 3, 1],
+      locrian_major:      [2, 2, 1, 1, 2, 2, 2],
+      ahirbhairav:        [1, 3, 1, 2, 2, 1, 2],
+      enigmatic:          [1, 3, 2, 2, 2, 1, 1],
+      neapolitan_minor:   [1, 2, 2, 2, 1, 3, 1],
+      pelog:              [1, 2, 4, 1, 4],
+      augmented2:         [1, 3, 1, 3, 1, 3],
+      scriabin:           [1, 3, 3, 2, 3],
+      harmonic_major:     [2, 2, 1, 2, 1, 3, 1],
+      melodic_minor_desc: [2, 1, 2, 2, 1, 2, 2],
+      romanian_minor:     [2, 1, 3, 1, 2, 1, 2],
+      hindu:              [2, 2, 1, 2, 1, 2, 2],
+      iwato:              [1, 4, 1, 4, 2],
+      melodic_minor:      [2, 1, 2, 2, 2, 2, 1],
+      diminished2:        [2, 1, 2, 1, 2, 1, 2, 1],
+      marva:              [1, 3, 2, 1, 2, 2, 1],
+      melodic_major:      [2, 2, 1, 2, 1, 2, 2],
+      indian:             [4, 1, 2, 3, 2],
+      spanish:            [1, 3, 1, 2, 1, 2, 2],
+      prometheus:         [2, 2, 2, 5, 1],
+      diminished:         [1, 2, 1, 2, 1, 2, 1, 2],
+      todi:               [1, 2, 3, 1, 1, 3, 1],
+      leading_whole:      [2, 2, 2, 2, 2, 1, 1],
+      augmented:          [3, 1, 3, 1, 3, 1],
+      purvi:              [1, 3, 2, 1, 1, 3, 1],
+      chinese:            [4, 2, 1, 4, 1],
+      lydian_minor:       [2, 2, 2, 1, 1, 2, 2],
+      blues_major:        [2, 1, 1, 3, 2, 3],
+      blues_minor:        [3, 2, 1, 1, 3, 2],
+      # Basic makams
+      cargah:             @cargah_beslisi ++ @cargah_dortlusu,
+      buselik:            @buselik_beslisi ++ @kurdi_dortlusu,
+      buselik_2:          @buselik_beslisi ++ @hicaz_dortlusu,
+      kurdi:              @kurdi_dortlusu ++ @buselik_beslisi,
+      rast:               @rast_beslisi ++ @rast_dortlusu,
+      acemli_rast:        @rast_beslisi ++ @buselik_dortlusu,
+      ussak:              @ussak_dortlusu ++ @buselik_beslisi,
+      bayati:             @ussak_dortlusu ++ @buselik_beslisi,
+      bayati_2:           @ussak_dortlusu ++ @buselik_beslisi ++ @kurdi_dortlusu,
+      isfahan:            @ussak_dortlusu ++ @buselik_beslisi,
+      isfahan_2:          @ussak_dortlusu ++ @buselik_beslisi ++ @kurdi_dortlusu,
+      hicaz_humayun:      @hicaz_dortlusu ++ @buselik_beslisi,
+      hicaz_humayun_2:    @hicaz_dortlusu ++ @buselik_beslisi ++ @kurdi_dortlusu,
+      hicaz:              @hicaz_dortlusu ++ @rast_beslisi,
+      hicaz_2:            @hicaz_dortlusu ++ @rast_beslisi ++ @buselik_dortlusu,
+      uzzal:              @hicaz_beslisi ++ @ussak_dortlusu,
+      uzzal_2:            @hicaz_beslisi ++ @ussak_dortlusu ++ @buselik_beslisi,
+      zirguleli_hicaz:    @hicaz_beslisi ++ @hicaz_dortlusu,
+      zirguleli_hicaz_2:  @hicaz_beslisi ++ @hicaz_dortlusu ++ @buselik_beslisi,
+      huseyni:            @huseyni_beslisi ++ @ussak_dortlusu,
+      huseyni_2:          @huseyni_beslisi ++ @ussak_dortlusu ++ @buselik_beslisi,
+      muhayyer:           @huseyni_beslisi ++ @ussak_dortlusu,
+      gulizar:            @huseyni_beslisi ++ @ussak_dortlusu,
+      neva:               @ussak_dortlusu ++ @rast_beslisi,
+      neva_2:             @ussak_dortlusu ++ @rast_beslisi ++ @buselik_dortlusu,
+      tahir:              @ussak_dortlusu ++ @rast_beslisi,
+      tahir_2:            @ussak_dortlusu ++ @rast_beslisi ++ @buselik_dortlusu,
+      karcigar:           @ussak_dortlusu ++ @hicaz_beslisi,
+      suznak:             @rast_beslisi ++ @hicaz_dortlusu,
+      suznak_2:           @rast_beslisi ++ @hicaz_dortlusu ++ @buselik_beslisi,
+      # Sedd Makams
+      mahur:              @cargah_beslisi ++ @cargah_dortlusu,
+      acem_asiran:        @cargah_beslisi ++ @cargah_dortlusu,
+      nihavend:           @buselik_beslisi ++ @kurdi_dortlusu,
+      nihavend_2:         @buselik_beslisi ++ @hicaz_dortlusu,
+      sultani_yegah:      @buselik_beslisi ++ @kurdi_dortlusu,
+      sultani_yegah_2:    @buselik_beslisi ++ @hicaz_dortlusu,
+      kurdili_hicazkar:   @kurdi_dortlusu ++ @buselik_beslisi,
+      kurdili_hicazkar_2: @kurdi_dortlusu ++ @hicaz_dortlusu ++ @buselik_beslisi,
+      kurdili_hicazkar_3: @kurdi_dortlusu ++ @hicaz_dortlusu ++ @hicaz_beslisi,
+      kurdili_hicazkar_4: @kurdi_dortlusu ++ @ussak_dortlusu ++ @buselik_beslisi,
+      kurdili_hicazkar_5: @kurdi_dortlusu ++ @ussak_dortlusu ++ @ussak_dortlusu,
+      zirguleli_suznak:   @hicaz_beslisi ++ @hicaz_dortlusu,
+      zirguleli_suznak_2: @hicaz_beslisi ++ @hicaz_dortlusu ++ @buselik_beslisi,
+      zirguleli_suznak_3: @hicaz_beslisi ++ @hicaz_dortlusu ++ @hicaz_beslisi,
+      hicazkar:           @hicaz_beslisi ++ @hicaz_dortlusu,
+      hicazkar_2:         @hicaz_beslisi ++ @hicaz_dortlusu ++ @buselik_beslisi,
+      evcara:             @hicaz_beslisi ++ @hicaz_dortlusu,
+      evcara_2:           @hicaz_beslisi ++ @hicaz_dortlusu ++ @mustear_dortlusu,
+      evcara_3:           @hicaz_beslisi ++ @hicaz_dortlusu ++ @eksik_ferahnak_beslisi,
+      evcara_4:           @hicaz_beslisi ++ @hicaz_dortlusu ++ @eksik_segah_beslisi,
+      suzidil:            @hicaz_beslisi ++ @hicaz_dortlusu,
+      suzidil_2:          @hicaz_beslisi ++ @hicaz_dortlusu ++ @hicaz_beslisi ++ @kurdi_dortlusu,
+      sedaraban:          @hicaz_beslisi ++ @hicaz_dortlusu,
+      sedaraban_2:        @hicaz_beslisi ++ @hicaz_dortlusu ++ @hicaz_dortlusu ++ @buselik_beslisi,
+      segah:              @tam_segah_beslisi ++ @hicaz_dortlusu, # There should be more variations of segah
+      segah_2:            [@kucuk_mucenneb, @tanini] ++ @ussak_dortlusu ++ @buselik_beslisi,
+      huzzam:             @huzzam_beslisi ++ @hicaz_dortlusu,
+      huzzam_2:           [@kucuk_mucenneb, @tanini] ++ @hicaz_dortlusu ++ @buselik_beslisi,
+      bayati_araban:      @ussak_dortlusu ++ @hicaz_beslisi ++ @kurdi_dortlusu,
+      acem_kurdi:         @kurdi_dortlusu ++ @cargah_beslisi,
+      sehnaz:             @hicaz_dortlusu ++ @buselik_beslisi,
+      sehnaz_2:           @hicaz_dortlusu ++ @rast_beslisi,
+      sehnaz_3:           @hicaz_beslisi ++ @ussak_dortlusu,
+      sehnaz_4:           @hicaz_beslisi ++ @hicaz_dortlusu, # There should be more variations of sehnaz
+      saba:               [@buyuk_mucenneb, @kucuk_mucenneb] ++ @hicaz_beslisi ++ @hicaz_dortlusu,
+      dugah:              [@buyuk_mucenneb, @kucuk_mucenneb] ++ @hicaz_beslisi ++ @hicaz_dortlusu,
+      dugah_2:            @hicaz_beslisi ++ @hicaz_dortlusu,
+      evic:               @segah_dortlusu, # There should be more variations of evic
+      evic_2:             @eksik_segah_beslisi,
+      bestenigar:         @segah_dortlusu ++ [@kucuk_mucenneb] ++ @hicaz_beslisi ++ @hicaz_dortlusu,
+      ferahnak:           @tam_ferahnak_beslisi ++ @hicaz_dortlusu, # There should be more variations of ferahnak
+      sevkefza:           @cargah_beslisi ++ @cargah_dortlusu,
+      sevkefza_2:         @cargah_beslisi ++ @hicaz_beslisi ++ @hicaz_dortlusu,
+      sevkefza_3:         @nikriz_beslisi ++ @hicaz_beslisi ++ @hicaz_dortlusu,
+      ferahfeza:          @buselik_beslisi ++ @hicaz_dortlusu, # There should be more variations of ferahfeza
+      ferahfeza_2:        @buselik_beslisi ++ @ussak_dortlusu,
+      yegah:              @rast_beslisi ++ @buselik_dortlusu,
+      yegah_2:            @rast_beslisi ++ @ussak_dortlusu ++ @rast_beslisi
+  ]
+
+
+  def interval(scale), do: @scale_intervals[scale]
+  def notes(base_note, scale) do
+
+    {seq, _acc} =
+      @scale_intervals[scale]
+      |> Enum.map_reduce(base_note, fn offset, acc ->
+
+        next_note = acc + offset
+        {acc, next_note}
+
+        end)
+
+    seq
+
+  end
+
 
 
   def arp(midi_out_conn, start_note, scale, opts\\[]) when is_list(scale) do
@@ -40,8 +268,6 @@ alias Midiex.Scale
   end
 
 
-
-
   def acc_cycle(start_note, num_notes, intervals, callback_function) do
     intervals
     # |> Enum.drop(1)
@@ -53,172 +279,34 @@ alias Midiex.Scale
       ret end)
   end
 
+  def generate_notes(start_note, num_notes, intervals) do
+
+    {seq, _acc} =
+      intervals
+      |> Stream.cycle()
+      |> Enum.take(num_notes)
+      |> Enum.map_reduce(start_note, fn offset, acc ->
+
+        next_note = acc + offset
+        {acc, next_note}
+
+        end)
+
+    seq
+  end
+
+  def generate_notes(start_note, num_notes, intervals, callback_function) do
+    intervals
+    # |> Enum.drop(1)
+    |> Stream.cycle()
+    |> Enum.take(num_notes)
+    |> Enum.map_reduce(start_note, fn offset, acc ->
+      ret = {offset, acc+offset};
+      callback_function.(acc);
+      ret end)
+  end
 
 
-
-  # Pentatonic (5)
-  def locrian_pentatonic_1, do: [0, 1, 3, 6, 8, 12]
-  def locrian_pentatonic_2, do: [0, 3, 4, 6, 10, 12]
-
-  def phrygian_pentatonic, do: [0, 1, 3, 7, 8, 12]
-  def syrian_pentatonic, do: [0, 1, 4, 5, 8, 12]
-  def scriabin_pentatonic, do: [0, 1, 4, 7, 9, 12]
-  @spec altered_pentatonic :: [0 | 1 | 5 | 7 | 9 | 12, ...]
-  def altered_pentatonic, do: [0, 1, 5, 7, 9, 12]
-  def aeolian_pentatonic, do: [0, 2, 3, 7, 8, 12]
-
-  def dorian_pentatonic, do: [0, 2, 3, 7, 9, 12]
-
-  def major_pentatonic, do: [0, 2, 4, 7, 9, 12]
-  def dominant_pentatonic, do: [0, 2, 4, 7, 10, 12]
-
-  def scottish_pentatonic, do: [0, 2, 5, 7, 9, 12]
-  def blues_major, do: scottish_pentatonic()
-  def major_complement, do: scottish_pentatonic()
-
-  def suspended_pentatonic, do: [0, 2, 5, 7, 10, 12]
-
-  def minor_added_sixth_pentatonic, do: [0, 3, 5, 7, 9, 12]
-
-  def minor_pentatonic, do: [0, 3, 5, 7, 10, 12]
-  def blues_pentatonic, do: minor_pentatonic()
-
-  def blues_minor, do: [0, 3, 5, 8, 10, 12]
-  def man_gong, do: blues_minor()
-
-  def mixolydian_pentatonic, do: [0, 4, 5, 7, 10, 12]
-
-  def ionian_pentatonic, do: [0, 4, 5, 7, 11, 12]
-
-  def bacovia_romania, do: [0, 4, 5, 8, 11, 12]
-
-  def lydian_pentatonic, do: [0, 4, 6, 7, 11, 12]
-
-
-  # Hexatonic (6)
-
-  @doc "Messiaen mode 5, Two-semitone Tritone scale"
-  def messiaen, do: [0, 1, 2, 6, 7, 8, 12]
-  def istrian, do: [0, 1, 3, 4, 6, 7, 12]
-  def superlocrian_hexamirror, do: [0, 1, 3, 4, 6, 10, 12]
-  def double_phrygian_hexatonic, do: [0, 1, 3, 5, 6, 9, 12]
-  def messiaen_truncated_mode_2, do: [0, 1, 3, 6, 7, 9, 12]
-  def messiaen_truncated_mode_3, do:  [0, 1, 4, 5, 8, 9, 12]
-  def prometheus_liszt, do: messiaen_truncated_mode_3()
-  def messiaen_truncated_mode_2_tritone, do: [0, 1, 4, 6, 7, 10, 12]
-  def prometheus_neapolitan, do: [0, 1, 4, 6, 9, 10, 12]
-  def pyramid_hexatonic, do: [0, 2, 3, 5, 6, 9, 12]
-  def minor_hexatonic, do: [0, 2, 3, 5, 7, 10, 12]
-  def hawaiian, do: [0, 2, 3, 7, 9, 11, 12]
-  def arezzo_major_diatonic_hexachord, do: [0, 2, 4, 5, 7, 9, 12]
-  def scottish_hexatonic, do: arezzo_major_diatonic_hexachord()
-  def ancient_chinese, do: [0, 2, 4, 6, 7, 9, 12]
-  def whole_tone, do: [0, 2, 4, 6, 8, 10, 12]
-  def messiaen_mode_1, do: whole_tone()
-  def anhemitonic_hexatonic, do: whole_tone()
-  def prometheus_scriabin, do: [0, 2, 4, 6, 9, 10, 12]
-  def mystic, do: prometheus_scriabin()
-  def lydian_hexatonic, do: [0, 2, 4, 7, 9, 11, 12]
-  def mixolydian_hexatonic, do: [0, 2, 5, 7, 9, 10, 12]
-  def equal_temperaments_3_and_4_mixed, do: [0, 3, 4, 6, 8, 9, 12]
-  def messiaen_truncated_mode_3_inverse, do: [0, 3, 4, 7, 8, 11, 12]
-  def major_augmented, do: messiaen_truncated_mode_3_inverse()
-  def genus_tertium, do: messiaen_truncated_mode_3_inverse()
-  def blues_scale_i, do: [0, 3, 5, 6, 7, 10, 12]
-  @spec phrygian_hexatonic :: [0 | 3 | 5 | 7 | 8 | 10 | 12, ...]
-  def phrygian_hexatonic, do: [0, 3, 5, 7, 8, 10, 12]
-  def messiaen_mode_5_inverse, do: [0, 4, 5, 6, 10, 11, 12]
-  def genus_secundum, do: [0, 4, 5, 7, 9, 11, 12]
-
-
-
-  # Common
-  def major, do: [0, 2, 4, 5, 7, 9, 11, 12]
-
-
-
-
-
-
-  # Heptatonic (7)
-
-
-
-
-
-
-# [0, 1, 2, 4, 6, 8, 10, 12]	Leading Whole-tone inverse
-# [0, 1, 2, 4, 7, 8, 9, 12]	Chromatic Phrygian inverse
-# [0, 1, 2, 5, 6, 7, 9, 12]	Chromatic Hypophrygian inverse
-# [0, 1, 2, 5, 6, 7, 10, 12]	Chromatic Mixolydian
-# [0, 1, 2, 5, 7, 8, 9, 12]	Chromatic Dorian
-# [0, 1, 3, 4, 6, 8, 9, 12]	Ultralocrian, Superlocrian Diminished, Mixolydian sharp 1
-# [0, 1, 3, 4, 6, 8, 10, 12]	Superlocrian, Altered Dominant, Diminished Whole-tone, Locrian flat 4, Pomeroy, Ravel
-# [0, 1, 3, 4, 7, 8, 10, 12]	Phrygian flat 4
-# [0, 1, 3, 5, 6, 8, 9, 12]	Locrian double-flat 7
-# [0, 1, 3, 5, 6, 8, 10, 12]	Greek Mixolydian, Greek Hyperdorian, Medieval Hypophrygian, Medieval Locrian, Greek Medieval Hyperaeolian, Rut biscale descending
-# [0, 1, 3, 5, 6, 9, 10, 12]	Locrian natural 6
-# [0, 1, 3, 5, 7, 8, 10, 12]	Greek Dorian, Medieval Phrygian, Greek Medieval Hypoaeolian, Gregorian nr.3, Major inverse
-# [0, 1, 3, 5, 7, 8, 11, 12]	Neapolitan Minor, Hungarian Gipsy
-# [0, 1, 3, 5, 7, 9, 10, 12]	Jazz Minor inverse, Phrygian-Mixolydian, Dorian flat 2
-# [0, 1, 3, 5, 7, 9, 11, 12]	Neapolitan Major, Lydian Major
-# [0, 1, 3, 6, 7, 8, 11, 12]	Harsh Minor, Chromatic Lydian inverse
-# [0, 1, 4, 5, 6, 8, 11, 12]	Persian, Chromatic Hypolydian inverse
-# [0, 1, 4, 5, 6, 9, 10, 12]	Oriental, Hungarian Minor inverse
-# [0, 1, 4, 5, 6, 9, 11, 12]	Chromatic Lydian, Bhankar
-# [0, 1, 4, 5, 7, 8, 9, 12]	Gipsy Hexatonic
-# [0, 1, 4, 5, 7, 8, 10, 12]	Phrygian Dominant, Phrygian Major, Spanish Gipsy, Dorico Flamenco: Spain, Harmonic Major inverse
-# [0, 1, 4, 5, 7, 8, 11, 12]	Major Gipsy, Double Harmonic Major, Chromatic 2nd Byzantine Liturgical
-# [0, 1, 4, 5, 7, 9, 10, 12]	Harmonic Minor inverse
-# [0, 1, 4, 5, 7, 9, 11, 12]	Major-Melodic Phrygian, Hungarian Gipsy inverse
-# [0, 1, 4, 5, 8, 10, 11, 12]	Verdi's Scala enigmatica descending
-# [0, 1, 4, 6, 7, 8, 9, 12]	Foulds' Mantra of Will scale
-# [0, 1, 4, 6, 7, 8, 10, 12]	Harsh Major-Minor
-# [0, 1, 4, 6, 7, 8, 11, 12]	Chromatic Hypolydian
-# [0, 1, 4, 6, 7, 9, 10, 12]	Romanian Major, Petrushka chord
-# [0, 1, 4, 6, 7, 9, 11, 12]	Harsh-intense Major
-# [0, 1, 4, 6, 8, 10, 11, 12]	Verdi's Scala enigmatica ascending
-# [0, 2, 3, 4, 5, 6, 9, 12]	Debussy's Heptatonic
-# [0, 2, 3, 4, 7, 8, 9, 12]	Chromatic Hypodorian, Relative Blues scale
-# [0, 2, 3, 5, 6, 7, 10, 12]	Modified Blues
-# [0, 2, 3, 5, 6, 8, 9, 12]	Moravian Pistalkova, Hungarian Major inverse
-# [0, 2, 3, 5, 6, 8, 10, 12]	Minor Locrian, Half Diminished, Locrian sharp 2, Minor flat 5
-# [0, 2, 3, 5, 6, 8, 11, 12]	Locrian nr.2
-# [0, 2, 3, 5, 6, 9, 10, 12]	Dorian flat 5, Blues Heptatonic
-# [0, 2, 3, 5, 6, 9, 11, 12]	Jeths' mode
-# [0, 2, 3, 5, 7, 8, 10, 12]	Natural Minor
-# [0, 2, 3, 5, 7, 8, 11, 12]	Harmonic Minor
-# [0, 2, 3, 5, 7, 9, 10, 12]	Greek Phrygian, Medieval Dorian, Medieval Hypomixolydian, Gregorian nr.8, Eskimo Heptatonic
-# [0, 2, 3, 5, 7, 9, 11, 12]	Melodic Minor ascending, Jazz Minor, Minor-Major, Hawaiian
-# [0, 2, 3, 6, 7, 8, 10, 12]	Minor Gipsy, Ukrainian Dorian
-# [0, 2, 3, 6, 7, 8, 11, 12]	Double Harmonic Minor, Hungarian Minor, Egyptian Heptatonic, Flamenco Mode
-# [0, 2, 3, 6, 7, 9, 10, 12]	Tunisian, Dorian sharp 4, Ukrainian Minor, Kaffa, Gnossiennes
-# [0, 2, 3, 6, 7, 9, 11, 12]	Lydian Diminished
-# [0, 2, 4, 5, 6, 8, 10, 12]	Major Locrian
-# [0, 2, 4, 5, 6, 9, 10, 12]	Minor Gipsy inverse
-# [0, 2, 4, 5, 7, 8, 9, 12]	Major Bebop Heptatonic
-# [0, 2, 4, 5, 7, 8, 10, 12]	Major-Minor, Melodic Major, Mixolydian flat 6
-# [0, 2, 4, 5, 7, 8, 11, 12]	Harmonic Major
-# [0, 2, 4, 5, 7, 9, 10, 12]	Greek Hypophrygian, Greek Ionian (Iastian), Medieval Mixolydian, Greek Medieval Hypoionian, Gregorian nr.7, Enharmonic Byzantine Liturgical
-# [0, 2, 4, 5, 7, 9, 11, 12]	Major
-# [0, 2, 4, 5, 8, 9, 11, 12]	Ionian Augmented, Ionian sharp 5
-# [0, 2, 4, 6, 7, 8, 10, 12]	Lydian Minor
-# [0, 2, 4, 6, 7, 8, 11, 12]	Harmonic Lydian
-# [0, 2, 4, 6, 7, 9, 10, 12]	Lydian Dominant, Overtone, Lydian-Mixolydian, Bartok
-# [0, 2, 4, 6, 7, 9, 11, 12]	Greek Hypolydian, Medieval Lydian, Greek Medieval Hypolocrian, Rut biscale ascending
-# [0, 2, 4, 6, 8, 9, 11, 12]	Lydian Augmented, Lydian sharp 5
-# [0, 2, 4, 6, 8, 10, 11, 12]	Leading Whole-tone
-# [0, 2, 5, 6, 7, 10, 11, 12]	Chromatic Mixolydian inverse
-# [0, 3, 4, 5, 7, 8, 11, 12]	Gipsy Hexatonic inverse
-# [0, 3, 4, 5, 7, 9, 10, 12]	Bluesy Rock 'n Roll
-# [0, 3, 4, 5, 7, 10, 11, 12]	Chromatic Dorian inverse
-# [0, 3, 4, 5, 8, 9, 10, 12]	Chromatic Hypodorian inverse
-# [0, 3, 4, 5, 8, 10, 11, 12]	Chromatic Phrygian
-# [0, 3, 4, 6, 7, 9, 10, 12]	Hungarian Major
-# [0, 3, 4, 6, 7, 9, 11, 12]	Aeolian Harmonic, Lydian sharp 2
-# [0, 3, 4, 6, 8, 9, 11, 12]	Aeolian flat 1
-# [0, 3, 5, 6, 7, 9, 10, 12]	Blues Heptatonic II
-# [0, 3, 5, 6, 7, 10, 11, 12]	Chromatic Hypophrygian, Blues scale III
 
 
 
