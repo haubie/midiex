@@ -4,9 +4,9 @@ defmodule Midiex do
   """
 # alias Hex.API.Key
 
-  use Rustler,
-    otp_app: :midiex,
-    crate: :midiex
+  alias Midiex.Backend
+  alias Midiex.Note
+  alias Midiex.Chord
 
   # ##########
   # NATIVE API
@@ -14,30 +14,32 @@ defmodule Midiex do
 
   # MIDI port functions
 
-  def list_ports(), do: err()
+  def list_ports(), do: Backend.list_ports()
   def list_ports(direction) when is_atom(direction), do: filter_port_direction(list_ports(), direction)
   def list_ports(name, direction \\ nil) when is_binary(name) do
     filter_port_name_contains(list_ports(), name, direction: direction)
   end
-  def count_ports(), do: err()
-  def connect(_midi_port), do: err()
-  def close_out_conn(_out_conn), do: err()
+  def count_ports(), do: Backend.count_ports()
+  def connect(midi_port), do: Backend.connect(midi_port)
+  def close_out_conn(out_conn), do: Backend.close_out_conn(out_conn)
 
-  def create_virtual_output_conn(_name \\ "MIDIex-virtual-output"), do: err()
+  def create_virtual_output_conn(name), do: Backend.create_virtual_output_conn(name)
+
+
 
   # MIDI messaging functions
-  def send_msg(_out_port_conn, _midi_msg), do: err()
+  def send_msg(out_port_conn, midi_msg), do: Backend.send_msg(out_port_conn, midi_msg)
 
   # Midiex callback functions
-  def subscribe(), do: err()
-  def listen(_input_port), do: err()
+  def subscribe(), do: Backend.subscribe()
+  def listen(input_port), do: Backend.listen(input_port)
 
 
-  defp err(), do: :erlang.nif_error(:nif_not_loaded)
 
   # #######
   # HELPERS
   # #######
+  @spec filter_port_name_contains(any, any, keyword) :: any
   def filter_port_name_contains(ports_list, name, opts \\ []) do
     direction = Keyword.get(opts, :direction, nil)
     ports_list
@@ -57,6 +59,39 @@ defmodule Midiex do
     |> filter_port_direction(:output)
     |> List.first()
   end
+
+  def choose(list), do: Enum.random(list)
+  def shuffle(list), do: Enum.shuffle(list)
+
+  def play(midi_out_conn, note) when is_number(note), do: play_notes(midi_out_conn, note)
+  def play(midi_out_conn, note) when is_list(note), do: play_notes(midi_out_conn, note)
+  def play(midi_out_conn, note), do: play_notes(midi_out_conn, Note.to_number(note))
+
+
+  def chord(base_note, chord_type) when is_number(base_note) do
+     Chord.generate_notes(base_note, chord_type)
+  end
+
+  def chord(base_note, chord_type) do
+    Note.to_number(base_note) |> Chord.generate_notes(chord_type)
+  end
+
+
+  def play_notes(midi_out_conn, notes, duration \\ 1) do
+
+    notes = if is_number(notes), do: [notes], else: notes
+
+    notes
+    |> Enum.map(fn note -> <<0x90, note, 127>> end)
+    |> Enum.each(fn midi_note_on_msg -> Midiex.send_msg(midi_out_conn, midi_note_on_msg) end )
+
+    :timer.sleep(duration * 150)
+
+    notes
+    |> Enum.map(fn note -> <<0x80, note, 127>> end)
+    |> Enum.each(fn midi_note_off_msg -> Midiex.send_msg(midi_out_conn, midi_note_off_msg) end)
+  end
+
 
   def play_note(midi_out_conn, note, duration \\ 1) do
     midi_note_on_msg = <<0x90, note, 127>>
@@ -87,15 +122,4 @@ defmodule Midiex do
   end
 
 
-  # ##########
-  # OLD API
-  # ##########
-
-  # def new(), do: get_midi_io()
-  # def get_midi_io(), do: err()
-  # def try_connect(_ref), do: err()
-  # def play(_conn), do: err()
-
-  #  def try_core_midi(), do: err()
-  #  def play_test(), do: err()
 end

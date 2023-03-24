@@ -257,6 +257,7 @@ defmodule Midiex.Note do
     D4: 62,
     Db4: 61,
     Cs4: 61,
+    MiddleC: 60,
     C4: 60,
     B3: 59,
     Bb3: 58,

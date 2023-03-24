@@ -102,8 +102,6 @@ fn close_out_conn(midi_out_conn: OutConn) -> Atom {
     // out_con.close();
 
 
-
-
     midi_out_conn.conn_ref.0
     .lock()
     .expect("lock should not be poisoned")
@@ -598,7 +596,7 @@ fn on_load(env: Env, _info: Term) -> bool {
 }
 
 rustler::init!(
-    "Elixir.Midiex",
+    "Elixir.Midiex.Backend",
     [count_ports, list_ports, connect, send_msg, subscribe, create_virtual_output_conn, listen, close_out_conn],
     load = on_load
 );
