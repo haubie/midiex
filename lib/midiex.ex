@@ -7,6 +7,7 @@ defmodule Midiex do
   alias Midiex.Backend
   alias Midiex.Note
   alias Midiex.Chord
+  alias Midiex.Scale
 
   # ##########
   # NATIVE API
@@ -67,6 +68,58 @@ defmodule Midiex do
   def play(midi_out_conn, note) when is_list(note), do: play_notes(midi_out_conn, note)
   def play(midi_out_conn, note), do: play_notes(midi_out_conn, Note.to_number(note))
 
+  def play_pattern(midi_out_conn, notes, timing \\ [1], opts \\ []) do
+
+    direction = Keyword.get(opts, :direction, :asc)
+
+    timing = if is_number(timing), do: [timing], else: timing
+
+    notes = case direction do
+      :asc -> notes
+      :up -> notes
+
+      :desc -> Enum.reverse(notes)
+      :down -> Enum.reverse(notes)
+
+      :sweep ->
+        [_h | t] = Enum.reverse(notes)
+        notes ++ t
+
+      :sweep_up ->
+        [_h | t] = Enum.reverse(notes)
+        notes ++ t
+
+      :sweep_down ->
+        [_h | t] = notes
+        Enum.reverse(notes) ++ t
+
+      :shuffle -> Enum.shuffle(notes)
+      :random -> Enum.shuffle(notes)
+
+      _-> notes
+    end
+
+
+    duration_pattern =
+      timing
+      |> Stream.cycle()
+      |> Enum.take(length(notes))
+
+
+    [notes, duration_pattern]
+    |> Enum.zip()
+    |> Enum.each(fn {note, duration} ->
+
+      Midiex.send_msg(midi_out_conn, <<0x90, note, 127>>)
+      :timer.sleep(duration * 150)
+      Midiex.send_msg(midi_out_conn, <<0x80, note, 127>>)
+
+    end)
+
+  end
+
+
+
 
   def chord(base_note, chord_type) when is_number(base_note) do
      Chord.generate_notes(base_note, chord_type)
@@ -74,6 +127,14 @@ defmodule Midiex do
   def chord(base_note, chord_type) do
     Note.to_number(base_note) |> Chord.generate_notes(chord_type)
   end
+
+
+
+  def scale(base_note, scale_type) when is_number(base_note), do: Scale.notes(base_note, scale_type)
+  def scale(base_note, scale_type) do
+    Note.to_number(base_note) |>  Scale.notes(scale_type)
+  end
+
 
 
   def play_notes(midi_out_conn, notes, duration \\ 1) do

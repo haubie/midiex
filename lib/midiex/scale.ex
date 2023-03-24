@@ -48,7 +48,15 @@ defmodule Midiex.Scale do
   @nikriz_beslisi         [@tanini, @kucuk_mucenneb, @artik_ikili, @kucuk_mucenneb]
   @tam_ferahnak_beslisi   [@kucuk_mucenneb, @tanini, @tanini, @buyuk_mucenneb]
   @eksik_ferahnak_beslisi [@kucuk_mucenneb, @tanini, @tanini, @bakiyye]
-  @nisabur_dortlusu       [@buyuk_mucenneb, @kucuk_mucenneb, @tanini]
+
+  # currently unused
+  # @nisabur_dortlusu       [@buyuk_mucenneb, @kucuk_mucenneb, @tanini]
+  # @kurdi_beslisi          @kurdi_dortlusu ++ [@tanini]
+  # @saba_dortlusu          [@buyuk_mucenneb, @kucuk_mucenneb, @kucuk_mucenneb]
+  # @tam_mustear_beslisi    @mustear_dortlusu ++ [@tanini]
+  # @eksik_mustear_beslisi  @mustear_dortlusu ++ [@kucuk_mucenneb]
+  # @pencgah_beslisi        [@tanini, @tanini, @buyuk_mucenneb, @kucuk_mucenneb]
+  # @nisabur_beslisi        @nisabur_dortlusu ++ [@bakiyye]
 
 
   @rotate fn seq, num ->
@@ -232,40 +240,7 @@ defmodule Midiex.Scale do
 
 
 
-  def arp(midi_out_conn, start_note, scale, opts\\[]) when is_list(scale) do
 
-    duration  = Keyword.get(opts, :duration, 1)
-    direction = Keyword.get(opts, :direction, :asc)
-
-    scale = case direction do
-      :asc -> scale
-      :up -> scale
-
-      :desc -> Enum.reverse(scale)
-      :down -> Enum.reverse(scale)
-
-      :sweep -> scale ++ Enum.reverse(scale)
-      :sweep_up -> scale ++ Enum.reverse(scale)
-
-      :sweep_down -> Enum.reverse(scale) ++ scale
-
-      :shuffle -> Enum.shuffle(scale)
-      :random -> Enum.shuffle(scale)
-
-      _-> scale
-    end
-
-
-    scale
-    |> Enum.each(fn offset ->
-
-      Midiex.send_msg(midi_out_conn, <<0x90, start_note + offset, 127>>)
-      :timer.sleep(duration * 150)
-      Midiex.send_msg(midi_out_conn, <<0x80, start_note + offset, 127>>)
-
-    end)
-
-  end
 
 
   def acc_cycle(start_note, num_notes, intervals, callback_function) do
