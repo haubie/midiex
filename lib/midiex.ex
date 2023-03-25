@@ -64,9 +64,15 @@ defmodule Midiex do
   def choose(list), do: Enum.random(list)
   def shuffle(list), do: Enum.shuffle(list)
 
-  def play(midi_out_conn, note) when is_number(note), do: play_notes(midi_out_conn, note)
-  def play(midi_out_conn, note) when is_list(note), do: play_notes(midi_out_conn, note)
-  def play(midi_out_conn, note), do: play_notes(midi_out_conn, Note.to_number(note))
+  def play(midi_out_conn, note, duration \\ 1) do
+    cond do
+      is_number(note) -> play_notes(midi_out_conn, note, duration)
+      is_list(note) -> play_notes(midi_out_conn, note, duration)
+      true -> play_notes(midi_out_conn, Note.to_number(note), duration)
+    end
+  end
+
+
 
   def play_pattern(midi_out_conn, notes, timing \\ [1], opts \\ []) do
 
@@ -118,21 +124,19 @@ defmodule Midiex do
 
   end
 
-
-
-
-  def chord(base_note, chord_type) when is_number(base_note) do
-     Chord.generate_notes(base_note, chord_type)
-  end
   def chord(base_note, chord_type) do
-    Note.to_number(base_note) |> Chord.generate_notes(chord_type)
+    cond do
+      is_number(base_note) -> Chord.generate_notes(base_note, chord_type)
+      true ->  Note.to_number(base_note) |> Chord.generate_notes(chord_type)
+    end
+
   end
 
-
-
-  def scale(base_note, scale_type) when is_number(base_note), do: Scale.notes(base_note, scale_type)
-  def scale(base_note, scale_type) do
-    Note.to_number(base_note) |>  Scale.notes(scale_type)
+  def scale(base_note, scale_type, opt \\ []) do
+    cond do
+      is_number(scale_type) -> Scale.notes(base_note, scale_type, opt)
+      true -> Note.to_number(base_note) |>  Scale.notes(scale_type, opt)
+    end
   end
 
 

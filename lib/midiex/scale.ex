@@ -223,10 +223,22 @@ defmodule Midiex.Scale do
 
 
   def interval(scale), do: @scale_intervals[scale]
-  def notes(base_note, scale) do
+  def notes(base_note, scale_type, opts \\ []) do
+
+    num_notes = Keyword.get(opts, :num_notes, nil)
+    num_octaves = Keyword.get(opts, :num_octaves, nil)
+
+    num_notes =
+      cond do
+        num_notes -> num_notes
+        num_octaves -> 12*num_octaves
+        true -> length(@scale_intervals[scale_type])
+      end
 
     {seq, _acc} =
-      @scale_intervals[scale]
+      @scale_intervals[scale_type]
+      |> Stream.cycle()
+      |> Enum.take(num_notes)
       |> Enum.map_reduce(base_note, fn offset, acc ->
 
         next_note = acc + offset
@@ -237,8 +249,6 @@ defmodule Midiex.Scale do
     seq
 
   end
-
-
 
 
 
