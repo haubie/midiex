@@ -117,7 +117,7 @@ defmodule Midiex do
     |> Enum.each(fn {note, duration} ->
 
       Midiex.send_msg(midi_out_conn, <<0x90, note, 127>>)
-      :timer.sleep(duration * 150)
+      Midiex.Time.wait(duration)
       Midiex.send_msg(midi_out_conn, <<0x80, note, 127>>)
 
     end)
@@ -149,7 +149,7 @@ defmodule Midiex do
     |> Enum.map(fn note -> <<0x90, note, 127>> end)
     |> Enum.each(fn midi_note_on_msg -> Midiex.send_msg(midi_out_conn, midi_note_on_msg) end )
 
-    :timer.sleep(duration * 150)
+    Midiex.Time.wait(duration)
 
     notes
     |> Enum.map(fn note -> <<0x80, note, 127>> end)
@@ -162,7 +162,7 @@ defmodule Midiex do
 
     midi_out_conn
     |> send_msg(midi_note_on_msg)
-    |> tap(fn _ -> :timer.sleep(duration * 150) end)
+    |> tap(fn _ -> Midiex.Time.wait(duration) end)
     |> stop_note(note)
 
   end
