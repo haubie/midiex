@@ -4,6 +4,7 @@ defmodule Midiex.Chord do
   # https://github.com/sonic-pi-net/sonic-pi/blob/710107fe22c5977b9fa5e83b71e30f847610e240/app/server/ruby/lib/sonicpi/chord.rb
   # which was ported from
   # Overtone: https://github.com/overtone/overtone/blob/master/src/overtone/music/pitch.clj
+  
   @chord_interverals [
     major: [0, 4, 7],
     M: [0, 4, 7],

@@ -1,22 +1,83 @@
-# Midiex
+# Midiex overview
+Midiex is a cross-platform, real-time MIDI processing in Elixir library.
 
-**TODO: Add description**
+## midir Rust library
+Using [Rustler](https://github.com/rusterlium/rustler), Midiex wraps the excellent [midir](https://github.com/Boddlnagg/midir) Rust library.
 
-## Installation
+Midir support a range of platforms and backends, such as:
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `midiex` to your list of dependencies in `mix.exs`:
+- ALSA (Linux)
+- WinMM (Windows)
+- CoreMIDI (macOS, iOS)
+- WinRT (Windows 8+), 
+- Jack (Linux, macOS), 
 
-```elixir
+Using WinRT or Jack requires special feature flags being enabled. See the [midir GitHub](https://github.com/Boddlnagg/midir) and [create docs](https://docs.rs/crate/midir/latest) for more details.
+
+## Status
+This library is currently under active development and it’s API is likely to change.
+
+## API
+At it's most basic level, the core functions of Midiex are for:
+- **listing** or **counting** MIDI ports availble (for example, a keyboard or synth)
+- **creating** or **closting connections** to MIDI ports
+- **sending messages** to connections
+- **receiving messages** from connections
+- **creating a virtual output connection** so your Elixir application appears as a MIDI device.
+
+## MIDI messages
+MIDI messages are in binary format. They're usually in the format of one status byte followed by one or two data bytes.
+
+For example, the status byte for 'Note On' is `0x90` in HEX format. The data byte representing the note Middle C is `60`. The data byte representing velocity (i.e. how hard the key was struck when the note was played) is an integer in the range `0 - 127` where 127 is the loudest.
+
+Putting that together, the message to play Middle C at a velocity of 127 is: `<<0x90, 60, 127>>`
+You can stop the same note from playing by sending the 'Note Off' status byte `0x80`, which would make the message: `<<0x80, 60, 127>>`.
+
+For more information on MIDI messages, see the offical (MIDI Assocations Specifications)[https://www.midi.org/specifications], [Expanded MIDI 1.0 message list](https://www.midi.org/specifications-old/item/table-2-expanded-messages-list-status-bytes) or the various articles online such as (this one)[https://www.songstuff.com/recording/article/midi_message_format/].
+
+## Example
+```
+# List MIDI ports
+Midiex.list_ports()
+
+# Create a virtual output connection
+piano = Midiex.create_virtual_output_conn("piano")
+
+# Returns an output connection:
+# %Midiex.OutConn{
+#   conn_ref: #Reference<0.1633267383.3718381569.210768>,
+#   name: "piano",
+#   port_num: 0
+# }
+
+# Send to MIDI messages to a connection
+note_on = <<0x90, 60, 127>>
+note_off = <<0x80, 60, 127>>
+
+Midiex.send_msg(piano, note_on)
+:timer.sleep(3000) # wait three seconds
+Midiex.send_msg(piano, note_off)
+
+```
+## Getting started
+
+### Adding it to your Elixir project (coming soon)
+The package can be installed by adding supercollider to your list of dependencies in mix.exs:
+```
 def deps do
   [
     {:midiex, "~> 0.1.0"}
   ]
-end
+End
+```elixir
+
+### Using within LiveBook and IEx (coming soon)
 ```
+Mix.install([{:midiex, "~> 0.1.0"}])
+```elixir
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/midiex>.
+## Documentation
+The docs can be found at https://hexdocs.pm/midiex.
 
-# midiex
+
+

@@ -249,10 +249,6 @@ defmodule Midiex.Scale do
     seq
 
   end
-
-
-
-
   def acc_cycle(start_note, num_notes, intervals, callback_function) do
     intervals
     # |> Enum.drop(1)
@@ -263,7 +259,6 @@ defmodule Midiex.Scale do
       callback_function.(acc);
       ret end)
   end
-
   def generate_notes(start_note, num_notes, intervals) do
 
     {seq, _acc} =
@@ -279,7 +274,6 @@ defmodule Midiex.Scale do
 
     seq
   end
-
   def generate_notes(start_note, num_notes, intervals, callback_function) do
     intervals
     # |> Enum.drop(1)
@@ -290,9 +284,6 @@ defmodule Midiex.Scale do
       callback_function.(acc);
       ret end)
   end
-
-
-
 
 
 end

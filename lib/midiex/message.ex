@@ -181,6 +181,11 @@ defmodule Midiex.Message do
       <<@note_off, channel::4, note, velocity>>
     end
 
+    # def note_off_all(channel) do
+    #   # change_control(channel, 123)
+    # end
+
+
 
 
 end

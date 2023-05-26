@@ -1,6 +1,6 @@
 defmodule Midiex.Time do
 
-  @default_bpm 60
+  @default_bpm 120
   @one_minute_in_ms 60_000
   @one_second_in_ms 1_000
   @one_minute_in_ms 60 * @one_second_in_ms
