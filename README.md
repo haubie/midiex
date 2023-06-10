@@ -61,7 +61,7 @@ note_off = <<0x80, 60, 127>>
 Midiex.send_msg(piano, note_on)
 :timer.sleep(3000) # wait three seconds
 Midiex.send_msg(piano, note_off)
-```elixir
+```
 
 ## Getting started
 
@@ -73,12 +73,12 @@ def deps do
     {:midiex, "~> 0.1.0"}
   ]
 End
-```elixir
+```
 
 ### Using within LiveBook and IEx
 ```
 Mix.install([{:midiex, "~> 0.1.0"}])
-```elixir
+```
 
 #### LiveBook tour
 Also see the introductory tour in LiveBook at [/livebook/midiex_notebook.livemd](https://github.com/haubie/midiex/blob/main/livebook/midiex_notebook.livemd).
