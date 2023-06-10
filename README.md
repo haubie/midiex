@@ -61,8 +61,8 @@ note_off = <<0x80, 60, 127>>
 Midiex.send_msg(piano, note_on)
 :timer.sleep(3000) # wait three seconds
 Midiex.send_msg(piano, note_off)
+```elixir
 
-```
 ## Getting started
 
 ### Adding it to your Elixir project (coming soon)
