@@ -25,7 +25,7 @@ This library is currently under active development and it’s API is likely to c
 ## API
 At it's most basic level, the core functions of Midiex are for:
 - **listing** or **counting** MIDI ports availble (for example, a keyboard or synth)
-- **creating** or **closing connections** to MIDI ports
+- **opening** or **closing connections** to MIDI ports
 - **sending** or **receiving messages** to and from connections
 - **creating a virtual output connection** so your Elixir application appears as a MIDI device.
 

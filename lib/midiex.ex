@@ -2,18 +2,35 @@ defmodule Midiex do
   @moduledoc """
   This is the main Midiex module.
 
-  With this module you can:
-  - Ports:
-    -- **list** or **count** MIDI ports availble (for example, a keyboard or synth)
-  - Connections:
-    -- **create** connects to MIDI ports or **close connections**
-    -- **create a virtual output connection** so your Elixir application appears as a MIDI device
-  - Messages: **send** or **recieve messages** to and from connections.
+  It's built around three basic concepts:
+  1. **Ports:**
+    - **list** or **count** MIDI ports availble (for example, a keyboard or synth)
+  2. **Connections:**
+    - **open** or **close** connections to MIDI ports
+    - **create a virtual output connection** so your Elixir application appears as a MIDI device
+  3. **Messages:**
+    - **send** or **recieve messages** to and from connections.
 
   ## Examples
   ```
   # List MIDI ports
   Midiex.list_ports()
+
+  # Lists MIDI ports discoverable on your system
+  # [
+  #   %Midiex.MidiPort{
+  #     direction: :input,
+  #     name: "IAC Driver Bus 1",
+  #     num: 0,
+  #     port_ref: #Reference<0.2239960018.1937899544.176288>
+  #   },
+  #   %Midiex.MidiPort{
+  #     direction: :output,
+  #     name: "IAC Driver Bus 1",
+  #     num: 0,
+  #     port_ref: #Reference<0.2239960018.1937899544.176289>
+  #   }
+  # ]
 
   # Create a virtual output connection
   piano = Midiex.create_virtual_output_conn("piano")
@@ -48,6 +65,7 @@ defmodule Midiex do
   # MIDI port functions
 
   @doc section: :ports
+  @spec list_ports :: list
   @doc """
   Lists MIDI ports availabile on the system.
 
@@ -75,6 +93,7 @@ defmodule Midiex do
   def list_ports(), do: Backend.list_ports()
 
   @doc section: :ports
+  @spec list_ports(:input | :output) :: list
   @doc """
   List MIDI ports matching the specified direction (e.g. input or output)
 
@@ -103,9 +122,11 @@ defmodule Midiex do
   # ]
   ```
   """
+
   def list_ports(direction) when is_atom(direction), do: filter_port_direction(list_ports(), direction)
 
   @doc section: :ports
+  @spec list_ports(String.t(), (:input | :output) | nil) :: list
   @doc """
   Lists MIDI ports containing the name. Optionally takes a direction (:input or :output) can be given.
 
@@ -148,7 +169,7 @@ defmodule Midiex do
   out_conn = Midiex.connect(out_port)
   ```
   """
-  def open(midi_port), do: Backend.connect(midi_port)
+  def open(midi_output_port), do: Backend.connect(midi_output_port)
 
   @doc section: :connections
   @doc """
@@ -180,8 +201,17 @@ defmodule Midiex do
   :timer.sleep(3000) # wait three seconds
   Midiex.send_msg(piano, note_off)
   ```
+
+  > #### Important {: .warning}
+  >
+  > Even though this creates an output port, beacause it's a virtual port it is listed as an 'input' when querying the OS for available devices.
+  >
+  > That means other software or devices will discover it and use it as a an input as intented.
+  >
+  > It also means it will show as `%Midiex.MidiPort{direction: :input}` when calling `Midiex.list_ports()`.
+
   """
-  def create_virtual_outputn(name), do: Backend.create_virtual_output_conn(name)
+  def create_virtual_output(name), do: Backend.create_virtual_output_conn(name)
 
   # MIDI messaging functions
 

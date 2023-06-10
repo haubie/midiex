@@ -32,7 +32,7 @@ use midir::{MidiInput, MidiOutput, MidiInputConnection, MidiOutputConnection, Mi
 
 use midir::os::unix::{VirtualInput, VirtualOutput};
 
-use rustler::{Atom, Env, Error, NifResult, NifStruct, NifMap, NifTuple, ResourceArc, Term, Binary, OwnedBinary};
+use rustler::{Atom, Env, Error, NifResult, NifStruct, NifMap, NifTuple, ResourceArc, Term, Binary, OwnedBinary, OwnedEnv};
 
 
 // IS THIS NEEDED ANYMORE?
@@ -75,22 +75,84 @@ mod atoms {
 // The rust side will need to keep a list of input connections being listened too. Ideally these will be identified by a key (string?)
 // There will also need to be a function to close and remove an input connection from the list.
 // REFERNCE: Look at this project to see how they did it: https://github.com/rrx/rust-synth/blob/b632bdd915979ad6d8e7973b5362dfdb9853fcb2/src/midi.rs
+// RUSTLER REFERENCE: https://github.com/rusterlium/rustler/blob/d8aa66d976fa5ebbc6f74662992448a79a7d2fbf/rustler_tests/native/rustler_test/src/test_env.rs
+
 
 #[rustler::nif]
-pub fn subscribe(env: Env) -> Atom {  
-
+pub fn subscribe(env: Env) -> Atom {    
     let pid = env.pid();
 
-    let mut the_message = Term::map_new(env);
+    // Our worker thread will need an environment.  We can't ship `env` to the
+    // other thread, because the Erlang VM is going to tear it down as soon as
+    // we return from this NIF. So we use an `OwnedEnv`.
+    let mut owned_env = OwnedEnv::new();
 
-    the_message = the_message.map_put("message", "You recieved this message from Rust.").unwrap();
 
-    env.send(&pid.clone(), the_message);
+    // Start the worker thread. This `move` closure takes ownership of both
+    // `my_env` and `saved_reversed_list`.
+    thread::spawn(move || {
+        // Use `.send()` to get a `Env` from our `OwnedEnv`,
+        // run some rust code, and finally send the result back to `pid`.
 
-    sleep(Duration::from_millis(1000));    
+        let mut count = 0;
+   
+        // infinite loop
+        loop {
+
+            // println!("Thread loop {}", count);
+
+            owned_env.send_and_clear(&pid, |env| {
+    
+                let mut the_message = Term::map_new(env);
+
+                let mut s = format!("You recieved this message {count} from Rust.");
+    
+                the_message = the_message.map_put("message", s).unwrap();
+    
+                env.send(&pid.clone(), the_message);
+
+                count += 1;
+    
+                sleep(Duration::from_millis(3000));    
+                
+                the_message
+    
+            });
+        }
+    });
+
+
+
+
+    
+    // let mut the_message = Term::map_new(env);
+
+    // the_message = the_message.map_put("message", "You recieved this message from Rust.").unwrap();
+
+    // env.send(&pid.clone(), the_message);
+
+    // sleep(Duration::from_millis(1000));    
 
     atoms::ok()
 }
+
+
+
+
+// #[rustler::nif]
+// pub fn subscribe(env: Env) -> Atom {    
+//     let pid = env.pid();
+    
+//     let mut the_message = Term::map_new(env);
+
+//     the_message = the_message.map_put("message", "You recieved this message from Rust.").unwrap();
+
+//     env.send(&pid.clone(), the_message);
+
+//     sleep(Duration::from_millis(1000));    
+
+//     atoms::ok()
+// }
 
 
 
@@ -111,8 +173,6 @@ fn close_out_conn(midi_out_conn: OutConn) -> Atom {
 
     atoms::ok()
 }
-
-
 
 
 
@@ -306,7 +366,7 @@ fn create_virtual_output_conn(name: String) -> Result<OutConn, Error>{
     // Even though we've created an output port, beacause it's a virtual port it is listed as an 'input' when querying the OS for available devices. 
     let port_index = midi_input.port_count();
 
-    // Just in case added port_ref vack into OutConn
+    // Just in case added port_ref back into OutConn
     // let new_port: MidiInputPort = midi_input.ports().into_iter().rev().next().unwrap();
 
     return Ok(
@@ -333,13 +393,6 @@ fn send_msg(midi_out_conn: OutConn, message: Binary) -> Result<OutConn, Error>{
 
     let mut midi_output = MidiOutput::new("MIDIex").expect("Midi output"); 
 
-    // {  
-    //     let mut binding = midi_out_conn.conn_ref.0.lock().unwrap();
-    //     let out_conn = binding.deref_mut();
-
-    //     out_conn.as_mut().expect("REASON").send(&message);  
-    // }
-
     {
     
         let mut binding = midi_out_conn.conn_ref.0.lock().unwrap();
@@ -357,12 +410,9 @@ fn send_msg(midi_out_conn: OutConn, message: Binary) -> Result<OutConn, Error>{
 }
 
 
-
-
-
-
-
+// ===============
 // MIDI Connection
+// ===============
 
 // pub enum MidiexConnRef {
 //     Input(MidiInputConnection), 
@@ -388,13 +438,6 @@ pub struct OutConn {
     port_num: usize,
 }
 
-// pub struct OutConnRef(pub Mutex<MidiOutputConnection>);
-
-// impl OutConnRef {
-//     pub fn new(data: MidiOutputConnection) -> Self {
-//         Self(Mutex::new(data))
-//     }
-// }
 
 // WRAP IN AN OPTION AS WELL SO THE CONN CAN BE DESTROYED LATER
 // Use of Option mean ownership of the connection can be taken with .take() and then .closed() can be called.
@@ -440,8 +483,6 @@ pub struct NumPorts {
     output: usize 
 }
 
-
-
 // MIDI IO related 
 
 pub struct MidiexMidiInputRef(pub Mutex<MidiInput>);
@@ -458,28 +499,6 @@ impl MidiexMidiOutputRef {
         Self(Mutex::new(data))
     }
 }
-
-
-#[derive(NifStruct)]
-#[module = "Midiex.MidiIO"]
-pub struct MidiexMidiIO {
-    pub resource_input: ResourceArc<MidiexMidiInputRef>,
-    pub resource_output: ResourceArc<MidiexMidiOutputRef>,
-    pub active_connections: Vec<MidiPort>,
-}
-
-impl MidiexMidiIO {
-    pub fn new(midi_input: MidiInput, midi_output: MidiOutput) -> Self {
-        Self {
-            resource_input: ResourceArc::new(MidiexMidiInputRef::new(midi_input)),
-            resource_output: ResourceArc::new(MidiexMidiOutputRef::new(midi_output)),
-            active_connections: Vec::new()
-        }
-    }
-
-}
-
-
 
 
 // List all the ports, taking midi_io as input
