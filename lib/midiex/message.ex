@@ -1,4 +1,29 @@
 defmodule Midiex.Message do
+  @moduledoc """
+  Conveniences for creating MIDI messages.
+
+  ## About MIDI messages
+  MIDI messages are in the format of:
+
+    status_byte + note_number (0-127) + velocity (0-127)
+
+  For example, taking the status byte for Note On which in HEX is `0x90`, and the note Middle C which is 60 and a maximum key velocity of 127, the MIDI message in binary format is:
+
+    <<0x90, 60, 127>>
+
+  ## MIDI message functions
+  So that you don't have to remember all the MIDI message codes, this library has the following functions to generate messages:
+
+  - note_on(note_number, velocity, opts)
+  - note_off(note_number, velocity, opts)
+  - polyphonic_aftertouch(note_number, pressure, opts)
+  - channel_aftertouch(note_number, pressure, opts)
+  - control_change(control_number, value, opts)
+  - program_change(program_number, opts)
+  - pitch_wheel(lsbyte, msbyte, opts)
+  - sysex - coming soon
+
+  """
 
 
   # status_byte, note_number (0-127), velocity (0-127)
@@ -168,16 +193,19 @@ defmodule Midiex.Message do
   @note_on <<0x9::4>>
   @note_off <<0x8::4>>
 
+
     def note(text_note) do
       {_, note} = Enum.find(@notes, fn {note, midi_num} -> note == text_note end)
       note
     end
 
-    def note_on(channel, note, velocity\\127) do
+    def note_on(note, velocity\\127, opts \\ []) do
+      channel = Keyword.get(opts, :channel, 0)
       <<@note_on, channel::4, note, velocity>>
     end
 
-    def note_off(channel, note, velocity\\127) do
+    def note_off(note, velocity\\127, opts \\ []) do
+      channel = Keyword.get(opts, :channel, 0)
       <<@note_off, channel::4, note, velocity>>
     end
 
@@ -186,6 +214,21 @@ defmodule Midiex.Message do
     # end
 
 
+    # NoteOff(note_number, velocity)
+
+    # NoteOn(note_number, velocity)
+
+    # PolyphonicAftertouch(note_number, pressure)
+
+    # ChannelAftertouch(pressure)
+
+    # ControlChange(control_number, value)
+
+    # ProgramChange(program_number)
+
+    # PitchWheel(lsbyte, msbyte)
+
+    # SysEx(manufacturer_id, data1, data2..., dataN)
 
 
 end

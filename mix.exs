@@ -12,12 +12,36 @@ defmodule Midiex.MixProject do
       deps: deps(),
       package: package(),
       docs: [
-        main: "README",
+        main: "readme",
         source_url: "https://github.com/haubie/midiex",
         homepage_url: "https://github.com/haubie/midiex",
+        logo: "logo-hexdoc.png",
+        assets: "assets",
         extras: [
           "README.md",
+          "livebook/midiex_notebook.livemd",
           {:"LICENSE", [title: "License (MIT)"]},
+        ],
+        groups_for_modules: [
+          Main: [
+            Midiex,
+            Midiex.Message
+          ],
+          Resources: [
+            Midiex.MidiInputConnection,
+            Midiex.MidiIO,
+            Midiex.MidiOutput,
+            Midiex.OutConn,
+            Midiex.MidiPort
+          ],
+          Backend: [
+            Midiex.Backend
+          ]
+        ],
+        groups_for_docs: [
+          "Ports": &(&1[:section] == :ports),
+          "Connections": &(&1[:section] == :connections),
+          "Messages": &(&1[:section] == :messages),
         ]
       ]
     ]

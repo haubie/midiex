@@ -1,3 +1,8 @@
+![Midiex](assets/midiex_logo_wide.png)
+
+[![Documentation](http://img.shields.io/badge/hex.pm-docs-green.svg?style=flat)](https://hexdocs.pm/midiex)
+[![Package](https://img.shields.io/hexpm/v/supercollider.svg)](https://hex.pm/packages/midiex)
+
 # Midiex overview
 Midiex is a cross-platform, real-time MIDI processing in Elixir library.
 
@@ -8,21 +13,20 @@ Midir support a range of platforms and backends, such as:
 
 - ALSA (Linux)
 - WinMM (Windows)
-- CoreMIDI (macOS, iOS)
+- CoreMIDI (MacOS, iOS)
 - WinRT (Windows 8+), 
 - Jack (Linux, macOS), 
 
-Using WinRT or Jack requires special feature flags being enabled. See the [midir GitHub](https://github.com/Boddlnagg/midir) and [create docs](https://docs.rs/crate/midir/latest) for more details.
+Using WinRT or Jack requires special feature flags enabled. See the [midir GitHub](https://github.com/Boddlnagg/midir) and [create docs](https://docs.rs/crate/midir/latest) for more details.
 
 ## Status
-This library is currently under active development and it’s API is likely to change.
+This library is currently under active development and it’s API is likely to change. It's been tested on MacOS only.
 
 ## API
 At it's most basic level, the core functions of Midiex are for:
 - **listing** or **counting** MIDI ports availble (for example, a keyboard or synth)
-- **creating** or **closting connections** to MIDI ports
-- **sending messages** to connections
-- **receiving messages** from connections
+- **creating** or **closing connections** to MIDI ports
+- **sending** or **receiving messages** to and from connections
 - **creating a virtual output connection** so your Elixir application appears as a MIDI device.
 
 ## MIDI messages
@@ -71,10 +75,15 @@ def deps do
 End
 ```elixir
 
-### Using within LiveBook and IEx (coming soon)
+### Using within LiveBook and IEx
 ```
 Mix.install([{:midiex, "~> 0.1.0"}])
 ```elixir
+
+#### LiveBook tour
+Also see the introductory tour in LiveBook at [/livebook/midiex_notebook.livemd](https://github.com/haubie/midiex/blob/main/livebook/midiex_notebook.livemd).
+
+[![Run in Livebook](https://livebook.dev/badge/v1/blue.svg)](https://livebook.dev/run?url=https%3A%2F%2Fgithub.com%2Fhaubie%2Fmidiex%2Fblob%2Fmain%2Flivebook%2Fmidiex_notebook.livemd)
 
 ## Documentation
 The docs can be found at https://hexdocs.pm/midiex.
