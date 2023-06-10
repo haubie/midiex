@@ -37,7 +37,7 @@ For example, the status byte for 'Note On' is `0x90` in HEX format. The data byt
 Putting that together, the message to play Middle C at a velocity of 127 is: `<<0x90, 60, 127>>`
 You can stop the same note from playing by sending the 'Note Off' status byte `0x80`, which would make the message: `<<0x80, 60, 127>>`.
 
-For more information on MIDI messages, see the offical (MIDI Assocations Specifications)[https://www.midi.org/specifications], [Expanded MIDI 1.0 message list](https://www.midi.org/specifications-old/item/table-2-expanded-messages-list-status-bytes) or the various articles online such as (this one)[https://www.songstuff.com/recording/article/midi_message_format/].
+For more information on MIDI messages, see the offical [MIDI Assocations Specifications](https://www.midi.org/specifications), [Expanded MIDI 1.0 message list](https://www.midi.org/specifications-old/item/table-2-expanded-messages-list-status-bytes) or the various articles online such as (this one)[https://www.songstuff.com/recording/article/midi_message_format/].
 
 ## Example
 ```
