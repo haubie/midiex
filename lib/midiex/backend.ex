@@ -24,6 +24,8 @@ defmodule Midiex.Backend do
   # Midiex callback functions
   def subscribe(), do: err()
   def listen(_input_port), do: err()
+  def get_subscribed_ports(), do: err()
+  def clear_subscribed_ports(), do: err()
 
   defp err(), do: :erlang.nif_error(:nif_not_loaded)
 
