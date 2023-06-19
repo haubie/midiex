@@ -11,6 +11,8 @@ defmodule Midiex.Backend do
   # NATIVE API
   # ##########
 
+  def test(_midi_port), do: err()
+
   # MIDI port functions
   def list_ports(), do: err()
   def count_ports(), do: err()
@@ -24,6 +26,7 @@ defmodule Midiex.Backend do
   # Midiex callback functions
   def subscribe(), do: err()
   def listen(_input_port), do: err()
+  def subscribe_to_port(_input_port), do: err()
   def get_subscribed_ports(), do: err()
   def clear_subscribed_ports(), do: err()
 

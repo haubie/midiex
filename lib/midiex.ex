@@ -229,6 +229,8 @@ defmodule Midiex do
   # Midiex callback functions
   def subscribe(), do: Backend.subscribe()
   @doc section: :messages
+  def subscribe_to_port(input_port), do: Backend.subscribe_to_port(input_port)
+
   def listen(input_port), do: Backend.listen(input_port)
 
   # #######

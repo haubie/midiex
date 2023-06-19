@@ -20,7 +20,6 @@ use std::iter::FromIterator;
 
 use std::hash::{Hash, Hasher};
 
-// use send_wrapper::SendWrapper;
 use std::ops::{Deref, DerefMut};
 use std::sync::mpsc;
 
@@ -53,10 +52,9 @@ thread_local!(static GLOBAL_MIDI_OUTPUT_RESULT: Result<MidiOutput, InitError> = 
 //     static ref GLOBAL_MIDI_MESSAGES: Mutex<Vec<u8>> = Mutex::new(Vec::<u8>::new());
 // }
 
-// lazy_static!{
-//     static ref GLOBAL_MIDI_BINARY_MESSAGES: Mutex<Vec<OwnedBinary>> = Mutex::new(Vec::<OwnedBinary>::new());
-// }
-
+lazy_static!{
+    static ref GLOBAL_MIDI_BINARY_MESSAGES: Mutex<Vec<OwnedBinary>> = Mutex::new(Vec::<OwnedBinary>::new());
+}
 
 lazy_static!{
     static ref GLOBAL_LISTEN_LIST: Mutex<Vec<MidiPort>> = Mutex::new(Vec::<MidiPort>::new());
@@ -133,6 +131,33 @@ mod atoms {
     
 // }
 
+
+#[rustler::nif]
+pub fn test(env: Env, midi_port: MidiPort) -> Atom {
+    
+    let mut midi_in = MidiInput::new("midir reading input").unwrap();
+    midi_in.ignore(Ignore::None);
+    
+    let mut in_port = match &midi_port.port_ref.0 {
+        MidiexMidiPortRef::Input(in_port) => in_port,
+        MidiexMidiPortRef::Output(out_port) => panic!("Midi Input Port Error: Problem getting midi input port reference.")
+    };
+
+    println!("\nOpening connection");
+    let in_port_name = midi_in.port_name(in_port).unwrap();
+
+    // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
+    let _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, _| {
+        println!("{}: {:?} (len = {})", stamp, message, message.len());
+    }, ());
+    
+    println!("Connection open, reading input from '{}'", in_port_name);
+
+    println!("Closing connection");
+
+    atoms::ok()
+}   
+
 #[rustler::nif]
 pub fn subscribe(env: Env) -> Atom {    
     let pid = env.pid();
@@ -146,50 +171,77 @@ pub fn subscribe(env: Env) -> Atom {
 
     thread::spawn::<thread::ThreadSpawner, _>(env, move |thread_env| {
 
-        let mut count = 0;
-
         let mut msg = Arc::new(Mutex::new(Vec::new()));
+
+        let mut count = 0;
        
         
         // infinite loop
         loop {
             
+            count = count + 1;
             let mut input_ports = GLOBAL_LISTEN_LIST.lock().unwrap().to_vec();
 
-            println!("Port count {}", input_ports.len());
+            // println!("Port count {}", input_ports.len());
 
             for midi_port in input_ports { 
-                let mut midi_input = MidiInput::new("MIDIex").expect("Midi input");
-                println!("Port name {} ({})", midi_port.name, midi_port.num);
+                let mut midi_input = MidiInput::new("MIDIex input").expect("Midi input");
+                midi_input.ignore(Ignore::None);
+
+                // println!("Port name: {} (#{})", midi_port.name, midi_port.num);
 
                 let mut in_port = match &midi_port.port_ref.0 {
                     MidiexMidiPortRef::Input(in_port) => in_port,
                     MidiexMidiPortRef::Output(out_port) => panic!("Midi Input Port Error: Problem getting midi input port reference.")
                 };
 
+                let in_port_name = midi_input.port_name(in_port).unwrap();
+                // println!("Connection open, reading input from '{}'", in_port_name);
+
                 let mut midi_msg_clone = msg.clone();
                 let _conn_in = midi_input.connect(&in_port, "MIDIex input port", move |stamp, message, _| {
-                    // let mut inner_clone = midi_msg_clone.clone();
+                    let mut inner_clone = midi_msg_clone.clone();
 
-
-                    println!("\n{}: {:?} (len = {})\r", stamp, message, message.len());
+                    // println!("\n{}: {:?} (len = {})\r", stamp, message, message.len());
                     
-                    midi_msg_clone.lock().unwrap().push([1,2,3]);
+                    // midi_msg_clone.lock().unwrap().push(message.to_vec());
+
+
+                    /* NEW: */
+                    let mut vec_msg =  message.to_vec();
+
+                    let mut bin_msg_two: OwnedBinary = OwnedBinary::new(message.len()).expect("Owned binary message created");
+                    bin_msg_two.as_mut_slice().copy_from_slice(&vec_msg);
+            
+                    // midi_msg_clone.lock().unwrap().push(vec_msg);
+                    inner_clone.lock().unwrap().push(bin_msg_two);
+                    // inner_clone.lock().unwrap().push(vec_msg);
 
                     
                 }, ());
 
-                let mut midi_msg_clone_two = msg.clone();
-                let mut size = (midi_msg_clone_two.lock().unwrap()).len();
-                println!("Length of vec: {:?}", size);
+               
+                // println!("Length of vec: {:?}", size);
+
+               
 
                 owned_env.send_and_clear(&pid, |env| {
 
+                    let mut midi_msg_clone_two = msg.clone();
+                    
+                    let mut midi_msg_lock = midi_msg_clone_two.lock().unwrap();
+                    // let size = midi_msg_clone_two.len();
+
+                    let new_vec_of_bin_msgs: Vec<Binary> = (midi_msg_lock
+                        .drain(..)
+                        .map(|owned_bin_msg| owned_bin_msg.release(env))
+                        .collect::<Vec<Binary>>()).to_vec();
+
                     let mut the_message = Term::map_new(env);
-                    let mut s = format!("You recieved this message {} from Rust.", count);
+                    let mut s = format!("You recieved this message from Rust.");
                     the_message = the_message.map_put("port_name", midi_port.name).unwrap();
                     the_message = the_message.map_put("port_num", midi_port.num).unwrap();
-                    // the_message = the_message.map_put("message", midi_message).unwrap();
+                    the_message = the_message.map_put("message", new_vec_of_bin_msgs).unwrap();
 
                     the_message
                 
@@ -203,10 +255,10 @@ pub fn subscribe(env: Env) -> Atom {
                 // owned_env.send_and_clear(&pid, |env| {
 
                 //     let mut the_message = Term::map_new(env);
-                //     let mut s = format!("You recieved this message {} from Rust for {}.", count, in_port.name);
+                //     // let mut s = format!("You recieved this message {} from Rust for {}.", count, in_port.name);
                 //     the_message = the_message.map_put("port_name", in_port.name).unwrap();
                 //     the_message = the_message.map_put("port_num", in_port.num).unwrap();
-                //     the_message = the_message.map_put("message", s).unwrap();
+                //     // the_message = the_message.map_put("message", s).unwrap();
 
                 //     the_message
                 
@@ -221,8 +273,7 @@ pub fn subscribe(env: Env) -> Atom {
 
     
             // });
-            count = count + 1;
-            sleep(Duration::from_millis(2000)); 
+            sleep(Duration::from_millis(1000)); 
         }
         
     });
@@ -310,7 +361,7 @@ fn close_out_conn(midi_out_conn: OutConn) -> Atom {
 
 
 #[rustler::nif]
-fn listen(env: Env, midi_port: MidiPort) -> Result<Vec<MidiPort>, Error> {
+fn subscribe_to_port(env: Env, midi_port: MidiPort) -> Result<Vec<MidiPort>, Error> {
     GLOBAL_LISTEN_LIST.lock().unwrap().push(midi_port);
     GLOBAL_LISTEN_LIST.lock().unwrap().sort_unstable_by_key(|midi_port| (midi_port.num));
     GLOBAL_LISTEN_LIST.lock().unwrap().dedup();
@@ -348,108 +399,134 @@ fn unsubscribe_port(env: Env, midi_port: MidiPort) -> Result<Vec<MidiPort>, Erro
 
 
 
-// #[rustler::nif(schedule = "DirtyCpu")]
-// fn listen(env: Env, midi_port: MidiPort) -> Result<Vec<Binary>, Error> {
+#[rustler::nif(schedule = "DirtyCpu")]
+fn listen(env: Env, midi_port: MidiPort) -> Result<Vec<Binary>, Error> {
 
-//     // let mut data: Binary = Binary::new();
+    // let mut data: Binary = Binary::new();
+
+
+    let mut midi_msg = Arc::new(Mutex::new(Vec::new()));
 
    
   
-//     if midi_port.direction == atoms::input()  {
+    if midi_port.direction == atoms::input()  {
 
-//         // println!("\rIs an input port");
 
-//         if let MidiexMidiPortRef::Input(in_port) = &midi_port.port_ref.0 { 
-//             // println!("\r\tIn connections section");
+        let mut midi_msg = midi_msg.clone();
+
+        // println!("\rIs an input port");
+
+        if let MidiexMidiPortRef::Input(in_port) = &midi_port.port_ref.0 { 
+            // println!("\r\tIn connections section");
         
-//                 let mut midi_input = MidiInput::new("MIDIex").expect("Midi input"); 
+                let mut midi_input = MidiInput::new("MIDIex").expect("Midi input"); 
 
-//                 let port_name = midi_input.port_name(in_port).unwrap();
+                let port_name = midi_input.port_name(in_port).unwrap();
 
-//                 // println!("\r\tPort is called {:?}", port_name);
+                // println!("\r\tPort is called {:?}", port_name);
 
-        
+                // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
+                let _conn_in = midi_input.connect(
+                    &in_port,
+                    "MIDIex input port",
+                    move |stamp, message, _| {
 
-
-//                 // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
-//                 let _conn_in = midi_input.connect(
-//                     &in_port,
-//                     "MIDIex input port",
-//                     move |stamp, message, _| {
+                    let mut midi_msg_clone = midi_msg.clone();
                      
-//                     println!("\n{}: {:?} (len = {})\r", stamp, message, message.len());
+                    println!("\n{}: {:?} (len = {})\r", stamp, message, message.len());
 
-//                     let mut vec_msg =  message.to_vec();
-
-
-
-//                     let mut bin_msg: OwnedBinary = OwnedBinary::new(message.len()).expect("Owned binary message created");
-//                     bin_msg.as_mut_slice().copy_from_slice(&vec_msg);
+                    let mut vec_msg =  message.to_vec();
 
 
-//                     GLOBAL_MIDI_BINARY_MESSAGES.lock().unwrap().push(bin_msg);
+/* NOT NEEDED ANYMORE
+                    let mut bin_msg: OwnedBinary = OwnedBinary::new(message.len()).expect("Owned binary message created");
+                    bin_msg.as_mut_slice().copy_from_slice(&vec_msg);
 
-//                     // let final_bin_msg: Binary = bin_msg.release(env);
+*/
+                    let mut bin_msg_two: OwnedBinary = OwnedBinary::new(message.len()).expect("Owned binary message created");
+                    bin_msg_two.as_mut_slice().copy_from_slice(&vec_msg);
 
-//                     // Ok((atoms::ok(), bin_msg.release(env)).encode(env)) 
+                    /* NOT NEEDED ANYMORE
+                    GLOBAL_MIDI_BINARY_MESSAGES.lock().unwrap().push(bin_msg);
+                    */
+
+                    // midi_msg_clone.lock().unwrap().push(vec_msg);
+                    midi_msg_clone.lock().unwrap().push(bin_msg_two);
+                    
+
+                    // let final_bin_msg: Binary = bin_msg.release(env);
+
+                    // Ok((atoms::ok(), bin_msg.release(env)).encode(env)) 
 
                     
 
-//                     // *GLOBAL_MIDI_MESSAGES.lock().unwrap() = vec_msg;
+                    // *GLOBAL_MIDI_MESSAGES.lock().unwrap() = vec_msg;
 
-//                     // GLOBAL_MIDI_MESSAGES.lock().unwrap().append(&mut vec_msg);
+                    // GLOBAL_MIDI_MESSAGES.lock().unwrap().append(&mut vec_msg);
 
-//                     // GLOBAL_MIDI_MESSAGES.lock().unwrap().append(&mut vec_msg);
+                    // GLOBAL_MIDI_MESSAGES.lock().unwrap().append(&mut vec_msg);
 
 
 
         
                    
-//                 }, ());   
+                }, ());   
 
             
 
-//                 sleep(Duration::from_millis(1));
+                sleep(Duration::from_millis(1));
                 
 
           
-//         };
+        };
 
-//     } else {
-//         println!("\nCannot listen to an output port - use the connect/1 function instead");
-//         // return atoms::error()
-//         return Err(Error::RaiseTerm(Box::new(
-//             "Not an input port.".to_string(),
-//         ))) 
-//     }
+    } else {
+        println!("\nCannot listen to an output port - use the connect/1 function instead");
+        // return atoms::error()
+        return Err(Error::RaiseTerm(Box::new(
+            "Not an input port.".to_string(),
+        ))) 
+    }
+
+    let mut midi_msg_lock =  midi_msg.lock().unwrap();
+    // println!("\n!! GLOBAL VEC AFTER LOOP: {:?})\r", midi_msg_lock);
+
+    let new_vec_of_bin_msgs: Vec<Binary> = (midi_msg_lock
+                                        .drain(..)
+                                        .map(|owned_bin_msg| owned_bin_msg.release(env))
+                                        .collect::<Vec<Binary>>()).to_vec();
 
 
 
-//     // println!("\nGLOBAL VEC AFTER LOOP: {:?})\r", *GLOBAL_MIDI_MESSAGES.lock().unwrap());
+    // println!("\nGLOBAL VEC AFTER LOOP: {:?})\r", *GLOBAL_MIDI_MESSAGES.lock().unwrap());
    
-//     // let msg = GLOBAL_MIDI_MESSAGES.lock().unwrap().to_vec();
+    // let msg = GLOBAL_MIDI_MESSAGES.lock().unwrap().to_vec();
 
 
-//     let vec_of_bin_msgs: Vec<Binary> = (*GLOBAL_MIDI_BINARY_MESSAGES.lock()
-//                                                         .unwrap()
-//                                                         .drain(..)
-//                                                         .map(|owned_bin_msg| owned_bin_msg.release(env))
-//                                                         .collect::<Vec<Binary>>()).to_vec();
+        /* NOT NEEDED ANYMORE
+    let vec_of_bin_msgs: Vec<Binary> = (*GLOBAL_MIDI_BINARY_MESSAGES.lock()
+                                                        .unwrap()
+                                                        .drain(..)
+                                                        .map(|owned_bin_msg| owned_bin_msg.release(env))
+                                                        .collect::<Vec<Binary>>()).to_vec();
 
-          
+           */
 
-//     // let port = output.ports().drain(..).skip(port).next().unwrap();
+    // let port = output.ports().drain(..).skip(port).next().unwrap();
     
 
-//     // clear it out
-//     // *GLOBAL_MIDI_MESSAGES.lock().unwrap() = Vec::<u8>::new();
+    // clear it out
+    // *GLOBAL_MIDI_MESSAGES.lock().unwrap() = Vec::<u8>::new();
 
 
-//     // Ok((atoms::ok(), bin_msg.release(env)).encode(env)) 
+    // Ok((atoms::ok(), bin_msg.release(env)).encode(env)) 
 
 
-//     Ok(vec_of_bin_msgs)
-// }
+    // Ok(vec_of_bin_msgs)
+
+    Ok(new_vec_of_bin_msgs)
+
+}
 
 
 // #[rustler::nif]
@@ -871,6 +948,6 @@ fn on_load(env: Env, _info: Term) -> bool {
 
 rustler::init!(
     "Elixir.Midiex.Backend",
-    [count_ports, list_ports, connect, close_out_conn, send_msg, subscribe, create_virtual_output_conn, listen, get_subscribed_ports, clear_subscribed_ports],
+    [test, count_ports, list_ports, connect, close_out_conn, send_msg, subscribe, create_virtual_output_conn, listen, get_subscribed_ports, clear_subscribed_ports, subscribe_to_port],
     load = on_load
 );

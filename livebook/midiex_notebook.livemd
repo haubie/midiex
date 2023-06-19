@@ -13,7 +13,7 @@ Mix.install([{:midiex, path: "/Users/haubie/Development/midiex"}])
 Compiling 1 file (.ex)
 Compiling crate midiex in release mode (native/midiex)
    Compiling midiex v0.1.0 (/Users/haubie/Development/midiex/native/midiex)
-    Finished release [optimized] target(s) in 0.48s
+    Finished release [optimized] target(s) in 0.55s
 ```
 
 <!-- livebook:{"output":true} -->
@@ -35,7 +35,7 @@ Midiex.count_ports()
 <!-- livebook:{"output":true} -->
 
 ```
-%{input: 5, output: 5}
+%{input: 4, output: 4}
 ```
 
 ### List devices (ports)
@@ -52,61 +52,49 @@ ports = Midiex.list_ports()
     direction: :input,
     name: "IAC Driver Bus 1",
     num: 0,
-    port_ref: #Reference<0.363119091.1102708760.33773>
-  },
-  %Midiex.MidiPort{
-    direction: :input,
-    name: "Arturia DrumBrute Impact",
-    num: 1,
-    port_ref: #Reference<0.363119091.1102708760.33774>
+    port_ref: #Reference<0.522475107.1026162712.215786>
   },
   %Midiex.MidiPort{
     direction: :input,
     name: "Arturia MicroFreak",
-    num: 2,
-    port_ref: #Reference<0.363119091.1102708760.33775>
+    num: 1,
+    port_ref: #Reference<0.522475107.1026162712.215787>
   },
   %Midiex.MidiPort{
     direction: :input,
     name: "KeyStep Pro",
-    num: 3,
-    port_ref: #Reference<0.363119091.1102708760.33776>
+    num: 2,
+    port_ref: #Reference<0.522475107.1026162712.215788>
   },
   %Midiex.MidiPort{
     direction: :input,
-    name: "USB MIDI Device",
-    num: 4,
-    port_ref: #Reference<0.363119091.1102708760.33777>
+    name: "MiniFuse 2",
+    num: 3,
+    port_ref: #Reference<0.522475107.1026162712.215789>
   },
   %Midiex.MidiPort{
     direction: :output,
     name: "IAC Driver Bus 1",
     num: 0,
-    port_ref: #Reference<0.363119091.1102708760.33778>
-  },
-  %Midiex.MidiPort{
-    direction: :output,
-    name: "Arturia DrumBrute Impact",
-    num: 1,
-    port_ref: #Reference<0.363119091.1102708760.33779>
+    port_ref: #Reference<0.522475107.1026162712.215790>
   },
   %Midiex.MidiPort{
     direction: :output,
     name: "Arturia MicroFreak",
-    num: 2,
-    port_ref: #Reference<0.363119091.1102708760.33780>
+    num: 1,
+    port_ref: #Reference<0.522475107.1026162712.215791>
   },
   %Midiex.MidiPort{
     direction: :output,
     name: "KeyStep Pro",
-    num: 3,
-    port_ref: #Reference<0.363119091.1102708760.33781>
+    num: 2,
+    port_ref: #Reference<0.522475107.1026162712.215792>
   },
   %Midiex.MidiPort{
     direction: :output,
-    name: "USB MIDI Device",
-    num: 4,
-    port_ref: #Reference<0.363119091.1102708760.33782>
+    name: "MiniFuse 2",
+    num: 3,
+    port_ref: #Reference<0.522475107.1026162712.215793>
   }
 ]
 ```
@@ -125,33 +113,70 @@ Midiex.list_ports(:output)
     direction: :output,
     name: "IAC Driver Bus 1",
     num: 0,
-    port_ref: #Reference<0.363119091.1102708760.33788>
-  },
-  %Midiex.MidiPort{
-    direction: :output,
-    name: "Arturia DrumBrute Impact",
-    num: 1,
-    port_ref: #Reference<0.363119091.1102708760.33789>
+    port_ref: #Reference<0.522475107.1026162712.215798>
   },
   %Midiex.MidiPort{
     direction: :output,
     name: "Arturia MicroFreak",
-    num: 2,
-    port_ref: #Reference<0.363119091.1102708760.33790>
+    num: 1,
+    port_ref: #Reference<0.522475107.1026162712.215799>
   },
   %Midiex.MidiPort{
     direction: :output,
     name: "KeyStep Pro",
-    num: 3,
-    port_ref: #Reference<0.363119091.1102708760.33791>
+    num: 2,
+    port_ref: #Reference<0.522475107.1026162712.215800>
   },
   %Midiex.MidiPort{
     direction: :output,
-    name: "USB MIDI Device",
-    num: 4,
-    port_ref: #Reference<0.363119091.1102708760.33792>
+    name: "MiniFuse 2",
+    num: 3,
+    port_ref: #Reference<0.522475107.1026162712.215801>
   }
 ]
+```
+
+```elixir
+out_port = Midiex.list_ports("Arturia", :output) |> List.first()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Midiex.MidiPort{
+  direction: :output,
+  name: "Arturia MicroFreak",
+  num: 1,
+  port_ref: #Reference<0.522475107.1026162712.215807>
+}
+```
+
+```elixir
+out_conn = Midiex.open(out_port)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Midiex.OutConn{
+  conn_ref: #Reference<0.522475107.1026162689.216660>,
+  name: "Arturia MicroFreak",
+  port_num: 1
+}
+```
+
+```elixir
+Midiex.send_msg(out_conn, <<0x90, 60, 127>>)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Midiex.OutConn{
+  conn_ref: #Reference<0.522475107.1026162689.216660>,
+  name: "Arturia MicroFreak",
+  port_num: 1
+}
 ```
 
 ```elixir
@@ -166,31 +191,25 @@ Midiex.list_ports(:input)
     direction: :input,
     name: "IAC Driver Bus 1",
     num: 0,
-    port_ref: #Reference<0.363119091.1102708760.33793>
-  },
-  %Midiex.MidiPort{
-    direction: :input,
-    name: "Arturia DrumBrute Impact",
-    num: 1,
-    port_ref: #Reference<0.363119091.1102708760.33794>
+    port_ref: #Reference<0.522475107.1026162712.215810>
   },
   %Midiex.MidiPort{
     direction: :input,
     name: "Arturia MicroFreak",
-    num: 2,
-    port_ref: #Reference<0.363119091.1102708760.33795>
+    num: 1,
+    port_ref: #Reference<0.522475107.1026162712.215811>
   },
   %Midiex.MidiPort{
     direction: :input,
     name: "KeyStep Pro",
-    num: 3,
-    port_ref: #Reference<0.363119091.1102708760.33796>
+    num: 2,
+    port_ref: #Reference<0.522475107.1026162712.215812>
   },
   %Midiex.MidiPort{
     direction: :input,
-    name: "USB MIDI Device",
-    num: 4,
-    port_ref: #Reference<0.363119091.1102708760.33797>
+    name: "MiniFuse 2",
+    num: 3,
+    port_ref: #Reference<0.522475107.1026162712.215813>
   }
 ]
 ```
@@ -209,7 +228,7 @@ Midiex.list_ports("IAC", :input)
     direction: :input,
     name: "IAC Driver Bus 1",
     num: 0,
-    port_ref: #Reference<0.363119091.1102708760.33803>
+    port_ref: #Reference<0.522475107.1026162712.215818>
   }
 ]
 ```
@@ -224,9 +243,9 @@ virtual_conn = Midiex.create_virtual_output("My Virtual Connection")
 
 ```
 %Midiex.OutConn{
-  conn_ref: #Reference<0.363119091.1102708745.36030>,
+  conn_ref: #Reference<0.522475107.1026162689.216746>,
   name: "My Virtual Connection",
-  port_num: 5
+  port_num: 4
 }
 ```
 
@@ -246,37 +265,31 @@ ports = Midiex.list_ports(:input)
     direction: :input,
     name: "IAC Driver Bus 1",
     num: 0,
-    port_ref: #Reference<0.363119091.1102708760.33813>
-  },
-  %Midiex.MidiPort{
-    direction: :input,
-    name: "Arturia DrumBrute Impact",
-    num: 1,
-    port_ref: #Reference<0.363119091.1102708760.33814>
+    port_ref: #Reference<0.522475107.1026162712.215826>
   },
   %Midiex.MidiPort{
     direction: :input,
     name: "Arturia MicroFreak",
-    num: 2,
-    port_ref: #Reference<0.363119091.1102708760.33815>
+    num: 1,
+    port_ref: #Reference<0.522475107.1026162712.215827>
   },
   %Midiex.MidiPort{
     direction: :input,
     name: "KeyStep Pro",
-    num: 3,
-    port_ref: #Reference<0.363119091.1102708760.33816>
+    num: 2,
+    port_ref: #Reference<0.522475107.1026162712.215828>
   },
   %Midiex.MidiPort{
     direction: :input,
-    name: "USB MIDI Device",
-    num: 4,
-    port_ref: #Reference<0.363119091.1102708760.33817>
+    name: "MiniFuse 2",
+    num: 3,
+    port_ref: #Reference<0.522475107.1026162712.215829>
   },
   %Midiex.MidiPort{
     direction: :input,
     name: "My Virtual Connection",
-    num: 5,
-    port_ref: #Reference<0.363119091.1102708760.33818>
+    num: 4,
+    port_ref: #Reference<0.522475107.1026162712.215830>
   }
 ]
 ```
@@ -296,7 +309,7 @@ out_conn =
 
 ```
 %Midiex.OutConn{
-  conn_ref: #Reference<0.363119091.1102708745.36054>,
+  conn_ref: #Reference<0.522475107.1026162689.216766>,
   name: "IAC Driver Bus 1",
   port_num: 0
 }
@@ -313,7 +326,7 @@ Midiex.Backend.get_subscribed_ports()
 ```
 
 ```elixir
-Midiex.Backend.listen(Midiex.list_ports(:input) |> Enum.at(3))
+Midiex.Backend.listen(Midiex.list_ports(:input) |> Enum.at(2))
 ```
 
 <!-- livebook:{"output":true} -->
@@ -323,10 +336,47 @@ Midiex.Backend.listen(Midiex.list_ports(:input) |> Enum.at(3))
   %Midiex.MidiPort{
     direction: :input,
     name: "KeyStep Pro",
-    num: 3,
-    port_ref: #Reference<0.363119091.1102708760.33838>
+    num: 2,
+    port_ref: #Reference<0.522475107.1026162712.215846>
   }
 ]
+```
+
+```elixir
+in_port = Midiex.list_ports("Key", :input) |> List.first()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Midiex.MidiPort{
+  direction: :input,
+  name: "KeyStep Pro",
+  num: 2,
+  port_ref: #Reference<0.522475107.1026162712.215855>
+}
+```
+
+```elixir
+1..10//1
+|> Enum.map(fn i ->
+  :timer.sleep(1000)
+  Midiex.Backend.test(in_port)
+end)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+warning: variable "i" is unused (if the variable is not meant to be used, prefix it with an underscore)
+  livebook/midiex_notebook.livemd#cell:7euaccszbergu2jit2isskr7ejpvc65q:2
+
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[:ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok]
 ```
 
 ```elixir
@@ -397,14 +447,14 @@ end
 <!-- livebook:{"output":true} -->
 
 ```
-warning: clauses with the same name and arity (number of arguments) should be grouped together, "def handle_cast/2" was previously defined (livebook/midiex_notebook.livemd#cell:toedrnbfplyqxocdq7hp7p7kom7ffqil:36)
-  livebook/midiex_notebook.livemd#cell:toedrnbfplyqxocdq7hp7p7kom7ffqil:46
+warning: clauses with the same name and arity (number of arguments) should be grouped together, "def handle_cast/2" was previously defined (livebook/midiex_notebook.livemd#cell:7rfguhfubcggnj6q6hoiiqg7lbqbjlab:36)
+  livebook/midiex_notebook.livemd#cell:7rfguhfubcggnj6q6hoiiqg7lbqbjlab:46
 
 warning: this clause cannot match because a previous clause at line 13 always matches
-  livebook/midiex_notebook.livemd#cell:toedrnbfplyqxocdq7hp7p7kom7ffqil:17
+  livebook/midiex_notebook.livemd#cell:7rfguhfubcggnj6q6hoiiqg7lbqbjlab:17
 
 warning: Midiex.filter_port_name_contains/3 is undefined or private
-  livebook/midiex_notebook.livemd#cell:toedrnbfplyqxocdq7hp7p7kom7ffqil:26: MyMidiServer.listen_to/1
+  livebook/midiex_notebook.livemd#cell:7rfguhfubcggnj6q6hoiiqg7lbqbjlab:26: MyMidiServer.listen_to/1
 
 ```
 
@@ -427,7 +477,7 @@ INIT: []
 <!-- livebook:{"output":true} -->
 
 ```
-{:ok, #PID<0.262.0>}
+{:ok, #PID<0.264.0>}
 ```
 
 ```elixir
@@ -454,50 +504,34 @@ MyMidiServer.subscribe(pid)
 <!-- livebook:{"output":true} -->
 
 ```
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
 ```
 
 ```elixir
-Midiex.Backend.listen(Midiex.list_ports(:input) |> Enum.at(3))
+Midiex.Backend.listen(Midiex.list_ports(:input) |> Enum.at(1))
 ```
 
 <!-- livebook:{"output":true} -->
@@ -507,14 +541,14 @@ Midiex.Backend.listen(Midiex.list_ports(:input) |> Enum.at(3))
   %Midiex.MidiPort{
     direction: :input,
     name: "Arturia MicroFreak",
-    num: 2,
-    port_ref: #Reference<0.2378396349.566362136.36623>
+    num: 1,
+    port_ref: #Reference<0.522475107.1026162712.215863>
   },
   %Midiex.MidiPort{
     direction: :input,
     name: "KeyStep Pro",
-    num: 3,
-    port_ref: #Reference<0.2378396349.566362136.36635>
+    num: 2,
+    port_ref: #Reference<0.522475107.1026162712.215846>
   }
 ]
 ```
@@ -522,40 +556,96 @@ Midiex.Backend.listen(Midiex.list_ports(:input) |> Enum.at(3))
 <!-- livebook:{"output":true} -->
 
 ```
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
+FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 1}
+FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
 ```
 
 ```elixir
@@ -568,15 +658,15 @@ Midiex.Backend.get_subscribed_ports()
 [
   %Midiex.MidiPort{
     direction: :input,
-    name: "Arturia MicroFreak",
-    num: 2,
-    port_ref: #Reference<0.3580799270.3518365720.258883>
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.2084832073.4240834584.3914>
   },
   %Midiex.MidiPort{
     direction: :input,
-    name: "KeyStep Pro",
-    num: 3,
-    port_ref: #Reference<0.3580799270.3518365720.258895>
+    name: "My Virtual Connection",
+    num: 1,
+    port_ref: #Reference<0.2084832073.4240834584.3918>
   }
 ]
 ```
@@ -584,66 +674,12 @@ Midiex.Backend.get_subscribed_ports()
 <!-- livebook:{"output":true} -->
 
 ```
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
-FROM RUST: %{"port_name" => "Arturia MicroFreak", "port_num" => 2}
-FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 3}
+FROM RUST: %{"port_name" => "IAC Driver Bus 1", "port_num" => 0}
+FROM RUST: %{"port_name" => "My Virtual Connection", "port_num" => 1}
+FROM RUST: %{"port_name" => "IAC Driver Bus 1", "port_num" => 0}
+FROM RUST: %{"port_name" => "My Virtual Connection", "port_num" => 1}
+FROM RUST: %{"port_name" => "IAC Driver Bus 1", "port_num" => 0}
+FROM RUST: %{"port_name" => "My Virtual Connection", "port_num" => 1}
 ```
 
 ```elixir
