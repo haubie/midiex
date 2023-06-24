@@ -6,6 +6,7 @@ defmodule Midiex.Server do
 
   @impl true
   def init(state \\ %__MODULE__{}) do
+    schedule_poller(self())
     {:ok, state}
   end
 
@@ -29,7 +30,6 @@ defmodule Midiex.Server do
   defp check_and_action_midi_msgs(state) do
     state.listener_callback_fns
     |> Enum.each(fn {in_port, callback_fn} ->
-      IO.inspect "call listeners"
       Midiex.listen(in_port) |> maybe_callback(callback_fn)
     end)
 
