@@ -114,7 +114,11 @@ defmodule Midiex.Server do
   defp check_and_action_midi_msgs(state) do
     state.listener_callback_fns
     |> Enum.each(fn {in_port, callback_fn} ->
-      Midiex.listen(in_port) |> maybe_callback(callback_fn)
+      IO.inspect "Message loop"
+      IO.inspect in_port, label: "Checking for"
+      msg = Midiex.listen(in_port)
+      IO.inspect msg, label: "MSG"
+      maybe_callback(msg, callback_fn)
     end)
 
     state

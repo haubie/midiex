@@ -213,6 +213,12 @@ defmodule Midiex do
   """
   def create_virtual_output(name), do: Backend.create_virtual_output_conn(name)
 
+  @doc section: :connections
+  @doc """
+  Creates a virtual input connection.
+  """
+  def create_virtual_input(name), do: Backend.create_virtual_input_conn(name)
+
   # MIDI messaging functions
 
   @doc section: :messages
@@ -232,6 +238,8 @@ defmodule Midiex do
   def subscribe_to_port(input_port), do: Backend.subscribe_to_port(input_port)
 
   def listen(input_port), do: Backend.listen(input_port)
+  def listen_virtual_input(name), do: Backend.listen_virtual_input(name)
+
 
   # #######
   # HELPERS

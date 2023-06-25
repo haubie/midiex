@@ -396,12 +396,7 @@ fn unsubscribe_port(env: Env, midi_port: MidiPort) -> Result<Vec<MidiPort>, Erro
     Ok(GLOBAL_LISTEN_LIST.lock().unwrap().to_vec())
 }
 
-
-
-
-
-
-#[rustler::nif(schedule = "DirtyCpu")]
+#[rustler::nif]
 fn listen(env: Env, midi_port: MidiPort) -> Result<Vec<Binary>, Error> {
 
     let mut midi_msg = Arc::new(Mutex::new(Vec::new()));
@@ -452,6 +447,71 @@ fn listen(env: Env, midi_port: MidiPort) -> Result<Vec<Binary>, Error> {
     Ok(new_vec_of_bin_msgs)
 
 }
+
+
+
+
+#[rustler::nif]
+fn listen_virtual_input(env: Env, name: String) -> Result<Vec<Binary>, Error> {
+
+    let mut midi_msg = Arc::new(Mutex::new(Vec::new()));
+   
+    {
+        let mut midi_input = MidiInput::new("MIDIex").expect("Midi input"); 
+
+        // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
+        
+        let mut midi_msg = midi_msg.clone();
+        let conn_in = midi_input.create_virtual(&name, move |stamp, message, _| {
+            let mut midi_msg_clone = midi_msg.clone();
+            let mut vec_msg =  message.to_vec();
+
+            let mut bin_msg: OwnedBinary = OwnedBinary::new(message.len()).expect("Owned binary message created");
+            bin_msg.as_mut_slice().copy_from_slice(&vec_msg);
+
+            midi_msg_clone.lock().unwrap().push(bin_msg);
+        }, ());
+    }
+    sleep(Duration::from_millis(1));
+    
+
+    let mut midi_msg_lock =  midi_msg.lock().unwrap();
+    let new_vec_of_bin_msgs: Vec<Binary> = (midi_msg_lock
+                                        .drain(..)
+                                        .map(|owned_bin_msg| owned_bin_msg.release(env))
+                                        .collect::<Vec<Binary>>()).to_vec();
+
+    Ok(new_vec_of_bin_msgs)
+}
+
+
+#[rustler::nif]
+fn create_virtual_input_conn(name: String) -> Result<InConn, Error>{
+
+    let mut midi_output = MidiOutput::new("MIDIex").expect("Midi output");
+    let mut midi_input = MidiInput::new("MIDIex").expect("Midi input");
+    midi_input.ignore(Ignore::None);
+
+    let port_index = midi_input.port_count();
+
+    let conn_in = midi_input.create_virtual(&name, |stamp, message, _| {
+        // Nothing! Just want the connection
+    }, ());
+
+   
+
+    return Ok(
+        InConn {
+            conn_ref: ResourceArc::new(InConnRef::new(conn_in.expect("MidiInputConnection"))),
+            name: name,
+            port_num: port_index,
+        }
+    )
+
+}
+
+
+
 
 
 // #[rustler::nif]
@@ -873,6 +933,6 @@ fn on_load(env: Env, _info: Term) -> bool {
 
 rustler::init!(
     "Elixir.Midiex.Backend",
-    [test, count_ports, list_ports, connect, close_out_conn, send_msg, subscribe, create_virtual_output_conn, listen, get_subscribed_ports, clear_subscribed_ports, subscribe_to_port],
+    [test, count_ports, list_ports, connect, close_out_conn, send_msg, subscribe, create_virtual_output_conn, listen, listen_virtual_input, create_virtual_input_conn, get_subscribed_ports, clear_subscribed_ports, subscribe_to_port],
     load = on_load
 );

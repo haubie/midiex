@@ -1,4 +1,14 @@
 defmodule Midiex.Message do
+
+
+  # TO DO
+  #
+  # PolyphonicAftertouch(note_number, pressure)
+  # ChannelAftertouch(pressure)
+  # SysEx(manufacturer_id, data1, data2..., dataN)
+
+
+
   @moduledoc """
   Conveniences for creating MIDI messages.
 
@@ -412,14 +422,6 @@ defmodule Midiex.Message do
   end
 
 
-
-    # PolyphonicAftertouch(note_number, pressure)
-
-    # ChannelAftertouch(pressure)
-
-
-    # PitchWheel(lsbyte, msbyte)
-
   @doc """
   Bend the pitch of notes playing in a channel.
   Values below 0x2000 will decrease the pitch, and higher values will increase it.
@@ -429,8 +431,5 @@ defmodule Midiex.Message do
     <<msb::7, lsb::7>> = <<bend::14>>
     <<0xE::4, channel::4, lsb, msb>>
   end
-
-    # SysEx(manufacturer_id, data1, data2..., dataN)
-
 
 end
