@@ -427,7 +427,7 @@ fn listen(env: Env, midi_port: MidiPort) -> Result<Vec<Binary>, Error> {
                                 
             }, ());   
     
-            sleep(Duration::from_millis(1));
+            sleep(Duration::from_millis(5));
           
         };
 

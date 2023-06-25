@@ -114,10 +114,8 @@ defmodule Midiex.Server do
   defp check_and_action_midi_msgs(state) do
     state.listener_callback_fns
     |> Enum.each(fn {in_port, callback_fn} ->
-      IO.inspect "Message loop"
-      IO.inspect in_port, label: "Checking for"
       msg = Midiex.listen(in_port)
-      IO.inspect msg, label: "MSG"
+      # IO.inspect msg, label: "MSG"
       maybe_callback(msg, callback_fn)
     end)
 
@@ -128,8 +126,8 @@ defmodule Midiex.Server do
   defp maybe_callback(msg, callback_fn), do: callback_fn.(msg)
 
   defp schedule_poller(pid) do
-    # send self(), :poll
-    Process.send_after(pid, :poll, 3000)
+    send self(), :poll
+    # Process.send_after(pid, :poll, 500)
   end
 
 end
