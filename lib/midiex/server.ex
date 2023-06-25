@@ -23,31 +23,21 @@ defmodule Midiex.Server do
   end
 
   @impl true
+  def handle_cast(:remove_all, state) do
+    new_state = %__MODULE__{state | listener_callback_fns: []}
+    {:noreply, new_state}
+  end
+
+  @impl true
   def handle_call(:state, _from, state) do
     {:reply, state, state}
   end
-
-  defp check_and_action_midi_msgs(state) do
-    state.listener_callback_fns
-    |> Enum.each(fn {in_port, callback_fn} ->
-      Midiex.listen(in_port) |> maybe_callback(callback_fn)
-    end)
-
-    state
-  end
-  defp maybe_callback([], _callback_fn), do: nil
-  defp maybe_callback(msg, callback_fn), do: callback_fn.(msg)
 
   @impl true
   def handle_info(:poll, state) do
     state = check_and_action_midi_msgs(state)
     schedule_poller(self())
     {:noreply, state}
-  end
-
-  defp schedule_poller(pid) do
-    # send self(), :poll
-    Process.send_after(pid, :poll, 3000)
   end
 
   # ---
@@ -95,23 +85,47 @@ defmodule Midiex.Server do
   end
 
   @doc """
+  Stops listening to all input ports by removing callback hander(s) for it.
+  """
+  def remove_all(pid) do
+    GenServer.cast(pid, :remove_all)
+  end
+
+  @doc """
   Get the servers state, returns `%Midiex.Server{}` struct.
   """
   def get_state(pid) do
     GenServer.call(pid, :state)
   end
 
-  @doc """
-  Start the inport port listening for callback execution loop.
-  """
-  def poll(pid) do
-    schedule_poller(pid)
-  end
+  # @doc """
+  # Start the inport port listening for callback execution loop.
+  # """
+  # def poll(pid) do
+  #   schedule_poller(pid)
+  # end
 
   # ----------------
   # Helper functions
   # ----------------
 
   defp ports_equal?(port_one, port_two), do: (port_one.name == port_two.name) && (port_one.num == port_two.num)
+
+  defp check_and_action_midi_msgs(state) do
+    state.listener_callback_fns
+    |> Enum.each(fn {in_port, callback_fn} ->
+      Midiex.listen(in_port) |> maybe_callback(callback_fn)
+    end)
+
+    state
+  end
+
+  defp maybe_callback([], _callback_fn), do: nil
+  defp maybe_callback(msg, callback_fn), do: callback_fn.(msg)
+
+  defp schedule_poller(pid) do
+    # send self(), :poll
+    Process.send_after(pid, :poll, 3000)
+  end
 
 end

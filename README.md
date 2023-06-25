@@ -29,6 +29,11 @@ At it's most basic level, the core functions of Midiex are for:
 - **sending** or **receiving messages** to and from connections
 - **creating a virtual output connection** so your Elixir application appears as a MIDI device.
 
+## Feature support
+Not all midir features have been wraped and some features are backend specific:
+- **Virtual output connection**: currently on every platform but Windows
+- **Virtual input connection**: although midir supports virtual input connections, it's not currently supported in this library.
+
 ## MIDI messages
 MIDI messages are in binary format. They're usually in the format of one status byte followed by one or two data bytes.
 

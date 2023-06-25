@@ -351,12 +351,10 @@ defmodule Midiex.Message do
   @note_off <<0x8::4>>
 
   def note(num_note) when is_number(num_note), do: num_note
-
   def note(text_note) when is_binary(text_note) do
     {_, note} = Enum.find(@notes_string_list, fn {note, _midi_num} -> note == text_note end)
     note
   end
-
   def note(atom_note) when is_atom(atom_note) do
     {_, note} = Enum.find(@notes_atom_list, fn {note, _midi_num} -> note == atom_note end)
     note
@@ -368,30 +366,69 @@ defmodule Midiex.Message do
     <<@note_on, channel::4, note(note), velocity>>
   end
 
-  def note_off(note, opts \\ []) do
+  def note_off(note, opts \\ [])
+  def note_off(:all, opts) do
+    channel = Keyword.get(opts, :channel, 0)
+    change_control(123, channel: channel)
+  end
+  def note_off(note, opts) do
     velocity = Keyword.get(opts, :velocity, 127)
     channel = Keyword.get(opts, :channel, 0)
     <<@note_off, channel::4, note(note), velocity>>
   end
 
-    # def note_off_all(channel) do
-    #   # change_control(channel, 123)
-    # end
+  def change_control(control_number, opts \\ []) do
+    value = Keyword.get(opts, :value, 127)
+    channel = Keyword.get(opts, :channel, 0)
+    <<0xB::4, channel::4, control_number, value>>
+  end
+
+  def change_program(prog_num, opts \\ []) do
+    channel = Keyword.get(opts, :channel, 0)
+    <<0xC::4, channel::4, prog_num>>
+  end
+
+  def change_sound_bank(bank, opts \\ []) do
+    channel = Keyword.get(opts, :channel, 0)
+    <<msb::7, lsb::7>> = <<bank::14>>
+    msb_binary = change_control(0, value: msb, channel: channel)
+    lsb_binary = change_control(0x20, value: lsb, channel: channel)
+    <<msb_binary::binary, lsb_binary::binary>>
+  end
+
+  def volume(volume_num, opts \\ []) do
+    channel = Keyword.get(opts, :channel, 0)
+    change_control(7, value: volume_num, channel: channel)
+  end
+
+  @doc """
+  Change the panoramic (pan) of a channel.
+  This shifts the sound from the left or right ear in when playing stereo.
+  Values below 64 moves the sound to the left, and above to the right.
+  """
+  def pan(pan, opts \\ []) do
+    channel = Keyword.get(opts, :channel, 0)
+    change_control(10, value: pan, channel: channel)
+  end
 
 
-    # NoteOff(note_number, velocity)
-
-    # NoteOn(note_number, velocity)
 
     # PolyphonicAftertouch(note_number, pressure)
 
     # ChannelAftertouch(pressure)
 
-    # ControlChange(control_number, value)
-
-    # ProgramChange(program_number)
 
     # PitchWheel(lsbyte, msbyte)
+
+  @doc """
+  Bend the pitch of notes playing in a channel.
+  Values below 0x2000 will decrease the pitch, and higher values will increase it.
+  """
+  def pitch_bend(bend, opts \\ []) do
+    channel = Keyword.get(opts, :channel, 0)
+    <<msb::7, lsb::7>> = <<bend::14>>
+    <<0xE::4, channel::4, lsb, msb>>
+  end
 
     # SysEx(manufacturer_id, data1, data2..., dataN)
 
