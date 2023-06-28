@@ -236,6 +236,8 @@ defmodule Midiex do
   def subscribe(midi_port), do: Backend.subscribe(midi_port)
   @doc section: :messages
   def subscribe_to_port(input_port), do: Backend.subscribe_to_port(input_port)
+  def unsubscribe(:all), do: Backend.unsubscribe_all_ports()
+
 
   def listen(input_port), do: Backend.listen(input_port)
   def listen_virtual_input(name), do: Backend.listen_virtual_input(name)

@@ -61,6 +61,12 @@ lazy_static!{
     static ref GLOBAL_LISTEN_LIST: Mutex<Vec<MidiPort>> = Mutex::new(Vec::<MidiPort>::new());
 }
 
+
+lazy_static!{
+    static ref GLOBAL_LISTEN_LIST_INDEX: Mutex<Vec<usize>> = Mutex::new(Vec::new());
+}
+
+
 lazy_static!{
     static ref GLOBAL_CONN_LISTEN_LIST: Mutex<Vec<InConn>> = Mutex::new(Vec::<InConn>::new());
 }
@@ -161,11 +167,24 @@ pub fn test(env: Env, midi_port: MidiPort) -> Atom {
 
 
 
+#[rustler::nif]
+fn unsubscribe_all_ports(env: Env) -> Result<Vec<usize>, Error> {
+    *GLOBAL_LISTEN_LIST_INDEX.lock().unwrap() = Vec::new();
+    Ok(GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().to_vec())
+}
 
 
 
 #[rustler::nif]
 pub fn subscribe(env: Env, midi_port: MidiPort) -> Atom {    
+
+
+    // Add the midi_port index to to the listers Vec
+    GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().push(midi_port.num);
+    GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().sort();
+    GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().dedup();
+
+
     let pid = env.pid();
     
     // Our worker thread will need an environment.  We can't ship `env` to the
@@ -173,7 +192,6 @@ pub fn subscribe(env: Env, midi_port: MidiPort) -> Atom {
     // we return from this NIF. So we use an `OwnedEnv`.
     
     let mut owned_env = OwnedEnv::new();
-
 
     std::thread::spawn(move || {
 
@@ -189,131 +207,24 @@ pub fn subscribe(env: Env, midi_port: MidiPort) -> Atom {
             .connect(
                 &in_port,
                 "midir-read-input",
-                move |stamp, message, _| {
-                    // Do stuff
-                    println!("\n{}: {:?} (len = {})\r", stamp, message, message.len());
-
-                    // let mut vec_msg =  message.to_vec();
-                    // let mut bin_msg: OwnedBinary = OwnedBinary::new(message.len()).expect("Owned binary message created");
-                    // bin_msg.as_mut_slice().copy_from_slice(&vec_msg);
-
-                    // owned_env.send_and_clear(&pid, |my_env| { bin_msg.encode(my_env) });
-
-                    owned_env.send_and_clear(&pid, |my_env| { message.encode(my_env) });
-
+                move |_stamp, message, _| {
+                    owned_env.send_and_clear(&pid, |the_env| { message.encode(the_env) });
                     ()
                 },
                 (),
             )
             .unwrap();
 
-            // while !quit.load() {}
+        let mut still_listen = GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().contains(&midi_port.num);
+        println!("\nStill listen? {:?}", still_listen);
+        println!("\nPort num '{}'", &midi_port.num);
 
-            loop {}
+
+            // loop {}
+
+        while still_listen {}
 
         });
-    
-
-
-
-
-
-/* 
-
-    thread::spawn::<thread::ThreadSpawner, _>(env, move |thread_env| {
-
-        let mut msg = Arc::new(Mutex::new(Vec::new()));
-
-        let mut count = 0;
-       
-        
-        // infinite loop
-        loop {
-            
-            count = count + 1;
-            let mut input_ports = GLOBAL_LISTEN_LIST.lock().unwrap().to_vec();
-
-            // println!("\bPort count {}", input_ports.len());
-
-            for midi_port in input_ports { 
-                let mut midi_input = MidiInput::new("MIDIex input").expect("Midi input");
-                midi_input.ignore(Ignore::None);
-
-                // println!("\nPort name: {} (#{})", midi_port.name, midi_port.num);
-
-                let mut in_port = match &midi_port.port_ref.0 {
-                    MidiexMidiPortRef::Input(in_port) => in_port,
-                    MidiexMidiPortRef::Output(out_port) => panic!("Midi Input Port Error: Problem getting midi input port reference.")
-                };
-
-                let in_port_name = midi_input.port_name(in_port).unwrap();
-                println!("\nConnection open, reading input from '{}'", in_port_name);
-
-                let mut midi_msg_clone = msg.clone();
-                let _conn_in = midi_input.connect(&in_port, "MIDIex input port", move |stamp, message, _| {
-                    let mut inner_clone = midi_msg_clone.clone();
-
-
-                    println!("\nIn midi_input.connect message reciever");
-                    println!("\n{}: {:?} (len = {})\r", stamp, message, message.len());
-                    
-                    // midi_msg_clone.lock().unwrap().push(message.to_vec());
-
-
-                    /* NEW: */
-                    let mut vec_msg =  message.to_vec();
-
-                    let mut bin_msg_two: OwnedBinary = OwnedBinary::new(message.len()).expect("Owned binary message created");
-                    bin_msg_two.as_mut_slice().copy_from_slice(&vec_msg);
-            
-                    // midi_msg_clone.lock().unwrap().push(vec_msg);
-                    inner_clone.lock().unwrap().push(bin_msg_two);
-                    // inner_clone.lock().unwrap().push(vec_msg);
-
-                    
-                }, ()).unwrap();
-
-               
-                // println!("Length of vec: {:?}", size);
-
-               
-
-                owned_env.send_and_clear(&pid, |env| {
-
-                    let mut midi_msg_clone_two = msg.clone();
-                    
-                    let mut midi_msg_lock = midi_msg_clone_two.lock().unwrap();
-                    // let size = midi_msg_clone_two.len();
-
-                    let new_vec_of_bin_msgs: Vec<Binary> = (midi_msg_lock
-                        .drain(..)
-                        .map(|owned_bin_msg| owned_bin_msg.release(env))
-                        .collect::<Vec<Binary>>()).to_vec();
-
-                    let mut the_message = Term::map_new(env);
-                    let mut s = format!("You recieved this message from Rust.");
-                    the_message = the_message.map_put("port_name", midi_port.name).unwrap();
-                    the_message = the_message.map_put("port_num", midi_port.num).unwrap();
-                    the_message = the_message.map_put("message", new_vec_of_bin_msgs).unwrap();
-
-                    the_message
-                
-                });
-
-       
-                            
-
-               
-
-            }
-
-          
-            sleep(Duration::from_millis(50)); 
-        }
-        
-    });
-
-*/
 
     atoms::ok()
 }
@@ -1193,6 +1104,6 @@ fn on_load(env: Env, _info: Term) -> bool {
 
 rustler::init!(
     "Elixir.Midiex.Backend",
-    [test, count_ports, list_ports, connect, close_out_conn, send_msg, subscribe, create_virtual_output_conn, listen, listen_virtual_input, create_virtual_input_conn, get_subscribed_ports, clear_subscribed_ports, subscribe_to_port],
+    [test, count_ports, list_ports, connect, close_out_conn, send_msg, subscribe, unsubscribe_all_ports, create_virtual_output_conn, listen, listen_virtual_input, create_virtual_input_conn, get_subscribed_ports, clear_subscribed_ports, subscribe_to_port],
     load = on_load
 );
