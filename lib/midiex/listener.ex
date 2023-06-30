@@ -21,7 +21,7 @@ defmodule Midiex.Listener do
 
   ## Example
   ```
-  use Midiex.Listener
+  alias Midiex.Listener
 
   # Get the first MIDI input port
   input_port = Midiex.list_ports(:input) |> List.first()
@@ -30,10 +30,8 @@ defmodule Midiex.Listener do
   {:ok, listner} = Listener.start(port: input_port)
 
   # Create a handler than inspects the MIDI messages recieved:
-  my_msg_hander = fn (midi_msg) -> IO.inspect(midi_message, label: "Msg for port num \#{input_port.num}") end
+  my_msg_hander = fn (midi_msg) -> IO.inspect(midi_msg, label: "MIDI message") end
   Listener.add_handler(listener, &my_msg_hander/1)
-
-
   ```
   """
 

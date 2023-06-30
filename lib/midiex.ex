@@ -58,6 +58,11 @@ defmodule Midiex do
   """
   alias Midiex.Backend
 
+
+  defguard is_input_port(midi_port) when is_struct(midi_port, Midiex.MidiPort) and midi_port.direction == :input
+
+
+
   # ##########
   # NATIVE API
   # ##########
@@ -233,17 +238,102 @@ defmodule Midiex do
 
   @doc section: :messages
   # Midiex callback functions
-  def subscribe([midi_port | rest_ports]) do
+  @doc """
+  Low-level API for subscribing to one or more MIDI input ports.
+
+  The first parameter accepts either:
+  - A single `%Midiex.MidiPort{direction: :input}` struct
+  - A list of `%Midiex.MidiPort{direction: :input}` structs.
+
+  The calling process will recieve MIDI messages from the ports subscribed to. The source of the message will be undifferentiated, so consider using a different calling process for different inputs if they need to be handled separately.
+
+  ## Example
+  ```
+  # Get a list of MIDI input ports on the system
+  midi_input_ports = Midiex.ports(:input)
+
+  # This function will return a list of ports discovered, e.g.:
+  # [
+  #   %Midiex.MidiPort{
+  #     direction: :input,
+  #     name: "Arturia MicroFreak",
+  #     num: 1,
+  #     port_ref: #Reference<0.3704955737.2291269656.36760>
+  #   },
+  #   %Midiex.MidiPort{
+  #     direction: :input,
+  #     name: "KeyStep Pro",
+  #     num: 2,
+  #     port_ref: #Reference<0.3704955737.2291269656.36761>
+  #   },
+  #   %Midiex.MidiPort{
+  #     direction: :input,
+  #     name: "MiniFuse 2",
+  #     num: 3,
+  #     port_ref: #Reference<0.3704955737.2291269656.36762>
+  #   }
+  # ]
+
+  # Subscribe to the input ports. The current process will recieve MIDI messages. Returns `:ok` if successful.
+  Midiex.subscribe(midi_input_ports)
+  ```
+
+  You'll need to implement message recieving in your process.
+
+  ## Alternative: use a Listener process
+  As an alterantive you can use `Midiex.Listener` GenServer which subscribes to MIDI input ports and forwards any messages recieved to event handlers.
+
+  For the above example, if you wanted to inspect messages coming in on those ports, you could:
+  ```
+  alias Midiex.Listener
+
+  # Start a lister for this MIDI input port
+  {:ok, listner} = Listener.start(port: midi_input_ports)
+
+  # Create a handler than inspects the MIDI messages recieved:
+  Listener.add_handler(listener, fn (midi_msg) -> IO.inspect(midi_msg, label: "Msg recieved") end)
+
+  # Any messages recieved will be inspected on the console, e.g.:
+  # Msg recieved: [130, 84, 0]
+  # Msg recieved: [146, 60, 43]
+  # Msg recieved: [130, 60, 0]
+  # Msg recieved: [146, 72, 34]
+  # Msg recieved: [130, 72, 0]
+  # Msg recieved: [146, 76, 40]
+  # Msg recieved: [130, 76, 0]
+  # Msg recieved: [146, 64, 47]
+  # Msg recieved: [130, 64, 0]
+  # Msg recieved: [146, 84, 30]
+  ```
+  """
+  def subscribe([midi_port | rest_ports]) when is_input_port(midi_port) do
     if rest_ports != [], do: subscribe(rest_ports)
     IO.inspect midi_port.name, label: "Subscribed to"
     subscribe(midi_port)
   end
-  def subscribe(midi_port), do: Backend.subscribe(midi_port)
+  def subscribe(midi_port) when is_input_port(midi_port), do: Backend.subscribe(midi_port)
   @doc section: :messages
-  def subscribe_to_port(input_port), do: Backend.subscribe_to_port(input_port)
+  @doc """
+  Unsubscribes from recieving MIDI messages from an input port connection.
+
+  Messages stop as this function releases the OS thread created for listening to the input conection.
+
+  This function takes as the first parameter _one_ of the following:
+  - Port struct: A MIDI input port `%Midiex.MidiPort{direction: :input}` struct
+  - List: A list of MIDI input port `%Midiex.MidiPort{direction: :input}` structs
+  - Number: A MIDI input port number (this is the integer in the `:num` key within the `%Midiex.MidiPort{}`)
+  - Atom: The atom `:all`, which will unsubscribe from all MIDI input ports subscribed to.
+  """
   def unsubscribe(:all), do: Backend.unsubscribe_all_ports()
   def unsubscribe(index) when is_integer(index), do: Backend.unsubscribe_port_by_index(index)
-  def get_subscribed_ports(), do: Backend.get_subscribed_ports()
+  def unsubscribe(midi_port) when is_input_port(midi_port), do: Backend.unsubscribe_port(midi_port)
+  def unsubscribe([midi_port | rest_ports]) when is_input_port(midi_port) do
+    if rest_ports != [], do: unsubscribe(rest_ports)
+    IO.inspect midi_port.name, label: "Unsubribe from"
+    unsubscribe(midi_port)
+  end
+
+  def subscribed_ports(), do: Backend.get_subscribed_ports()
 
   def listen(input_port), do: Backend.listen(input_port)
   def listen_virtual_input(name), do: Backend.listen_virtual_input(name)

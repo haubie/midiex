@@ -62,9 +62,9 @@ lazy_static!{
 }
 
 
-lazy_static!{
-    static ref GLOBAL_LISTEN_LIST_INDEX: Mutex<Vec<usize>> = Mutex::new(Vec::new());
-}
+// lazy_static!{
+//     static ref GLOBAL_LISTEN_LIST_INDEX: Mutex<Vec<usize>> = Mutex::new(Vec::new());
+// }
 
 
 lazy_static!{
@@ -165,31 +165,49 @@ pub fn test(env: Env, midi_port: MidiPort) -> Atom {
     atoms::ok()
 }   
 
+
 #[rustler::nif]
-fn unsubscribe_all_ports(env: Env) -> Result<Vec<usize>, Error> {
-    GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().clear();
-    Ok(GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().to_vec())
+fn unsubscribe_all_ports(env: Env) -> Result<Vec<MidiPort>, Error> {
+    // *GLOBAL_LISTEN_LIST.lock().unwrap() = Vec::new();
+    GLOBAL_LISTEN_LIST.lock().unwrap().clear();
+    Ok(GLOBAL_LISTEN_LIST.lock().unwrap().to_vec())
+}
+
+// #[rustler::nif]
+// fn unsubscribe_all_ports(env: Env) -> Result<Vec<usize>, Error> {
+//     GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().clear();
+//     Ok(GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().to_vec())
+// }
+
+#[rustler::nif]
+fn unsubscribe_port(env: Env, midi_port: MidiPort) -> Result<Vec<MidiPort>, Error> {
+    GLOBAL_LISTEN_LIST.lock().unwrap().retain(|x| *x != midi_port);
+    Ok(GLOBAL_LISTEN_LIST.lock().unwrap().to_vec())
 }
 
 #[rustler::nif]
-fn unsubscribe_port_by_index(env: Env, port_num: usize) -> Result<Vec<usize>, Error> {  
-    GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().retain(|x| *x != port_num);
-    Ok(GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().to_vec())
+fn unsubscribe_port_by_index(env: Env, port_num: usize) -> Result<Vec<MidiPort>, Error> {  
+    GLOBAL_LISTEN_LIST.lock().unwrap().retain(|x| x.num != port_num);
+    Ok(GLOBAL_LISTEN_LIST.lock().unwrap().to_vec())
 }
 
 #[rustler::nif]
-fn get_subscribed_ports(env: Env) -> Result<Vec<usize>, Error> {
-    Ok(GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().to_vec())
+fn get_subscribed_ports(env: Env) -> Result<Vec<MidiPort>, Error> {
+    Ok(GLOBAL_LISTEN_LIST.lock().unwrap().to_vec()) 
 }
 
 #[rustler::nif]
 pub fn subscribe(env: Env, midi_port: MidiPort) -> Atom {    
 
     // Add the midi_port index to to the listers Vec
-    GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().push(midi_port.num);
-    GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().sort();
-    GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().dedup();
+    // GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().push(midi_port.num);
+    // GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().sort();
+    // GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().dedup();
 
+    // Add the whole port struct to a listeners Vec
+    GLOBAL_LISTEN_LIST.lock().unwrap().push(midi_port.clone());
+    GLOBAL_LISTEN_LIST.lock().unwrap().sort_unstable_by_key(|midi_port| (midi_port.num));
+    GLOBAL_LISTEN_LIST.lock().unwrap().dedup();
 
     let pid = env.pid();
     
@@ -223,8 +241,17 @@ pub fn subscribe(env: Env, midi_port: MidiPort) -> Atom {
 
         let mut still_listen = true;
         while still_listen {
-            let mut still_listen = GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().contains(&midi_port.num);
-            // println!("\nStill listen? {:?}", still_listen);
+            // let mut still_listen = GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().contains(&midi_port.num);
+            let mut still_listen = GLOBAL_LISTEN_LIST.lock().unwrap().contains(&midi_port);
+
+
+            // impl PartialEq for Test {
+            //     fn eq(&self, other: &Test) -> bool {
+            //         self.val1 == other.val1 && self.val2 == other.val2
+            //     }
+            // }
+            // println!("\nStill listen one? {:?}", still_listen);
+            // println!("\nStill listen two? {:?}", still_listen_two);
             // println!("\nPort num '{}'", &midi_port.num);
         }
 
@@ -440,7 +467,9 @@ fn close_out_conn(midi_out_conn: OutConn) -> Atom {
 }
 
 
+// THIS ISN'T NEEDED ANYMORE - fn subscribe/1 is used instead.
 
+/*
 #[rustler::nif]
 fn subscribe_to_port(env: Env, midi_port: MidiPort) -> Result<Vec<MidiPort>, Error> {
     GLOBAL_LISTEN_LIST.lock().unwrap().push(midi_port);
@@ -450,6 +479,8 @@ fn subscribe_to_port(env: Env, midi_port: MidiPort) -> Result<Vec<MidiPort>, Err
     Ok(GLOBAL_LISTEN_LIST.lock().unwrap().to_vec())
 }
 
+*/
+
 // fn listen(env: Env, midi_in_conn: InConn) -> Result<Vec<InConn>, Error> {
 //     GLOBAL_CONN_LISTEN_LIST.lock().unwrap().push(midi_in_conn);
 //     // GLOBAL_CONN_LISTEN_LIST.lock().unwrap().sort_unstable_by_key(|in_conn| (in_conn.num));
@@ -458,17 +489,6 @@ fn subscribe_to_port(env: Env, midi_port: MidiPort) -> Result<Vec<MidiPort>, Err
 //     Ok(GLOBAL_CONN_LISTEN_LIST.lock().unwrap().to_vec())
 // }
 
-#[rustler::nif]
-fn clear_subscribed_ports(env: Env) -> Result<Vec<MidiPort>, Error> {
-    *GLOBAL_LISTEN_LIST.lock().unwrap() = Vec::new();
-    Ok(GLOBAL_LISTEN_LIST.lock().unwrap().to_vec())
-}
-
-#[rustler::nif]
-fn unsubscribe_port(env: Env, midi_port: MidiPort) -> Result<Vec<MidiPort>, Error> {
-    *GLOBAL_LISTEN_LIST.lock().unwrap() = Vec::new();
-    Ok(GLOBAL_LISTEN_LIST.lock().unwrap().to_vec())
-}
 
 #[rustler::nif(schedule="DirtyIo")]
 fn listen(env: Env, midi_port: MidiPort) -> Result<Vec<Binary>, Error> {
@@ -944,22 +964,13 @@ pub struct MidiPort {
     port_ref: ResourceArc<FlexiPort>,
 }
 
-
-
-// impl Hash for MidiPort {
-//     fn hash<H: Hasher>(&self, state: &mut H) {
-//         self.name.hash(state);
-//         self.num.hash(state);
-//     }
-// }
-
 impl PartialEq for MidiPort {
     fn eq(&self, other: &Self) -> bool {
-        println!("MidiPort Eq: {}, {}", (self.name), (self.name == other.name));
+        // println!("MidiPort Eq: {}, {}", (self.name), (self.name == other.name));
         (self.name == other.name) && (self.direction == other.direction) && (self.num == other.num)
     }
 }
-// impl Eq for MidiPort {}
+
 
 
 
@@ -1103,6 +1114,6 @@ fn on_load(env: Env, _info: Term) -> bool {
 
 rustler::init!(
     "Elixir.Midiex.Backend",
-    [test, count_ports, list_ports, connect, close_out_conn, send_msg, subscribe, unsubscribe_all_ports, unsubscribe_port_by_index, create_virtual_output_conn, listen, listen_virtual_input, create_virtual_input_conn, get_subscribed_ports, clear_subscribed_ports, subscribe_to_port],
+    [test, count_ports, list_ports, connect, close_out_conn, send_msg, subscribe, unsubscribe_all_ports, unsubscribe_port, unsubscribe_port_by_index, create_virtual_output_conn, listen, listen_virtual_input, create_virtual_input_conn, get_subscribed_ports],
     load = on_load
 );

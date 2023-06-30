@@ -27,13 +27,13 @@ defmodule Midiex.Backend do
   # Midiex callback functions
   def subscribe(_midi_port), do: err()
   def unsubscribe_all_ports(), do: err()
-  def unsubscribe_port_by_index(_index), do: err()
+  def unsubscribe_port(_midi_port), do: err()
+  def unsubscribe_port_by_index(_port_index), do: err()
 
   def listen(_input_port), do: err()
   def listen_virtual_input(_name \\ "MIDIex-virtual-input"), do: err()
-  def subscribe_to_port(_input_port), do: err()
   def get_subscribed_ports(), do: err()
-  def clear_subscribed_ports(), do: err()
+
 
   defp err(), do: :erlang.nif_error(:nif_not_loaded)
 
