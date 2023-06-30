@@ -165,19 +165,25 @@ pub fn test(env: Env, midi_port: MidiPort) -> Atom {
     atoms::ok()
 }   
 
-
-
 #[rustler::nif]
 fn unsubscribe_all_ports(env: Env) -> Result<Vec<usize>, Error> {
-    *GLOBAL_LISTEN_LIST_INDEX.lock().unwrap() = Vec::new();
+    GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().clear();
     Ok(GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().to_vec())
 }
 
+#[rustler::nif]
+fn unsubscribe_port_by_index(env: Env, port_num: usize) -> Result<Vec<usize>, Error> {  
+    GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().retain(|x| *x != port_num);
+    Ok(GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().to_vec())
+}
 
+#[rustler::nif]
+fn get_subscribed_ports(env: Env) -> Result<Vec<usize>, Error> {
+    Ok(GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().to_vec())
+}
 
 #[rustler::nif]
 pub fn subscribe(env: Env, midi_port: MidiPort) -> Atom {    
-
 
     // Add the midi_port index to to the listers Vec
     GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().push(midi_port.num);
@@ -215,16 +221,14 @@ pub fn subscribe(env: Env, midi_port: MidiPort) -> Atom {
             )
             .unwrap();
 
-        let mut still_listen = GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().contains(&midi_port.num);
-        println!("\nStill listen? {:?}", still_listen);
-        println!("\nPort num '{}'", &midi_port.num);
+        let mut still_listen = true;
+        while still_listen {
+            let mut still_listen = GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().contains(&midi_port.num);
+            // println!("\nStill listen? {:?}", still_listen);
+            // println!("\nPort num '{}'", &midi_port.num);
+        }
 
-
-            // loop {}
-
-        while still_listen {}
-
-        });
+    });
 
     atoms::ok()
 }
@@ -453,11 +457,6 @@ fn subscribe_to_port(env: Env, midi_port: MidiPort) -> Result<Vec<MidiPort>, Err
 
 //     Ok(GLOBAL_CONN_LISTEN_LIST.lock().unwrap().to_vec())
 // }
-
-#[rustler::nif]
-fn get_subscribed_ports(env: Env) -> Result<Vec<MidiPort>, Error> {
-    Ok(GLOBAL_LISTEN_LIST.lock().unwrap().to_vec())
-}
 
 #[rustler::nif]
 fn clear_subscribed_ports(env: Env) -> Result<Vec<MidiPort>, Error> {
@@ -1104,6 +1103,6 @@ fn on_load(env: Env, _info: Term) -> bool {
 
 rustler::init!(
     "Elixir.Midiex.Backend",
-    [test, count_ports, list_ports, connect, close_out_conn, send_msg, subscribe, unsubscribe_all_ports, create_virtual_output_conn, listen, listen_virtual_input, create_virtual_input_conn, get_subscribed_ports, clear_subscribed_ports, subscribe_to_port],
+    [test, count_ports, list_ports, connect, close_out_conn, send_msg, subscribe, unsubscribe_all_ports, unsubscribe_port_by_index, create_virtual_output_conn, listen, listen_virtual_input, create_virtual_input_conn, get_subscribed_ports, clear_subscribed_ports, subscribe_to_port],
     load = on_load
 );

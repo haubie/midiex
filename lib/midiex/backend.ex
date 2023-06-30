@@ -27,6 +27,7 @@ defmodule Midiex.Backend do
   # Midiex callback functions
   def subscribe(_midi_port), do: err()
   def unsubscribe_all_ports(), do: err()
+  def unsubscribe_port_by_index(_index), do: err()
 
   def listen(_input_port), do: err()
   def listen_virtual_input(_name \\ "MIDIex-virtual-input"), do: err()

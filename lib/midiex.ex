@@ -237,7 +237,8 @@ defmodule Midiex do
   @doc section: :messages
   def subscribe_to_port(input_port), do: Backend.subscribe_to_port(input_port)
   def unsubscribe(:all), do: Backend.unsubscribe_all_ports()
-
+  def unsubscribe(index) when is_integer(index), do: Backend.unsubscribe_port_by_index(index)
+  def get_subscribed_ports(), do: Backend.get_subscribed_ports()
 
   def listen(input_port), do: Backend.listen(input_port)
   def listen_virtual_input(name), do: Backend.listen_virtual_input(name)
