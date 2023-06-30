@@ -61,6 +61,11 @@ lazy_static!{
     static ref GLOBAL_LISTEN_LIST: Mutex<Vec<MidiPort>> = Mutex::new(Vec::<MidiPort>::new());
 }
 
+lazy_static!{
+    static ref GLOBAL_VIRTUAL_LISTEN_LIST: Mutex<Vec<String>> = Mutex::new(Vec::<String>::new());
+}
+
+
 
 // lazy_static!{
 //     static ref GLOBAL_LISTEN_LIST_INDEX: Mutex<Vec<usize>> = Mutex::new(Vec::new());
@@ -198,22 +203,12 @@ fn get_subscribed_ports(env: Env) -> Result<Vec<MidiPort>, Error> {
 
 #[rustler::nif]
 pub fn subscribe(env: Env, midi_port: MidiPort) -> Atom {    
-
-    // Add the midi_port index to to the listers Vec
-    // GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().push(midi_port.num);
-    // GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().sort();
-    // GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().dedup();
-
     // Add the whole port struct to a listeners Vec
     GLOBAL_LISTEN_LIST.lock().unwrap().push(midi_port.clone());
     GLOBAL_LISTEN_LIST.lock().unwrap().sort_unstable_by_key(|midi_port| (midi_port.num));
     GLOBAL_LISTEN_LIST.lock().unwrap().dedup();
 
     let pid = env.pid();
-    
-    // Our worker thread will need an environment.  We can't ship `env` to the
-    // other thread, because the Erlang VM is going to tear it down as soon as
-    // we return from this NIF. So we use an `OwnedEnv`.
     
     let mut owned_env = OwnedEnv::new();
 
@@ -241,210 +236,13 @@ pub fn subscribe(env: Env, midi_port: MidiPort) -> Atom {
 
         let mut still_listen = true;
         while still_listen {
-            // let mut still_listen = GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().contains(&midi_port.num);
             let mut still_listen = GLOBAL_LISTEN_LIST.lock().unwrap().contains(&midi_port);
-
-
-            // impl PartialEq for Test {
-            //     fn eq(&self, other: &Test) -> bool {
-            //         self.val1 == other.val1 && self.val2 == other.val2
-            //     }
-            // }
-            // println!("\nStill listen one? {:?}", still_listen);
-            // println!("\nStill listen two? {:?}", still_listen_two);
-            // println!("\nPort num '{}'", &midi_port.num);
         }
 
     });
 
     atoms::ok()
 }
-
-
-
-
-
-// #[rustler::nif]
-pub fn subscribe_original(env: Env) -> Atom {    
-    let pid = env.pid();
-    
-    // Our worker thread will need an environment.  We can't ship `env` to the
-    // other thread, because the Erlang VM is going to tear it down as soon as
-    // we return from this NIF. So we use an `OwnedEnv`.
-    
-    let mut owned_env = OwnedEnv::new();
-
-
-    thread::spawn::<thread::ThreadSpawner, _>(env, move |thread_env| {
-
-        let mut msg = Arc::new(Mutex::new(Vec::new()));
-
-        let mut count = 0;
-       
-        
-        // infinite loop
-        loop {
-            
-            count = count + 1;
-            let mut input_ports = GLOBAL_LISTEN_LIST.lock().unwrap().to_vec();
-
-            // println!("\bPort count {}", input_ports.len());
-
-            for midi_port in input_ports { 
-                let mut midi_input = MidiInput::new("MIDIex input").expect("Midi input");
-                midi_input.ignore(Ignore::None);
-
-                // println!("\nPort name: {} (#{})", midi_port.name, midi_port.num);
-
-                let mut in_port = match &midi_port.port_ref.0 {
-                    MidiexMidiPortRef::Input(in_port) => in_port,
-                    MidiexMidiPortRef::Output(out_port) => panic!("Midi Input Port Error: Problem getting midi input port reference.")
-                };
-
-                let in_port_name = midi_input.port_name(in_port).unwrap();
-                println!("\nConnection open, reading input from '{}'", in_port_name);
-
-                let mut midi_msg_clone = msg.clone();
-                let _conn_in = midi_input.connect(&in_port, "MIDIex input port", move |stamp, message, _| {
-                    let mut inner_clone = midi_msg_clone.clone();
-
-
-                    println!("\nIn midi_input.connect message reciever");
-                    println!("\n{}: {:?} (len = {})\r", stamp, message, message.len());
-                    
-                    // midi_msg_clone.lock().unwrap().push(message.to_vec());
-
-
-                    /* NEW: */
-                    let mut vec_msg =  message.to_vec();
-
-                    let mut bin_msg_two: OwnedBinary = OwnedBinary::new(message.len()).expect("Owned binary message created");
-                    bin_msg_two.as_mut_slice().copy_from_slice(&vec_msg);
-            
-                    // midi_msg_clone.lock().unwrap().push(vec_msg);
-                    inner_clone.lock().unwrap().push(bin_msg_two);
-                    // inner_clone.lock().unwrap().push(vec_msg);
-
-                    
-                }, ()).unwrap();
-
-               
-                // println!("Length of vec: {:?}", size);
-
-               
-
-                owned_env.send_and_clear(&pid, |env| {
-
-                    let mut midi_msg_clone_two = msg.clone();
-                    
-                    let mut midi_msg_lock = midi_msg_clone_two.lock().unwrap();
-                    // let size = midi_msg_clone_two.len();
-
-                    let new_vec_of_bin_msgs: Vec<Binary> = (midi_msg_lock
-                        .drain(..)
-                        .map(|owned_bin_msg| owned_bin_msg.release(env))
-                        .collect::<Vec<Binary>>()).to_vec();
-
-                    let mut the_message = Term::map_new(env);
-                    let mut s = format!("You recieved this message from Rust.");
-                    the_message = the_message.map_put("port_name", midi_port.name).unwrap();
-                    the_message = the_message.map_put("port_num", midi_port.num).unwrap();
-                    the_message = the_message.map_put("message", new_vec_of_bin_msgs).unwrap();
-
-                    the_message
-                
-                });
-
-       
-                            
-
-               
-
-                // owned_env.send_and_clear(&pid, |env| {
-
-                //     let mut the_message = Term::map_new(env);
-                //     // let mut s = format!("You recieved this message {} from Rust for {}.", count, in_port.name);
-                //     the_message = the_message.map_put("port_name", in_port.name).unwrap();
-                //     the_message = the_message.map_put("port_num", in_port.num).unwrap();
-                //     // the_message = the_message.map_put("message", s).unwrap();
-
-                //     the_message
-                
-                // });
-
-            }
-
-            //     owned_env.send_and_clear(&pid, |env| {
-    
-                
-            //     }
-
-    
-            // });
-            sleep(Duration::from_millis(50)); 
-        }
-        
-    });
-
-
-    // Start the worker thread. This `move` closure takes ownership of the owned_env
-    // thread::spawn(move || {
-   
-    //     let mut count = 0;
-   
-    //     // infinite loop
-    //     loop {
-
-    //         owned_env.send_and_clear(&pid, |env| {
-    
-    //             let mut the_message = Term::map_new(env);
-
-    //             let mut s = format!("You recieved this message {count} from Rust.");
-    
-    //             the_message = the_message.map_put("message", s).unwrap();
-    
-    //             // env.send(&pid.clone(), the_message);
-
-    //             count += 1;
-    
-    //             // sleep(Duration::from_millis(3000));    
-                
-    //             the_message
-    
-    //         });
-    //     }
-    // });
-
-   
-    
-    // let mut the_message = Term::map_new(env);
-
-    // the_message = the_message.map_put("message", "You recieved this message from Rust.").unwrap();
-
-    // env.send(&pid.clone(), the_message);
-
-    // sleep(Duration::from_millis(1000));    
-
-    atoms::ok()
-}
-
-
-
-
-// #[rustler::nif]
-// pub fn subscribe(env: Env) -> Atom {    
-//     let pid = env.pid();
-    
-//     let mut the_message = Term::map_new(env);
-
-//     the_message = the_message.map_put("message", "You recieved this message from Rust.").unwrap();
-
-//     env.send(&pid.clone(), the_message);
-
-//     sleep(Duration::from_millis(1000));    
-
-//     atoms::ok()
-// }
 
 
 
@@ -468,28 +266,6 @@ fn close_out_conn(midi_out_conn: OutConn) -> Atom {
 
 
 // THIS ISN'T NEEDED ANYMORE - fn subscribe/1 is used instead.
-
-/*
-#[rustler::nif]
-fn subscribe_to_port(env: Env, midi_port: MidiPort) -> Result<Vec<MidiPort>, Error> {
-    GLOBAL_LISTEN_LIST.lock().unwrap().push(midi_port);
-    GLOBAL_LISTEN_LIST.lock().unwrap().sort_unstable_by_key(|midi_port| (midi_port.num));
-    GLOBAL_LISTEN_LIST.lock().unwrap().dedup();
-
-    Ok(GLOBAL_LISTEN_LIST.lock().unwrap().to_vec())
-}
-
-*/
-
-// fn listen(env: Env, midi_in_conn: InConn) -> Result<Vec<InConn>, Error> {
-//     GLOBAL_CONN_LISTEN_LIST.lock().unwrap().push(midi_in_conn);
-//     // GLOBAL_CONN_LISTEN_LIST.lock().unwrap().sort_unstable_by_key(|in_conn| (in_conn.num));
-//     // GLOBAL_CONN_LISTEN_LIST.lock().unwrap().dedup();
-
-//     Ok(GLOBAL_CONN_LISTEN_LIST.lock().unwrap().to_vec())
-// }
-
-
 #[rustler::nif(schedule="DirtyIo")]
 fn listen(env: Env, midi_port: MidiPort) -> Result<Vec<Binary>, Error> {
 
@@ -542,39 +318,79 @@ fn listen(env: Env, midi_port: MidiPort) -> Result<Vec<Binary>, Error> {
 
 }
 
-
+// This replaces all other create_virtual_input stuff
+// Probably rename to create_viritual_input
 #[rustler::nif]
-fn listen_virtual_input(env: Env, name: String) -> Result<Vec<Binary>, Error> {
+pub fn listen_virtual_input(env: Env, name: String) -> Atom {    
+    // Add the whole port struct to a listeners Vec
+    GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().push(name.clone());
+    GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().sort();
+    GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().dedup();
 
-    let mut midi_msg = Arc::new(Mutex::new(Vec::new()));
+    let pid = env.pid();
+    
+    let mut owned_env = OwnedEnv::new();
+
+    std::thread::spawn(move || {
+
+        let mut midi_in = MidiInput::new("MIDIex input").expect("Midi input");
+        midi_in.ignore(Ignore::None);
+
+        let _conn_in = midi_in
+            .create_virtual(
+                &name,
+                move |_stamp, message, _| {
+                    owned_env.send_and_clear(&pid, |the_env| { message.encode(the_env) });
+                    ()
+                },
+                (),
+            )
+            .unwrap();
+
+        let mut still_listen = true;
+        while still_listen {
+            let mut still_listen = GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().contains(&name);
+        }
+
+    });
+
+    atoms::ok()
+}
+
+
+
+// #[rustler::nif]
+// fn listen_virtual_input(env: Env, name: String) -> Result<Vec<Binary>, Error> {
+
+//     let mut midi_msg = Arc::new(Mutex::new(Vec::new()));
    
-    {
-        let mut midi_input = MidiInput::new("MIDIex").expect("Midi input"); 
+//     {
+//         let mut midi_input = MidiInput::new("MIDIex").expect("Midi input"); 
 
-        // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
+//         // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
         
-        let mut midi_msg = midi_msg.clone();
-        let conn_in = midi_input.create_virtual(&name, move |stamp, message, _| {
-            let mut midi_msg_clone = midi_msg.clone();
-            let mut vec_msg =  message.to_vec();
+//         let mut midi_msg = midi_msg.clone();
+//         let conn_in = midi_input.create_virtual(&name, move |stamp, message, _| {
+//             let mut midi_msg_clone = midi_msg.clone();
+//             let mut vec_msg =  message.to_vec();
 
-            let mut bin_msg: OwnedBinary = OwnedBinary::new(message.len()).expect("Owned binary message created");
-            bin_msg.as_mut_slice().copy_from_slice(&vec_msg);
+//             let mut bin_msg: OwnedBinary = OwnedBinary::new(message.len()).expect("Owned binary message created");
+//             bin_msg.as_mut_slice().copy_from_slice(&vec_msg);
 
-            midi_msg_clone.lock().unwrap().push(bin_msg);
-        }, ()).unwrap();
-    }
-    sleep(Duration::from_millis(25));
+//             midi_msg_clone.lock().unwrap().push(bin_msg);
+//         }, ()).unwrap();
+//     }
+//     sleep(Duration::from_millis(25));
     
 
-    let mut midi_msg_lock =  midi_msg.lock().unwrap();
-    let new_vec_of_bin_msgs: Vec<Binary> = (midi_msg_lock
-                                        .drain(..)
-                                        .map(|owned_bin_msg| owned_bin_msg.release(env))
-                                        .collect::<Vec<Binary>>()).to_vec();
+//     let mut midi_msg_lock =  midi_msg.lock().unwrap();
+//     let new_vec_of_bin_msgs: Vec<Binary> = (midi_msg_lock
+//                                         .drain(..)
+//                                         .map(|owned_bin_msg| owned_bin_msg.release(env))
+//                                         .collect::<Vec<Binary>>()).to_vec();
 
-    Ok(new_vec_of_bin_msgs)
-}
+//     Ok(new_vec_of_bin_msgs)
+// }
 
 
 
@@ -617,7 +433,7 @@ fn listen_virtual_input(env: Env, name: String) -> Result<Vec<Binary>, Error> {
 
 #[rustler::nif(schedule = "DirtyCpu")]
 fn create_virtual_input_conn(env: Env, name: String) -> Atom{
-
+    
     let pid = env.pid();
     
     // Our worker thread will need an environment.  We can't ship `env` to the
@@ -644,6 +460,7 @@ fn create_virtual_input_conn(env: Env, name: String) -> Atom{
                 midi_input.ignore(Ignore::None);
 
                 let mut midi_msg_clone = msg.clone();
+
                 let _conn_in = midi_input.create_virtual(&name, move |stamp, message, _| {
 
                     let mut inner_clone = midi_msg_clone.clone();

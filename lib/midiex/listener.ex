@@ -55,7 +55,8 @@ defmodule Midiex.Listener do
 
   @impl true
   def handle_cast({:add_handler, handler_fn}, state) do
-    new_state = %__MODULE__{state | callback: [handler_fn] ++ state.callback}
+    handler_fn = if is_list(handler_fn), do: handler_fn, else: [handler_fn]
+    new_state = %__MODULE__{state | callback: handler_fn ++ state.callback}
     {:noreply, new_state}
   end
 
@@ -141,13 +142,38 @@ defmodule Midiex.Listener do
 
   @doc """
   Add a callback function which will be called for an inport port.
+
+  A single callback function or multiple callback functions can be provided in a list.
+
+  ## Example
+  ```
+  # Start your Listener process
+  {:ok, listener} = Listener.start(port: input_port)
+
+  # Add a single handler
+  Listener.add_handler(listener, fn msg -> IO.inspect msg, label: "Inspecting msg" end)
+
+  # Add multiple handlers in a list
+  Listener.add_handler(
+    listener,
+    [
+      fn msg -> IO.inspect msg, label: "Msg handler 1" end,
+      fn msg -> IO.inspect msg, label: "Msg handler 1" end,
+    ]
+  )
+
+  # If you've defined your hander function in a module function, pass it the usual way:
+  Listener.add_handler(listener, &MyModule.function_name/1)
+  ```
   """
   def add_handler(pid, handler_fn) do
     GenServer.cast(pid, {:add_handler, handler_fn})
   end
 
   @doc """
-  Stops listening to the MIDI input port by removing callback hander(s) for it.
+  Stops listening to the MIDI input port by unsubscribing to it.
+
+  Note that this stops the Rust OS thread from sending messages from that port. If other Elixir processes have also subscribed to that port, they will also stop recieving messages.
   """
   def remove(pid, midi_input_port) do
     GenServer.cast(pid, {:remove, midi_input_port})
