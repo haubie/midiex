@@ -65,12 +65,12 @@ defmodule Midiex do
   # MIDI port functions
 
   @doc section: :ports
-  @spec list_ports :: list
+  @spec ports :: list
   @doc """
   Lists MIDI ports availabile on the system.
 
   ```
-  Midiex.list_ports()
+  Midiex.ports()
 
   # Returns a list of input or output ports:
 
@@ -90,10 +90,10 @@ defmodule Midiex do
   # ]
   ```
   """
-  def list_ports(), do: Backend.list_ports()
+  def ports(), do: Backend.list_ports()
 
   @doc section: :ports
-  @spec list_ports(:input | :output) :: list
+  @spec ports(:input | :output) :: list
   @doc """
   List MIDI ports matching the specified direction (e.g. input or output)
 
@@ -102,7 +102,7 @@ defmodule Midiex do
   - :output - lists output ports only.
 
   ```
-  Midiex.list_ports(:input)
+  Midiex.ports(:input)
 
   # Returns a list of input or output MIDI ports:
 
@@ -123,27 +123,27 @@ defmodule Midiex do
   ```
   """
 
-  def list_ports(direction) when is_atom(direction), do: filter_port_direction(list_ports(), direction)
+  def ports(direction) when is_atom(direction), do: filter_port_direction(ports(), direction)
 
   @doc section: :ports
-  @spec list_ports(String.t(), (:input | :output) | nil) :: list
+  @spec ports(String.t(), (:input | :output) | nil) :: list
   @doc """
   Lists MIDI ports containing the name. Optionally takes a direction (:input or :output) can be given.
 
   Examples:
   ```
   # List ports with the name 'Arturia'
-  Midiex.list_ports("Arturia")
+  Midiex.ports("Arturia")
 
   # List input ports with the name 'Arturia'
-  Midiex.list_ports("Arturia", :input)
+  Midiex.ports("Arturia", :input)
 
   # List output ports with the name 'Arturia'
-  Midiex.list_ports("Arturia", :output)
+  Midiex.ports("Arturia", :output)
   ```
   """
-  def list_ports(name, direction \\ nil) when is_binary(name) do
-    filter_port_name_contains(list_ports(), name, direction: direction)
+  def ports(name, direction \\ nil) when is_binary(name) do
+    filter_port_name_contains(ports(), name, direction: direction)
   end
 
   @doc section: :ports
@@ -233,6 +233,11 @@ defmodule Midiex do
 
   @doc section: :messages
   # Midiex callback functions
+  def subscribe([midi_port | rest_ports]) do
+    if rest_ports != [], do: subscribe(rest_ports)
+    IO.inspect midi_port.name, label: "Subscribed to"
+    subscribe(midi_port)
+  end
   def subscribe(midi_port), do: Backend.subscribe(midi_port)
   @doc section: :messages
   def subscribe_to_port(input_port), do: Backend.subscribe_to_port(input_port)
