@@ -37,7 +37,7 @@ defmodule Midiex.Listener do
 
   use GenServer
 
-  defstruct port: nil, callback: nil
+  defstruct port: [], callback: []
 
   @impl true
   def init(state \\ %__MODULE__{}) do
@@ -48,7 +48,8 @@ defmodule Midiex.Listener do
   @impl true
   def handle_cast({:subscribe, midi_input_port}, state) do
     Midiex.subscribe(midi_input_port)
-    new_state = %__MODULE__{state | port: [midi_input_port] ++ []}
+    midi_input_port = if is_list(midi_input_port), do: midi_input_port, else: [midi_input_port]
+    new_state = %__MODULE__{state | port: midi_input_port ++ []}
     {:noreply, new_state}
   end
 
@@ -59,7 +60,16 @@ defmodule Midiex.Listener do
   end
 
   @impl true
+  def handle_cast({:remove, midi_input_port}, state) do
+    Midiex.unsubscribe(midi_input_port)
+    port = Enum.reject(state.port, fn port -> ports_equal?(port, midi_input_port) end)
+    new_state = %__MODULE__{state | port: port}
+    {:noreply, new_state}
+  end
+
+  @impl true
   def handle_cast(:remove_all, state) do
+    Midiex.unsubscribe(state.callback)
     new_state = %__MODULE__{state | callback: []}
     {:noreply, new_state}
   end
@@ -73,6 +83,9 @@ defmodule Midiex.Listener do
   def handle_info(info, state) do
     IO.inspect info, label: "INFO MSG"
     # state = check_and_action_midi_msgs(state)
+    state.callback
+    |> Enum.each(fn callback_fn -> callback_fn.(info) end)
+
     {:noreply, state}
   end
 
@@ -89,19 +102,18 @@ defmodule Midiex.Listener do
   `listener_callback_fns` which holds a list of functions called when a message is recieved for an input port.
   """
   def new(opts \\ []) do
-
     port =
       case Keyword.get(opts, :port) do
         ports when is_list(ports) -> ports
         port when is_struct(port) -> [port]
-        _ -> nil
+        _ -> []
       end
 
     callback =
       case Keyword.get(opts, :callback) do
         callbacks when is_list(callbacks) -> callbacks
         callback when is_function(callback) -> [callback]
-        _ -> nil
+        _ -> []
       end
 
     %__MODULE__{port: port, callback: callback}
@@ -135,14 +147,21 @@ defmodule Midiex.Listener do
   end
 
   @doc """
-  Stops listening to all input ports by removing callback hander(s) for it.
+  Stops listening to the MIDI input port by removing callback hander(s) for it.
+  """
+  def remove(pid, midi_input_port) do
+    GenServer.cast(pid, {:remove, midi_input_port})
+  end
+
+  @doc """
+  Stops listening to all input ports.
   """
   def remove_all(pid) do
     GenServer.cast(pid, :remove_all)
   end
 
   @doc """
-  Stops listening to all input ports by removing callback hander(s) for it.
+  Subscribe to one or more MIDI input ports.
   """
   def subscribe(pid, midi_input_port) do
     GenServer.cast(pid, {:subscribe, midi_input_port})

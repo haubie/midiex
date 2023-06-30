@@ -308,7 +308,6 @@ defmodule Midiex do
   """
   def subscribe([midi_port | rest_ports]) when is_input_port(midi_port) do
     if rest_ports != [], do: subscribe(rest_ports)
-    IO.inspect midi_port.name, label: "Subscribed to"
     subscribe(midi_port)
   end
   def subscribe(midi_port) when is_input_port(midi_port), do: Backend.subscribe(midi_port)
@@ -329,7 +328,6 @@ defmodule Midiex do
   def unsubscribe(midi_port) when is_input_port(midi_port), do: Backend.unsubscribe_port(midi_port)
   def unsubscribe([midi_port | rest_ports]) when is_input_port(midi_port) do
     if rest_ports != [], do: unsubscribe(rest_ports)
-    IO.inspect midi_port.name, label: "Unsubribe from"
     unsubscribe(midi_port)
   end
 
