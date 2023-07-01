@@ -47,7 +47,7 @@ For more information on MIDI messages, see the offical [MIDI Assocations Specifi
 ## Example
 ```
 # List MIDI ports
-Midiex.list_ports()
+Midiex.ports()
 
 # Create a virtual output connection
 piano = Midiex.create_virtual_output_conn("piano")

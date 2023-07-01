@@ -8,7 +8,7 @@ defmodule Midiex.Listener do
     A subscription can be established on the `start/1` or `subscribe/1` functions, e.g.:
     ```
     # Get the first MIDI input port
-    input_port = Midiex.list_ports(:input) |> List.first()
+    input_port = Midiex.ports(:input) |> List.first()
 
     # Start a lister for this MIDI input port
     {:ok, listner} =  Midiex.Listener.start(port: input_port)
@@ -24,7 +24,7 @@ defmodule Midiex.Listener do
   alias Midiex.Listener
 
   # Get the first MIDI input port
-  input_port = Midiex.list_ports(:input) |> List.first()
+  input_port = Midiex.ports(:input) |> List.first()
 
   # Start a lister for this MIDI input port
   {:ok, listner} = Listener.start(port: input_port)
@@ -61,7 +61,7 @@ defmodule Midiex.Listener do
   end
 
   @impl true
-  def handle_cast({:remove, midi_input_port}, state) do
+  def handle_cast({:unsubscribe, midi_input_port}, state) do
     Midiex.unsubscribe(midi_input_port)
     port = Enum.reject(state.port, fn port -> ports_equal?(port, midi_input_port) end)
     new_state = %__MODULE__{state | port: port}
@@ -69,7 +69,7 @@ defmodule Midiex.Listener do
   end
 
   @impl true
-  def handle_cast(:remove_all, state) do
+  def handle_cast(:unsubscribe_all, state) do
     Midiex.unsubscribe(state.callback)
     new_state = %__MODULE__{state | callback: []}
     {:noreply, new_state}
@@ -175,15 +175,15 @@ defmodule Midiex.Listener do
 
   Note that this stops the Rust OS thread from sending messages from that port. If other Elixir processes have also subscribed to that port, they will also stop recieving messages.
   """
-  def remove(pid, midi_input_port) do
-    GenServer.cast(pid, {:remove, midi_input_port})
+  def unsubscribe(pid, midi_input_port) do
+    GenServer.cast(pid, {:unsubscribe, midi_input_port})
   end
 
   @doc """
   Stops listening to all input ports.
   """
-  def remove_all(pid) do
-    GenServer.cast(pid, :remove_all)
+  def unsubscribe_all(pid) do
+    GenServer.cast(pid, :unsubscribe_all)
   end
 
   @doc """

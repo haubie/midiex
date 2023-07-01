@@ -17,7 +17,7 @@ defmodule Midiex.MidiPort do
   ## Example
 
   ```
-  Midiex.list_ports()
+  Midiex.ports()
 
   ```
   This will return MIDI ports available on your system, for example:

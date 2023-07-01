@@ -14,7 +14,7 @@ defmodule Midiex do
   ## Examples
   ```
   # List MIDI ports
-  Midiex.list_ports()
+  Midiex.ports()
 
   # Lists MIDI ports discoverable on your system
   # [
@@ -170,7 +170,7 @@ defmodule Midiex do
 
   ```
   # get the first available output port
-  out_port = Midiex.list_ports(:output) |> List.first()
+  out_port = Midiex.ports(:output) |> List.first()
   out_conn = Midiex.connect(out_port)
   ```
   """
@@ -186,11 +186,13 @@ defmodule Midiex do
   """
   def close(out_conn), do: Backend.close_out_conn(out_conn)
 
-  @doc section: :connections
+  @doc section: :virtual
   @doc """
   Creates a virtual output connection.
 
   This allows your Elixir application to be seen as a MIDI device.
+
+  Note this is only available on platforms that support virtual ports (currently every platform but Windows).
 
   ```
   # Create an output connection called "piano"
@@ -213,16 +215,48 @@ defmodule Midiex do
   >
   > That means other software or devices will discover it and use it as a an input as intented.
   >
-  > It also means it will show as `%Midiex.MidiPort{direction: :input}` when calling `Midiex.list_ports()`.
+  > It also means it will show as `%Midiex.MidiPort{direction: :input}` when calling `Midiex.ports()`.
 
   """
   def create_virtual_output(name), do: Backend.create_virtual_output_conn(name)
 
+  @doc section: :virtual
+  @doc """
+  Creates a virtual input port struct.
+
+  Takes a name as the first parameter.
+
+  Note this is only available on platforms that support virtual ports (currently every platform but Windows).
+
+  ## Example
+  ```
+  # Create a virtual MIDI input by giving it a name. MIDIex will also assign it an input port number (`num`).
+  my_virtual_in = Midiex.create_virtual_input("My Virtual Input")
+
+  # This will return a VirtualMidiPort struct in the following format
+  # %Midiex.VirtualMidiPort{direction: :input, name: "My Virtual Input", num: 1}
+  ```
+  The `%Midiex.VirtualMidiPort{}` struct can then be passed to MIDI input port listener functions, such as:
+  - `Midiex.subscribe(my_virtual_in)`
+  - If using a Listener GenServer:
+    - `Midiex.Listener.start(port: my_virtual_in)`
+    - `Midiex.Listener.subscribe(listener, my_virtual_in)`
+
+  Likewise, once subscribed to, the virtual input port can be unsubscribed to:
+  - `Midiex.unsubscribe(my_virtual_in)`
+  - If using a Listener GenServer: `Midiex.Listener.unsubscribe(my_virtual_in)`
+  """
+  def create_virtual_input(name), do: Backend.create_virtual_input(name)
+
   @doc section: :connections
   @doc """
-  Creates a virtual input connection.
+  Subscribes to a virtual input port.
+
+  Note this is only available on platforms that support virtual ports (currently every platform but Windows).
   """
-  def create_virtual_input(name), do: Backend.create_virtual_input_conn(name)
+  def subscribe_virtual_input(virtual_input_port), do: Backend.subscribe_virtual_input(virtual_input_port)
+
+  def unsubscribe_virtual_input(virtual_input_port), do: Backend.unsubscribe_virtual_input(virtual_input_port)
 
   # MIDI messaging functions
 
@@ -332,9 +366,9 @@ defmodule Midiex do
   end
 
   def subscribed_ports(), do: Backend.get_subscribed_ports()
+  def subscribed_virtual_ports(), do: Backend.get_subscribed_virtual_ports()
 
   def listen(input_port), do: Backend.listen(input_port)
-  def listen_virtual_input(name), do: Backend.listen_virtual_input(name)
 
 
   # #######

@@ -41,7 +41,7 @@ Midiex.count_ports()
 ### List devices (ports)
 
 ```elixir
-ports = Midiex.list_ports()
+ports = Midiex.ports()
 ```
 
 <!-- livebook:{"output":true} -->
@@ -102,7 +102,7 @@ ports = Midiex.list_ports()
 ### Filter to show input or output ports
 
 ```elixir
-Midiex.list_ports(:output)
+Midiex.ports(:output)
 ```
 
 <!-- livebook:{"output":true} -->
@@ -137,7 +137,7 @@ Midiex.list_ports(:output)
 ```
 
 ```elixir
-out_port = Midiex.list_ports("Arturia", :output) |> List.first()
+out_port = Midiex.ports("Arturia", :output) |> List.first()
 ```
 
 <!-- livebook:{"output":true} -->
@@ -180,7 +180,7 @@ Midiex.send_msg(out_conn, <<0x90, 60, 127>>)
 ```
 
 ```elixir
-Midiex.list_ports(:input)
+Midiex.ports(:input)
 ```
 
 <!-- livebook:{"output":true} -->
@@ -217,7 +217,7 @@ Midiex.list_ports(:input)
 ### Filter by port name
 
 ```elixir
-Midiex.list_ports("IAC", :input)
+Midiex.ports("IAC", :input)
 ```
 
 <!-- livebook:{"output":true} -->
@@ -251,10 +251,10 @@ virtual_conn = Midiex.create_virtual_output("My Virtual Connection")
 
 Note that although you've created this virtual output, on your system it will appear as an import port to be discoverable by other MIDI software or devices.
 
-If you call `Midiex.list_ports/1` you'll see it as an input:
+If you call `Midiex.ports/1` you'll see it as an input:
 
 ```elixir
-ports = Midiex.list_ports(:input)
+ports = Midiex.ports(:input)
 ```
 
 <!-- livebook:{"output":true} -->
@@ -300,7 +300,7 @@ ports = Midiex.list_ports(:input)
 
 ```elixir
 out_conn =
-  Midiex.list_ports("IAC", :output)
+  Midiex.ports("IAC", :output)
   |> List.first()
   |> Midiex.open()
 ```
@@ -326,7 +326,7 @@ Midiex.Backend.get_subscribed_ports()
 ```
 
 ```elixir
-Midiex.Backend.listen(Midiex.list_ports(:input) |> Enum.at(2))
+Midiex.Backend.listen(Midiex.ports(:input) |> Enum.at(2))
 ```
 
 <!-- livebook:{"output":true} -->
@@ -343,7 +343,7 @@ Midiex.Backend.listen(Midiex.list_ports(:input) |> Enum.at(2))
 ```
 
 ```elixir
-in_port = Midiex.list_ports("Key", :input) |> List.first()
+in_port = Midiex.ports("Key", :input) |> List.first()
 ```
 
 <!-- livebook:{"output":true} -->
@@ -416,7 +416,7 @@ defmodule MyMidiServer do
   end
 
   def listen_to(device_name \\ "IAC Driver") do
-    Midiex.list_ports()
+    Midiex.ports()
     |> Midiex.filter_port_name_contains(device_name, direction: :input)
     |> List.first()
     |> Midiex.listen()
@@ -531,7 +531,7 @@ FROM RUST: %{"port_name" => "KeyStep Pro", "port_num" => 2}
 ```
 
 ```elixir
-Midiex.Backend.listen(Midiex.list_ports(:input) |> Enum.at(1))
+Midiex.Backend.listen(Midiex.ports(:input) |> Enum.at(1))
 ```
 
 <!-- livebook:{"output":true} -->

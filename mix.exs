@@ -25,14 +25,16 @@ defmodule Midiex.MixProject do
         groups_for_modules: [
           Main: [
             Midiex,
-            Midiex.Message
+            Midiex.Message,
+            Midiex.Listener
           ],
           Resources: [
             Midiex.MidiInputConnection,
             Midiex.MidiIO,
             Midiex.MidiOutput,
             Midiex.OutConn,
-            Midiex.MidiPort
+            Midiex.MidiPort,
+            Midiex.VirtualMidiPort,
           ],
           Backend: [
             Midiex.Backend
@@ -41,6 +43,7 @@ defmodule Midiex.MixProject do
         groups_for_docs: [
           "Ports": &(&1[:section] == :ports),
           "Connections": &(&1[:section] == :connections),
+          "Virtual": &(&1[:section] == :connections),
           "Messages": &(&1[:section] == :messages),
         ]
       ]
