@@ -15,7 +15,7 @@ defmodule Midiex.Listener do
     ```
   - Receieves MIDI messages and passes it onto one or more Elixir handler functions. The handler takes one parameter representing the MIDI message, e.g.:
     ```
-    # Add a simple message handler which inspects each message recieved:
+    # Add a simple message handler which inspects each message received:
     Listener.add_handler(listener, fn (midi_msg) -> IO.inspect(midi_msg) end)
     ```
 
@@ -29,7 +29,7 @@ defmodule Midiex.Listener do
   # Start a lister for this MIDI input port
   {:ok, listner} = Listener.start(port: input_port)
 
-  # Create a handler than inspects the MIDI messages recieved:
+  # Create a handler than inspects the MIDI messages received:
   my_msg_hander = fn (midi_msg) -> IO.inspect(midi_msg, label: "MIDI message") end
   Listener.add_handler(listener, &my_msg_hander/1)
   ```
@@ -100,7 +100,7 @@ defmodule Midiex.Listener do
   Takes an optional keyword list as the first parameter which can be used to populate individual struct keys.
 
   The struct holds the following key-values:
-  `listener_callback_fns` which holds a list of functions called when a message is recieved for an input port.
+  `listener_callback_fns` which holds a list of functions called when a message is received for an input port.
   """
   def new(opts \\ []) do
     port =

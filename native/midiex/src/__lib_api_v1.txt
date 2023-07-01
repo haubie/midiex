@@ -50,7 +50,7 @@ pub fn subscribe(env: Env) -> Atom {
 
     let mut the_message = Term::map_new(env);
 
-    the_message = the_message.map_put("message", "You recieved this message from Rust.").unwrap();
+    the_message = the_message.map_put("message", "You received this message from Rust.").unwrap();
 
 
     env.send(&pid.clone(), the_message);

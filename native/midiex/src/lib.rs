@@ -71,31 +71,6 @@ lazy_static!{
 
 
 
-// lazy_static!{
-//     static ref GLOBAL_LISTEN_LIST_INDEX: Mutex<Vec<usize>> = Mutex::new(Vec::new());
-// }
-
-
-lazy_static!{
-    static ref GLOBAL_CONN_LISTEN_LIST: Mutex<Vec<InConn>> = Mutex::new(Vec::<InConn>::new());
-}
-
-
-// lazy_static!{
-//     static ref GLOBAL_OWNED_ENV: Mutex<OwnedEnv> = Mutex::new(OwnedEnv::new());
-// }
-
-
-// lazy_static!{
-//     static ref GLOBAL_RETURN_PID: Mutex<Option<rustler::types::LocalPid>> = Mutex::new(None);
-// }
-
-
-
-
-
-
-
 // Atoms
 mod atoms {
     rustler::atoms! {
@@ -129,7 +104,7 @@ mod atoms {
 //             owned_env.send_and_clear(&pid, |env| {
 
 //                 let mut the_message = Term::map_new(env);
-//                 let mut s = format!("You recieved this message from Rust.");
+//                 let mut s = format!("You received this message from Rust.");
 //                 // the_message = the_message.map_put("port_name", midi_port.name).unwrap();
 //                 // the_message = the_message.map_put("port_num", midi_port.num).unwrap();
 //                 the_message = the_message.map_put("message", message).unwrap();
@@ -148,31 +123,7 @@ mod atoms {
 // }
 
 
-#[rustler::nif]
-pub fn test(env: Env, midi_port: MidiPort) -> Atom {
-    
-    let mut midi_in = MidiInput::new("midir reading input").unwrap();
-    midi_in.ignore(Ignore::None);
-    
-    let mut in_port = match &midi_port.port_ref.0 {
-        MidiexMidiPortRef::Input(in_port) => in_port,
-        MidiexMidiPortRef::Output(out_port) => panic!("Midi Input Port Error: Problem getting midi input port reference.")
-    };
 
-    println!("\nOpening connection");
-    let in_port_name = midi_in.port_name(in_port).unwrap();
-
-    // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
-    let _conn_in = midi_in.connect(in_port, "midir-read-input", move |stamp, message, _| {
-        println!("{}: {:?} (len = {})", stamp, message, message.len());
-    }, ());
-    
-    println!("Connection open, reading input from '{}'", in_port_name);
-
-    println!("Closing connection");
-
-    atoms::ok()
-}   
 
 
 #[rustler::nif]
@@ -318,9 +269,6 @@ fn listen(env: Env, midi_port: MidiPort) -> Result<Vec<Binary>, Error> {
 
 
 
-
-
-
 #[rustler::nif]
 fn create_virtual_input(env: Env,  port_name: String) -> Result<VirtualMidiPort, Error> {
 
@@ -335,8 +283,14 @@ fn create_virtual_input(env: Env,  port_name: String) -> Result<VirtualMidiPort,
 }
 
 #[rustler::nif]
-fn unsubscribe_virtual_input(env: Env, virtual_midi_port: VirtualMidiPort) -> Result<Vec<VirtualMidiPort>, Error> {  
+fn unsubscribe_virtual_port(env: Env, virtual_midi_port: VirtualMidiPort) -> Result<Vec<VirtualMidiPort>, Error> {  
     GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().retain(|virt_port| virt_port != &virtual_midi_port);
+    Ok(GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().to_vec())
+}
+
+#[rustler::nif]
+fn unsubscribe_all_virtual_ports(env: Env) -> Result<Vec<VirtualMidiPort>, Error> {
+    GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().clear();
     Ok(GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().to_vec())
 }
 
@@ -541,25 +495,25 @@ impl OutConnRef {
 }
 
 
-#[derive(NifStruct, Clone)]
-#[module = "Midiex.InConn"]
-pub struct InConn {
-    conn_ref: ResourceArc<InConnRef>,
-    // midi_port: MidiPort,
-    name: String,
-    port_num: usize,
-}
+// #[derive(NifStruct, Clone)]
+// #[module = "Midiex.InConn"]
+// pub struct InConn {
+//     conn_ref: ResourceArc<InConnRef>,
+//     // midi_port: MidiPort,
+//     name: String,
+//     port_num: usize,
+// }
 
 // WRAP IN AN OPTION AS WELL SO THE CONN CAN BE DESTROYED LATER
 // Use of Option mean ownership of the connection can be taken with .take() and then .closed() can be called.
 
-pub struct InConnRef(pub Mutex<Option<MidiInputConnection<()>>>);
+// pub struct InConnRef(pub Mutex<Option<MidiInputConnection<()>>>);
 
-impl InConnRef {
-    pub fn new(data: MidiInputConnection<()>) -> Self {
-        Self(Mutex::new(Some(data)))
-    }
-}
+// impl InConnRef {
+//     pub fn new(data: MidiInputConnection<()>) -> Self {
+//         Self(Mutex::new(Some(data)))
+//     }
+// }
 
 
 
@@ -741,7 +695,7 @@ fn on_load(env: Env, _info: Term) -> bool {
     // rustler::resource!(FlexiConn, env);
     // rustler::resource!(MidiexConnRef, env);
     rustler::resource!(OutConnRef, env);
-    rustler::resource!(InConnRef, env);
+    // rustler::resource!(InConnRef, env);
 
     true
 }
@@ -749,7 +703,6 @@ fn on_load(env: Env, _info: Term) -> bool {
 rustler::init!(
     "Elixir.Midiex.Backend",
     [
-        test,
         count_ports,
         list_ports,
         connect,
@@ -763,7 +716,8 @@ rustler::init!(
         create_virtual_input,
         listen,
         subscribe_virtual_input,
-        unsubscribe_virtual_input,
+        unsubscribe_virtual_port,
+        unsubscribe_all_virtual_ports,
         get_subscribed_ports,
         get_subscribed_virtual_ports,
         ],

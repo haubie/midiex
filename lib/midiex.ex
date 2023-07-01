@@ -9,7 +9,7 @@ defmodule Midiex do
     - **open** or **close** connections to MIDI ports
     - **create a virtual output connection** so your Elixir application appears as a MIDI device
   3. **Messages:**
-    - **send** or **recieve messages** to and from connections.
+    - **send** or **receive messages** to and from connections.
 
   ## Examples
   ```
@@ -59,8 +59,8 @@ defmodule Midiex do
   alias Midiex.Backend
 
 
-  defguard is_input_port(midi_port) when is_struct(midi_port, Midiex.MidiPort) and midi_port.direction == :input
-
+  defguardp is_input_port(midi_port) when is_struct(midi_port, Midiex.MidiPort) and midi_port.direction == :input
+  defguardp is_virtual_input_port(midi_port) when is_struct(midi_port, Midiex.VirtualMidiPort) and midi_port.direction == :input
 
 
   # ##########
@@ -168,25 +168,41 @@ defmodule Midiex do
   @doc """
   Creates a connection to the MIDI port.
 
+  ## Example
   ```
   # get the first available output port
   out_port = Midiex.ports(:output) |> List.first()
-  out_conn = Midiex.connect(out_port)
+  out_conn = Midiex.open(out_port)
+
+  # Returns an output connection struct, for example:
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.3613027763.2067398660.163505>,
+    name: "IAC Driver Bus 1",
+    port_num: 0
+  }
   ```
   """
   def open(midi_output_port), do: Backend.connect(midi_output_port)
 
   @doc section: :connections
+  @spec close(%Midiex.OutConn{}) :: any
   @doc """
   Closes a MIDI output connection.
 
+  ## Example
   ```
+  # Connect to the first output port
+  out_port = Midiex.ports(:output) |> List.first()
+  out_conn = Midiex.open(out_port)
+
   Midiex.close_out_conn(out_conn)
+  # Will return :ok if successful
   ```
   """
   def close(out_conn), do: Backend.close_out_conn(out_conn)
 
   @doc section: :virtual
+  @spec create_virtual_output(String.t()) :: %Midiex.OutConn{}
   @doc """
   Creates a virtual output connection.
 
@@ -213,7 +229,7 @@ defmodule Midiex do
   >
   > Even though this creates an output port, beacause it's a virtual port it is listed as an 'input' when querying the OS for available devices.
   >
-  > That means other software or devices will discover it and use it as a an input as intented.
+  > That means other software or devices will discover it and use it as a an input as intented, such as to receive messages.
   >
   > It also means it will show as `%Midiex.MidiPort{direction: :input}` when calling `Midiex.ports()`.
 
@@ -221,6 +237,7 @@ defmodule Midiex do
   def create_virtual_output(name), do: Backend.create_virtual_output_conn(name)
 
   @doc section: :virtual
+  @spec create_virtual_input(String.t()) :: %Midiex.VirtualMidiPort{}
   @doc """
   Creates a virtual input port struct.
 
@@ -245,18 +262,18 @@ defmodule Midiex do
   Likewise, once subscribed to, the virtual input port can be unsubscribed to:
   - `Midiex.unsubscribe(my_virtual_in)`
   - If using a Listener GenServer: `Midiex.Listener.unsubscribe(my_virtual_in)`
+
+  > #### Important {: .warning}
+  >
+  > Even though this creates an input port, beacause it's a virtual port it is listed as an 'output' when querying the OS for available devices.
+  >
+  > That means other software or devices will discover it and use it as a an output and can send messages to it.
+  >
+  > It also means it will show as `%Midiex.MidiPort{direction: :output}` when calling `Midiex.ports()`.
+  >
+  > Note that it won't be discoverable until the input port is subscribed.
   """
   def create_virtual_input(name), do: Backend.create_virtual_input(name)
-
-  @doc section: :connections
-  @doc """
-  Subscribes to a virtual input port.
-
-  Note this is only available on platforms that support virtual ports (currently every platform but Windows).
-  """
-  def subscribe_virtual_input(virtual_input_port), do: Backend.subscribe_virtual_input(virtual_input_port)
-
-  def unsubscribe_virtual_input(virtual_input_port), do: Backend.unsubscribe_virtual_input(virtual_input_port)
 
   # MIDI messaging functions
 
@@ -273,13 +290,13 @@ defmodule Midiex do
   @doc section: :messages
   # Midiex callback functions
   @doc """
-  Low-level API for subscribing to one or more MIDI input ports.
+  Low-level API for subscribing to one or more MIDI input ports. This includes ports created via `create_virtual_input/1`.
 
   The first parameter accepts either:
-  - A single `%Midiex.MidiPort{direction: :input}` struct
-  - A list of `%Midiex.MidiPort{direction: :input}` structs.
+  - A single `%Midiex.MidiPort{direction: :input}` or `%Midiex.VirtualMidiPort{direction: :input}` struct
+  - A list of `%Midiex.MidiPort{direction: :input}` or `%Midiex.VirtualMidiPort{direction: :input}` structs.
 
-  The calling process will recieve MIDI messages from the ports subscribed to. The source of the message will be undifferentiated, so consider using a different calling process for different inputs if they need to be handled separately.
+  The calling process will receive MIDI messages from the ports subscribed to. The source of the message will be undifferentiated, so consider using a different calling process for different inputs if they need to be handled separately.
 
   ## Example
   ```
@@ -308,14 +325,14 @@ defmodule Midiex do
   #   }
   # ]
 
-  # Subscribe to the input ports. The current process will recieve MIDI messages. Returns `:ok` if successful.
+  # Subscribe to the input ports. The current process will receive MIDI messages. Returns `:ok` if successful.
   Midiex.subscribe(midi_input_ports)
   ```
 
   You'll need to implement message recieving in your process.
 
   ## Alternative: use a Listener process
-  As an alterantive you can use `Midiex.Listener` GenServer which subscribes to MIDI input ports and forwards any messages recieved to event handlers.
+  As an alterantive you can use `Midiex.Listener` GenServer which subscribes to MIDI input ports and forwards any messages received to event handlers.
 
   For the above example, if you wanted to inspect messages coming in on those ports, you could:
   ```
@@ -324,27 +341,29 @@ defmodule Midiex do
   # Start a lister for this MIDI input port
   {:ok, listner} = Listener.start(port: midi_input_ports)
 
-  # Create a handler than inspects the MIDI messages recieved:
-  Listener.add_handler(listener, fn (midi_msg) -> IO.inspect(midi_msg, label: "Msg recieved") end)
+  # Create a handler than inspects the MIDI messages received:
+  Listener.add_handler(listener, fn (midi_msg) -> IO.inspect(midi_msg, label: "Msg received") end)
 
-  # Any messages recieved will be inspected on the console, e.g.:
-  # Msg recieved: [130, 84, 0]
-  # Msg recieved: [146, 60, 43]
-  # Msg recieved: [130, 60, 0]
-  # Msg recieved: [146, 72, 34]
-  # Msg recieved: [130, 72, 0]
-  # Msg recieved: [146, 76, 40]
-  # Msg recieved: [130, 76, 0]
-  # Msg recieved: [146, 64, 47]
-  # Msg recieved: [130, 64, 0]
-  # Msg recieved: [146, 84, 30]
+  # Any messages received will be inspected on the console, e.g.:
+  # Msg received: [130, 84, 0]
+  # Msg received: [146, 60, 43]
+  # Msg received: [130, 60, 0]
+  # Msg received: [146, 72, 34]
+  # Msg received: [130, 72, 0]
+  # Msg received: [146, 76, 40]
+  # Msg received: [130, 76, 0]
+  # Msg received: [146, 64, 47]
+  # Msg received: [130, 64, 0]
+  # Msg received: [146, 84, 30]
   ```
   """
-  def subscribe([midi_port | rest_ports]) when is_input_port(midi_port) do
+  def subscribe([midi_port | rest_ports]) when is_input_port(midi_port) or is_virtual_input_port(midi_port) do
     if rest_ports != [], do: subscribe(rest_ports)
     subscribe(midi_port)
   end
   def subscribe(midi_port) when is_input_port(midi_port), do: Backend.subscribe(midi_port)
+  def subscribe(midi_port) when is_virtual_input_port(midi_port), do: Backend.subscribe_virtual_input(midi_port)
+
   @doc section: :messages
   @doc """
   Unsubscribes from recieving MIDI messages from an input port connection.
@@ -352,23 +371,69 @@ defmodule Midiex do
   Messages stop as this function releases the OS thread created for listening to the input conection.
 
   This function takes as the first parameter _one_ of the following:
-  - Port struct: A MIDI input port `%Midiex.MidiPort{direction: :input}` struct
-  - List: A list of MIDI input port `%Midiex.MidiPort{direction: :input}` structs
-  - Number: A MIDI input port number (this is the integer in the `:num` key within the `%Midiex.MidiPort{}`)
-  - Atom: The atom `:all`, which will unsubscribe from all MIDI input ports subscribed to.
+  - Port struct: A MIDI input port `%Midiex.MidiPort{direction: :input}` or `%Midiex.VirtualMidiPort{direction: :input}` struct
+  - List: A list of MIDI input port `%Midiex.MidiPort{direction: :input}` or `%Midiex.VirtualMidiPort{direction: :input}` structs
+  - Number: A MIDI input port number (this is the integer in the `:num` key within the `%Midiex.MidiPort{}`) (non-virtual ports only)
+  - Atom: The atom `:all`, which will unsubscribe from all MIDI input ports subscribed to, including virtual ports. If you would like to unsubscribe to virtual ports or ones listed on your device by the OS only, use `unsubscribe(:all, :virtual)` or `unsubscribe(:all, :device)` instead.
+
+  ## Example
+  ```
+  # Unsubscribe from all inport ports listed on your device's OS
+  Midiex.unsubscribe(:all, :device)
+
+  # Unsubscribe from all virtual ports you created
+  Midiex.unsubscribe(:all, :virtual)
+  ```
   """
-  def unsubscribe(:all), do: Backend.unsubscribe_all_ports()
-  def unsubscribe(index) when is_integer(index), do: Backend.unsubscribe_port_by_index(index)
   def unsubscribe(midi_port) when is_input_port(midi_port), do: Backend.unsubscribe_port(midi_port)
-  def unsubscribe([midi_port | rest_ports]) when is_input_port(midi_port) do
+  def unsubscribe(midi_port) when is_virtual_input_port(midi_port), do: Backend.unsubscribe_virtual_port(midi_port)
+  def unsubscribe([midi_port | rest_ports]) when is_input_port(midi_port) or is_virtual_input_port(midi_port) do
     if rest_ports != [], do: unsubscribe(rest_ports)
     unsubscribe(midi_port)
   end
+  def unsubscribe(:all) do
+    Backend.unsubscribe_all_ports()
+    Backend.unsubscribe_all_virtual_ports()
+  end
+  def unsubscribe(index) when is_integer(index), do: Backend.unsubscribe_port_by_index(index)
+  @doc section: :messages
 
-  def subscribed_ports(), do: Backend.get_subscribed_ports()
-  def subscribed_virtual_ports(), do: Backend.get_subscribed_virtual_ports()
 
-  def listen(input_port), do: Backend.listen(input_port)
+  @doc false
+  @spec unsubscribe(:all, :virtual) :: any
+  def unsubscribe(:all, :virtual), do: Backend.unsubscribe_all_virtual_ports()
+  @doc false
+  @spec unsubscribe(:all, :device) :: any
+  def unsubscribe(:all, :device), do: Backend.unsubscribe_all_ports()
+
+  @doc section: :messages
+  @doc """
+  Returns a list of ports currently subscribed to using the `subscribe/1` function.
+
+  This will include any vitual input ports currently subscribed to.
+
+  ## Example
+  ```
+  Midiex.subscribed_ports()
+
+  # Returns of list of subscribed ports, including virtual ports, e.g.:
+  [
+    %Midiex.MidiPort{
+      direction: :input,
+      name: "IAC Driver Bus 1",
+      num: 0,
+      port_ref: #Reference<0.3977715800.1277296664.256043>
+    },
+    %Midiex.VirtualMidiPort{direction: :input, name: "My Virtual Input", num: 1}
+  ]
+
+  ```
+  """
+  @spec subscribed_ports :: []
+  def subscribed_ports(), do: Backend.get_subscribed_ports() ++ Backend.get_subscribed_virtual_ports()
+
+  # @doc section: :messages
+  # def listen(input_port), do: Backend.listen(input_port)
 
 
   # #######

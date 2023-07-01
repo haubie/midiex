@@ -29,7 +29,6 @@ defmodule Midiex.MixProject do
             Midiex.Listener
           ],
           Resources: [
-            Midiex.MidiInputConnection,
             Midiex.MidiIO,
             Midiex.MidiOutput,
             Midiex.OutConn,
@@ -41,10 +40,10 @@ defmodule Midiex.MixProject do
           ]
         ],
         groups_for_docs: [
-          "Ports": &(&1[:section] == :ports),
-          "Connections": &(&1[:section] == :connections),
-          "Virtual": &(&1[:section] == :connections),
-          "Messages": &(&1[:section] == :messages),
+          "Port discovery": &(&1[:section] == :ports),
+          "Output connections": &(&1[:section] == :connections),
+          "Virtual ports & connections": &(&1[:section] == :virtual),
+          "Send & receive messages": &(&1[:section] == :messages),
         ]
       ]
     ]
