@@ -62,7 +62,6 @@ defmodule Midiex do
   defguardp is_input_port(midi_port) when is_struct(midi_port, Midiex.MidiPort) and midi_port.direction == :input
   defguardp is_virtual_input_port(midi_port) when is_struct(midi_port, Midiex.VirtualMidiPort) and midi_port.direction == :input
 
-
   # ##########
   # NATIVE API
   # ##########
@@ -131,24 +130,33 @@ defmodule Midiex do
   def ports(direction) when is_atom(direction), do: filter_port_direction(ports(), direction)
 
   @doc section: :ports
-  @spec ports(String.t(), (:input | :output) | nil) :: list
+  @spec ports(String.t()|Regex.t(), (:input | :output) | nil) :: list
   @doc """
-  Lists MIDI ports containing the name. Optionally takes a direction (:input or :output) can be given.
+  Lists MIDI ports matching the name. This can be either a string match or a regex pattern.
+
+  Optionally takes a direction (:input or :output) can be given.
 
   Examples:
   ```
-  # List ports with the name 'Arturia'
-  Midiex.ports("Arturia")
+  # Regex examples
 
-  # List input ports with the name 'Arturia'
-  Midiex.ports("Arturia", :input)
+  # List ports containing the word 'Arturia' and ignore case
+  Midiex.ports(~r/Arturia/i)
 
-  # List output ports with the name 'Arturia'
-  Midiex.ports("Arturia", :output)
+  # List output ports starting the word 'Arturia' and ignore case
+  Midiex.ports(~r/^Arturia/i, :output)
+
+  # String matching examples
+
+  # List input ports with the name 'KeyStep Pro'
+  Midiex.ports("KeyStep Pro", :input)
+
+  # List output ports with the name 'Arturia MicroFreak'
+  Midiex.ports("Arturia MicroFreak", :output)
   ```
   """
-  def ports(name, direction \\ nil) when is_binary(name) do
-    filter_port_name_contains(ports(), name, direction: direction)
+  def ports(name_or_pattern, direction \\ nil) when is_binary(name_or_pattern) or is_struct(name_or_pattern) do
+    filter_port_name(ports(), name_or_pattern, direction: direction)
   end
 
   @doc section: :ports
@@ -212,7 +220,7 @@ defmodule Midiex do
 
   ```
   # Create an output connection called "piano"
-  piano_conn = Midiex.create_virtual_output_conn("piano")
+  piano_conn = Midiex.create_virtual_output("piano")
   ```
 
   You can send messages to MIDI software or hardware connected to this virtual device in the standard way, e.g.:
@@ -440,11 +448,19 @@ defmodule Midiex do
   # HELPERS
   # #######
 
-  defp filter_port_name_contains(ports_list, name, opts \\ []) do
+  defp filter_port_name(ports_list, comparison_name_or_pattern, opts) do
     direction = Keyword.get(opts, :direction, nil)
     ports_list
-    |> Enum.filter(fn port -> String.contains?(port.name, name) end)
+    |> Enum.filter(fn port -> port_name_matches?(port.name, comparison_name_or_pattern) end)
     |> filter_port_direction(direction)
+  end
+
+  defp port_name_matches?(port_name, comparison_name_or_pattern) when is_binary(comparison_name_or_pattern) do
+    String.equivalent?(port_name, comparison_name_or_pattern)
+  end
+
+  defp port_name_matches?(port_name, comparison_name_or_pattern) when is_struct(comparison_name_or_pattern) do
+    String.match?(port_name, comparison_name_or_pattern)
   end
 
   defp filter_port_direction(ports_list, nil), do: ports_list

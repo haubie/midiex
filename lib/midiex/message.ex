@@ -360,6 +360,28 @@ defmodule Midiex.Message do
   @note_on <<0x9::4>>
   @note_off <<0x8::4>>
 
+  @doc """
+  Returns the MIDI numerical code for a note.
+
+  Takes either a string or atom representation of a note as the first parameter.
+
+  ## Example
+  ```
+  # Return the code for middle-C (also known as C4)
+  Message.note(:C4)
+  Message.note("C4")
+  Message.note(:MiddleC)
+  Message.note("MiddleC")
+
+  # These all return: 60
+
+  # Return the code for A-sharp 3
+  Message.note(:As3)
+  Message.note("A#3")
+
+  # These both return: 58
+  ```
+  """
   def note(num_note) when is_number(num_note), do: num_note
   def note(text_note) when is_binary(text_note) do
     {_, note} = Enum.find(@notes_string_list, fn {note, _midi_num} -> note == text_note end)
@@ -370,16 +392,69 @@ defmodule Midiex.Message do
     note
   end
 
+  @spec note_on(atom | binary | number, keyword) :: <<_::24>>
+  @doc """
+  Creates a MIDI note-on message.
+
+  Takes a note as a string (e.g. "C4"), atom (e.g. :C4) or number (e.g. 60) as the first parameter.
+
+  The following options can be passed:
+  - velocity: a number between 0 and 127 representing how hard (or loud) a key was pressed. By defaut 127 is used.
+  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 0 is used.
+
+  Note that MIDI channels are in the range 0 - 15. But in MIDI software and hardware it may be offset by +1, so MIDI channel 0 might be called MIDI channel 1 and so on to channel 16.
+
+  ## Examples
+  ```
+  # Note-on message for middle-C
+  Midiex.Message.note_on(:C4)
+
+  # Returns: <<144, 60, 127>>
+
+  # Note-on message for middle-C on channel 2
+  Midiex.Message.note_on(:C4, channel: 2)
+
+  # Returns: <<146, 60, 127>>
+
+  # Note-on message for middle-C on channel 2 with a velocity of 40
+  Midiex.Message.note_on(:C4, channel: 2, velocity: 40)
+
+  # Returns: <<146, 60, 40>>
+  ```
+
+  These can be sent to a connection using `Midiex.send_msg/2`, for example:
+  ```
+  alias Midiex.Message
+  Midiex.send_msg(out_conn, Message.note_on(:C4, channel: 2, velocity: 40))
+  ```
+  """
   def note_on(note, opts \\ []) do
     velocity = Keyword.get(opts, :velocity, 127)
     channel = Keyword.get(opts, :channel, 0)
     <<@note_on, channel::4, note(note), velocity>>
   end
 
+  @doc """
+  Creates a MIDI note-off message.
+
+  Takes a note as a string (e.g. "C4"), atom (e.g. :C4) or number (e.g. 60) as the first parameter.
+
+  The following options can be passed:
+  - velocity: a number between 0 and 127 representing how hard (or loud) a key was pressed. By defaut 127 is used.
+  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 0 is used.
+
+  ## Example
+  ```
+  # Note-off for middle-C
+  Message.note_off(:C4)
+
+  # Returns: <<128, 60, 127>>
+  ```
+  """
   def note_off(note, opts \\ [])
   def note_off(:all, opts) do
     channel = Keyword.get(opts, :channel, 0)
-    change_control(123, channel: channel)
+    control_change(123, channel: channel)
   end
   def note_off(note, opts) do
     velocity = Keyword.get(opts, :velocity, 127)
@@ -387,13 +462,59 @@ defmodule Midiex.Message do
     <<@note_off, channel::4, note(note), velocity>>
   end
 
-  def change_control(control_number, opts \\ []) do
+  @doc """
+  Creates a polyphonic aftertouch message.
+
+  On a keyboard, a polyphonic aftertouch message is sent by pressing down further on a key after it has already reached the bottom. Not all keyboards have aftertouch.
+
+  Note: `polyphonic_aftertouch` is specific to each key, where as `channel_aftertouch` is average amount of pressure applied to whichever keys are held down.
+
+  Takes a note as the first parameter and the following options:
+  - pressure: a number between 0 and 127 representing the pressure on the key. By defaut 127 is used.
+  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 0 is used.
+
+  ## Example
+  ```
+  alias Midiex.Message
+
+  # Create a series of aftertouch messages from 0 to 127 for the note middle-C (C4)
+  0..127//1
+  |> Enum.map(fn pressure -> Message.polyphonic_aftertouch(:C4, pressure: pressure) end)
+  ```
+  """
+  def polyphonic_aftertouch(note, opts \\ []) do
+    velocity = Keyword.get(opts, :pressure, 127)
+    channel = Keyword.get(opts, :channel, 0)
+    <<0xA, channel::4, note(note), velocity>>
+  end
+
+  @doc """
+  Creates a MIDI CC or 'control change' message.
+
+  The following options can be passed:
+  - value: depends on the control function, but usually is a a number between 0 and 127. See the MIDI 1.0 Control Change Messages Spec or consult the MIDI device manual for specific codes an values.
+  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 0 is used.
+
+  ## Example
+  The MIDI CC message of `123` equates to "All Notes Off", thus stopping all notes being played.
+  ```
+  # Create a 'all notes off' CC message.
+  Midiex.control_change(127)
+  ```
+  ## Reference
+  See the official [MIDI 1.0 Control Change Messages Spec](https://www.midi.org/specifications-old/item/table-3-control-change-messages-data-bytes-2).
+  """
+  def control_change(control_number, opts \\ []) do
     value = Keyword.get(opts, :value, 127)
     channel = Keyword.get(opts, :channel, 0)
     <<0xB::4, channel::4, control_number, value>>
   end
 
-  def change_program(prog_num, opts \\ []) do
+  @doc """
+  Creates a program change message, used select the instrument type to play sounds with.
+
+  """
+  def program_change(prog_num, opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
     <<0xC::4, channel::4, prog_num>>
   end
@@ -401,14 +522,14 @@ defmodule Midiex.Message do
   def change_sound_bank(bank, opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
     <<msb::7, lsb::7>> = <<bank::14>>
-    msb_binary = change_control(0, value: msb, channel: channel)
-    lsb_binary = change_control(0x20, value: lsb, channel: channel)
+    msb_binary = control_change(0, value: msb, channel: channel)
+    lsb_binary = control_change(0x20, value: lsb, channel: channel)
     <<msb_binary::binary, lsb_binary::binary>>
   end
 
   def volume(volume_num, opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
-    change_control(7, value: volume_num, channel: channel)
+    control_change(7, value: volume_num, channel: channel)
   end
 
   @doc """
@@ -418,18 +539,26 @@ defmodule Midiex.Message do
   """
   def pan(pan, opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
-    change_control(10, value: pan, channel: channel)
+    control_change(10, value: pan, channel: channel)
   end
 
 
   @doc """
-  Bend the pitch of notes playing in a channel.
-  Values below 0x2000 will decrease the pitch, and higher values will increase it.
+  Creates a pitch bend message, representing a change in pitch.
+
+  Pitch bend change messages a usually sent from a keyboard with a pitch bend wheel.
+
+  A pitch bend message includes two data bytes to specify the pitch bend value. Having two bites allows creates a higher resolution, making the pitch changes smoother.
   """
-  def pitch_bend(bend, opts \\ []) do
+  def pitch_bend(msb, lsb, opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
-    <<msb::7, lsb::7>> = <<bend::14>>
     <<0xE::4, channel::4, lsb, msb>>
   end
+  # Values below 0x2000 will decrease the pitch, and higher values will increase it.
+  # def pitch_bend(bend, opts \\ []) do
+  #   channel = Keyword.get(opts, :channel, 0)
+  #   <<msb::7, lsb::7>> = <<bend::14>>
+  #   <<0xE::4, channel::4, lsb, msb>>
+  # end
 
 end

@@ -251,9 +251,9 @@ fn listen(env: Env, midi_port: MidiPort) -> Result<Vec<Binary>, Error> {
         };
 
     } else {
-        println!("\nCannot listen to an output port - use the connect/1 function instead");
+        // println!("\nCannot listen to an output port - use the Midiex.open/1 function instead");
         return Err(Error::RaiseTerm(Box::new(
-            "Not an input port.".to_string(),
+            "Cannot listen to an output port - use the Midiex.open/1 function instead".to_string(),
         ))) 
     }
 
@@ -344,7 +344,7 @@ pub fn subscribe_virtual_input(env: Env, virtual_midi_port: VirtualMidiPort) -> 
 fn connect(midi_port: MidiPort) -> Result<OutConn, Error>{
 
     if midi_port.direction == atoms::output()  {
-        println!("OUTPUT");
+        // println!("OUTPUT");
 
         let mut midi_output = MidiOutput::new("MIDIex").expect("Midi output");  
 
@@ -352,13 +352,13 @@ fn connect(midi_port: MidiPort) -> Result<OutConn, Error>{
 
         if let MidiexMidiPortRef::Output(port) = &midi_port.port_ref.0 { 
 
-            println!("OUTPUT PORT");
+            // println!("OUTPUT PORT");
 
             let mut conn_out_result = midi_output.connect(&port, "MIDIex");
 
             let mut conn_out = match conn_out_result {
                 Ok(conn_out) => {
-                    println!("CONNECTION MADE");
+                    // println!("CONNECTION MADE");
                     
                     return Ok(
                         OutConn {
@@ -379,7 +379,7 @@ fn connect(midi_port: MidiPort) -> Result<OutConn, Error>{
 
 
     } else {
-        println!("INPUT");
+        // println!("INPUT");
 
         let mut midi_input = MidiInput::new("MIDIex").expect("Midi output");  
 
@@ -387,7 +387,7 @@ fn connect(midi_port: MidiPort) -> Result<OutConn, Error>{
 
         if let MidiexMidiPortRef::Input(port) = &midi_port.port_ref.0 { 
 
-            println!("INPUT PORT");
+            // println!("INPUT PORT");
 
             // let mut conn_in_result = midi_input.connect(&port, "MIDIex");
 
