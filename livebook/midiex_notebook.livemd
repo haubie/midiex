@@ -29,7 +29,7 @@ Compiling crate midiex in release mode (native/midiex)
 ### How many ports are there?
 
 ```elixir
-Midiex.count_ports()
+Midiex.port_count()
 ```
 
 <!-- livebook:{"output":true} -->

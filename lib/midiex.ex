@@ -165,13 +165,13 @@ defmodule Midiex do
   Returns the count of the number of input and output MIDI ports in as a map.
 
   ```
-  Midiex.count_ports()
+  Midiex.port_count()
 
   # Returns a map in the following format:
   # %{input: 2, output: 0}
   ```
   """
-  def count_ports(), do: Backend.count_ports()
+  def port_count(), do: Backend.count_ports()
 
   @doc section: :connections
   @spec open(%Midiex.MidiPort{direction: :output} | [%Midiex.MidiPort{direction: :output}]) :: %Midiex.OutConn{} | [%Midiex.OutConn{}]
@@ -376,13 +376,13 @@ defmodule Midiex do
   @doc section: :messages
   @spec send_msg(%Midiex.OutConn{} | [%Midiex.OutConn{}], binary) :: %Midiex.OutConn{} | [%Midiex.OutConn{}]
   @doc """
-  Sends a binary MIDI message to a specified output connection.
+  Sends a binary MIDI message to one or more output connection(s).
 
   Takes the following parameters:
-  - Output connection: which is an %Midiex.OutConn{} struct
-  - MIDI message: which is in a binary format, such as <<0x90, 60, 127>>
+  1. Output connection: which is an %Midiex.OutConn{} struct or a list of Midiex.OutConn{} structs
+  2. MIDI message: which is in a binary format, such as <<0x90, 60, 127>>
 
-  Returns the same output connection or a list of output connectsions passed to it. This is so you can chain messages together.
+  Returns the same output connection or a list of output connections passed to it. This is so you can chain messages together.
 
   ## Example
   ### Send a message to single output connection
