@@ -5,7 +5,7 @@ defmodule Midiex.Listener do
   This GenServer works by:
   - Subscribing to one or more MIDI input ports (using `Midiex.subscribe/1`). For each MIDI input port, `Midiex.subscribe/1` will create a new OS thread (in Rust) which establishes a connection to the port and listens to messages. Incoming messages are then forwarded to the calling Elixir process (in this case, the `Midiex.Listener` process.)
 
-    A subscription can be established on the `start/1` or `subscribe/1` functions, e.g.:
+    A subscription can be established on the `start/1` or `subscribe/2` functions, e.g.:
     ```
     # Get the first MIDI input port
     input_port = Midiex.ports(:input) |> List.first()
@@ -103,7 +103,8 @@ defmodule Midiex.Listener do
   Takes an optional keyword list as the first parameter which can be used to populate individual struct keys.
 
   The struct holds the following key-values:
-  `listener_callback_fns` which holds a list of functions called when a message is received for an input port.
+  - `:port` which holds a list of MIDI input ports to listen to. These can be device ports `%Midiex.MidiPort{direction: :input}` or virtual ports `%Midiex.VirtualMidiPort{}`
+  - `:callback` which holds a list of functions called when a message is received for an input port. The callback must be of single arity and take it's first parameter a message. See `add_handler/2` for an example.
   """
   def new(opts \\ []) do
     port =
@@ -154,9 +155,9 @@ defmodule Midiex.Listener do
   #   GenServer.cast(pid, {:add_input_port, input_port})
   # end
 
-  @spec add_handler(pid(), function()) :: :ok
+  @spec add_handler(pid(), function() | [function()]) :: :ok
   @doc """
-  Add a callback function which will be called for an input port.
+  Add one or more callback function(s) which will recieve and handle MIDI messages.
 
   A single callback function or multiple callback functions can be provided in a list.
 
@@ -189,12 +190,12 @@ defmodule Midiex.Listener do
   @doc """
   Stops listening to the MIDI input port by unsubscribing to it.
 
-  This accepts both ports listed on your device `%Midiex.MidiPort{direction: :input}` and virtual ports `%Midiex.VirtualMidiPort{} you've created.
+  This accepts both ports listed on your device `%Midiex.MidiPort{direction: :input}` and virtual ports `%Midiex.VirtualMidiPort{}` you've created.
 
   It accepts as it's second parameter either:
-  - a single midi input port
-  - a list of midi input ports
-  - :all atom which will stop MIDI input ports subscribed to.
+  - a single MIDI input port
+  - a list of MIDI input ports
+  - `:all` atom which will stop all MIDI input ports subscribed to.
 
   > #### Important {: .warning}
   >
@@ -211,6 +212,37 @@ defmodule Midiex.Listener do
   @spec subscribe(pid(), %Midiex.MidiPort{direction: :input} | %Midiex.VirtualMidiPort{} | [%Midiex.MidiPort{direction: :input} | %Midiex.VirtualMidiPort{}] ) :: :ok
   @doc """
   Subscribe to one or more MIDI input ports.
+
+  This accepts both ports listed on your device `%Midiex.MidiPort{direction: :input}` and virtual ports `%Midiex.VirtualMidiPort{}` you've created.
+
+  It accepts as it's second parameter either:
+  - a single MIDI input port
+  - a list of MIDI input ports
+  - `:all` atom which will stop all MIDI input ports subscribed to.
+
+  ## Example
+  ```
+  # Subscribe to the input port of the Arturia KeyStep Pro keyboard
+  keystep_in_port = Midiex.port("KeyStep Pro", :input)
+
+  # Returns a list with matching port names, in this case:
+  [
+    %Midiex.MidiPort{
+        direction: :input,
+        name: "KeyStep Pro",
+        num: 2,
+        port_ref: #Reference<0.3139841870.4103995416.58432>
+      }
+  ]
+
+  # Create and start a listener process
+  {:ok, keyboard} = Midiex.Listener.start()
+
+  # Listen to MIDI messages from the keyboard
+  Midiex.Listener.subscribe(keyboard, keystep_in_port)
+
+  # Any keys you push on the keyboard will be listened to. Add one or more handlers with Midiex.Listener.add_handler/2 to process messages.
+  ```
   """
   def subscribe(pid, midi_input_port) do
     GenServer.cast(pid, {:subscribe, midi_input_port})
@@ -224,19 +256,10 @@ defmodule Midiex.Listener do
     GenServer.call(pid, :state)
   end
 
-  # @doc """
-  # Start the inport port listening for callback execution loop.
-  # """
-  # def poll(pid) do
-  #   schedule_poller(pid)
-  # end
-
   # ----------------
   # Helper functions
   # ----------------
 
   defp ports_equal?(port_one, port_two), do: (port_one.name == port_two.name) && (port_one.num == port_two.num)
-
-
 
 end
