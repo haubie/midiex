@@ -32,6 +32,9 @@ defmodule Midiex.Listener do
   # Create a handler than inspects the MIDI messages received:
   my_msg_hander = fn (midi_msg) -> IO.inspect(midi_msg, label: "MIDI message") end
   Listener.add_handler(listener, &my_msg_hander/1)
+
+  # Stop listening to the input port
+  Listener.unsubscribe(listner, input_port)
   ```
   """
 
@@ -121,13 +124,24 @@ defmodule Midiex.Listener do
   end
 
 
-
-
   @spec start(keyword) :: :ignore | {:error, any} | {:ok, pid}
   @doc """
   Start the Midiex.Server GenServer.
 
   Takes an optional keyword list as the first parameter which can be used to populate individual %Midiex.Listener{} struct keys. See `new/1` for informaton.
+
+  ## Examples
+  ```
+  # Start with no options
+  {:ok, listener} = Midiex.Listener.start()
+
+  # Start, already passing the first available input port to listen to
+  first_port = Midiex.ports(:input) |> List.first()
+  {:ok, listener} = Midiex.Listener.start(ports: first_port)
+
+  # Start, already passing a list of all input ports available to listen to
+  {:ok, listener} = Midiex.Listener.start(ports: Midiex.ports(:input))
+  ```
   """
   def start(opts \\ []) do
     GenServer.start_link(__MODULE__, new(opts))
@@ -140,8 +154,9 @@ defmodule Midiex.Listener do
   #   GenServer.cast(pid, {:add_input_port, input_port})
   # end
 
+  @spec add_handler(pid(), function()) :: :ok
   @doc """
-  Add a callback function which will be called for an inport port.
+  Add a callback function which will be called for an input port.
 
   A single callback function or multiple callback functions can be provided in a list.
 
@@ -170,22 +185,30 @@ defmodule Midiex.Listener do
     GenServer.cast(pid, {:add_handler, handler_fn})
   end
 
+  @spec unsubscribe(pid(), %Midiex.MidiPort{direction: :input} | %Midiex.VirtualMidiPort{} | [%Midiex.MidiPort{direction: :input} | %Midiex.VirtualMidiPort{}] | :all) :: :ok
   @doc """
   Stops listening to the MIDI input port by unsubscribing to it.
 
-  Note that this stops the Rust OS thread from sending messages from that port. If other Elixir processes have also subscribed to that port, they will also stop recieving messages.
+  This accepts both ports listed on your device `%Midiex.MidiPort{direction: :input}` and virtual ports `%Midiex.VirtualMidiPort{} you've created.
+
+  It accepts as it's second parameter either:
+  - a single midi input port
+  - a list of midi input ports
+  - :all atom which will stop MIDI input ports subscribed to.
+
+  > #### Important {: .warning}
+  >
+  > This stops the Rust OS thread from sending messages from that MIDI input port. If other Elixir processes have also subscribed to that port, they will also stop recieving messages.
+  >
   """
+  def unsubscribe(pid, :all) do
+    GenServer.cast(pid, :unsubscribe_all)
+  end
   def unsubscribe(pid, midi_input_port) do
     GenServer.cast(pid, {:unsubscribe, midi_input_port})
   end
 
-  @doc """
-  Stops listening to all input ports.
-  """
-  def unsubscribe_all(pid) do
-    GenServer.cast(pid, :unsubscribe_all)
-  end
-
+  @spec subscribe(pid(), %Midiex.MidiPort{direction: :input} | %Midiex.VirtualMidiPort{} | [%Midiex.MidiPort{direction: :input} | %Midiex.VirtualMidiPort{}] ) :: :ok
   @doc """
   Subscribe to one or more MIDI input ports.
   """
@@ -193,8 +216,9 @@ defmodule Midiex.Listener do
     GenServer.cast(pid, {:subscribe, midi_input_port})
   end
 
+  @spec get_state(pid()) :: %Midiex.Listener{}
   @doc """
-  Get the servers state, returns `%Midiex.Server{}` struct.
+  Gets the servers state, returns `%Midiex.Listener{}` struct.
   """
   def get_state(pid) do
     GenServer.call(pid, :state)
