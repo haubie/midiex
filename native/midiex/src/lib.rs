@@ -194,6 +194,8 @@ pub fn subscribe(env: Env, midi_port: MidiPort) -> Atom {
             let mut still_listen = GLOBAL_LISTEN_LIST.lock().unwrap().contains(&midi_port);
         }
 
+        _conn_in.close();
+
     });
 
     atoms::ok()
@@ -331,6 +333,8 @@ pub fn subscribe_virtual_input(env: Env, virtual_midi_port: VirtualMidiPort) -> 
         while still_listen {
             let mut still_listen = GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().contains(&virtual_midi_port);
         }
+
+        _conn_in.close();
 
     });
 

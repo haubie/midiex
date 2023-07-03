@@ -58,9 +58,11 @@ defmodule Midiex do
   """
   alias Midiex.Backend
 
-
+  defguardp is_output_conn(midi_conn) when is_struct(midi_conn, Midiex.OutConn)
+  defguardp is_output_port(midi_port) when is_struct(midi_port, Midiex.MidiPort) and midi_port.direction == :output
   defguardp is_input_port(midi_port) when is_struct(midi_port, Midiex.MidiPort) and midi_port.direction == :input
   defguardp is_virtual_input_port(midi_port) when is_struct(midi_port, Midiex.VirtualMidiPort) and midi_port.direction == :input
+
 
   # ##########
   # NATIVE API
@@ -69,7 +71,7 @@ defmodule Midiex do
   # MIDI port functions
 
   @doc section: :ports
-  @spec ports :: list
+  @spec ports :: [%Midiex.MidiPort{}]
   @doc """
   Lists MIDI ports availabile on the system.
 
@@ -97,7 +99,7 @@ defmodule Midiex do
   def ports(), do: Backend.list_ports()
 
   @doc section: :ports
-  @spec ports(:input | :output) :: list
+  @spec ports(:input | :output) :: [%Midiex.MidiPort{}]
   @doc """
   List MIDI ports matching the specified direction (e.g. input or output)
 
@@ -126,11 +128,10 @@ defmodule Midiex do
   # ]
   ```
   """
-
   def ports(direction) when is_atom(direction), do: filter_port_direction(ports(), direction)
 
   @doc section: :ports
-  @spec ports(String.t()|Regex.t(), (:input | :output) | nil) :: list
+  @spec ports(binary | map, (:input | :output)|nil) :: [%Midiex.MidiPort{}]
   @doc """
   Lists MIDI ports matching the name. This can be either a string match or a regex pattern.
 
@@ -173,13 +174,24 @@ defmodule Midiex do
   def count_ports(), do: Backend.count_ports()
 
   @doc section: :connections
+  @spec open(%Midiex.MidiPort{direction: :output} | [%Midiex.MidiPort{direction: :output}]) :: %Midiex.OutConn{} | [%Midiex.OutConn{}]
   @doc """
   Creates a connection to the MIDI port.
 
+  Accepts one of the following as a parameter:
+  - MIDI output port, e.g. a `%Midiex.MidiPort{direction: :output}` struct
+  - List of MIDI output ports.
+
+  Returns an output connection (`%Midiex.OutConn{)`) or a list of output connections if a list was output ports was given as the first parameter.
+
   ## Example
+
+  ### Connect to a single output port
   ```
-  # get the first available output port
+  # Get the first available MIDI output port
   out_port = Midiex.ports(:output) |> List.first()
+
+  # Open an output connection
   out_conn = Midiex.open(out_port)
 
   # Returns an output connection struct, for example:
@@ -189,13 +201,85 @@ defmodule Midiex do
     port_num: 0
   }
   ```
+  You can now send messages to the connection:
+  ```
+  # Send a note on message for D4
+  Midiex.msg_send(out_conn, Midiex.Message.note_on(:D4))
+
+  # Let note play for 2 seconds
+  :timer.sleep(2000)
+
+  # Send a note off message for D4
+  Midiex.msg_send(out_conn, Midiex.Message.note_off(:D4))
+  ```
+  ### Connect to a list of output ports
+  ```
+  # Get a list of available output ports
+  out_ports = Midiex.ports(:output)
+
+  # Returns a list of available MIDI output ports, e.g.:
+  [
+    %Midiex.MidiPort{
+      direction: :output,
+      name: "Arturia MicroFreak",
+      num: 1,
+      port_ref: #Reference<0.3139841870.4103995416.58431>
+    },
+    %Midiex.MidiPort{
+      direction: :output,
+      name: "KeyStep Pro",
+      num: 2,
+      port_ref: #Reference<0.3139841870.4103995416.58432>
+    },
+    %Midiex.MidiPort{
+      direction: :output,
+      name: "MiniFuse 2",
+      num: 3,
+      port_ref: #Reference<0.3139841870.4103995416.58433>
+    }
+  ]
+
+  # Connect to each port
+  out_conns = Midiex.open(out_ports)
+
+  # Returns a list of MIDI output connections, e.g.:
+  [
+    %Midiex.MidiPort{
+      direction: :output,
+      name: "Arturia MicroFreak",
+      num: 1,
+      port_ref: #Reference<0.3139841870.4103995416.58431>
+    },
+    %Midiex.MidiPort{
+      direction: :output,
+      name: "KeyStep Pro",
+      num: 2,
+      port_ref: #Reference<0.3139841870.4103995416.58432>
+    },
+    %Midiex.MidiPort{
+      direction: :output,
+      name: "MiniFuse 2",
+      num: 3,
+      port_ref: #Reference<0.3139841870.4103995416.58433>
+    }
+  ]
+  ```
   """
-  def open(midi_output_port), do: Backend.connect(midi_output_port)
+  def open([midi_output_port | rest_ports]) when is_output_port(midi_output_port) do
+    ([Backend.connect(midi_output_port)] ++ open(rest_ports))
+  end
+  def open([]), do: []
+  def open(midi_output_port) when is_output_port(midi_output_port), do: Backend.connect(midi_output_port)
+
 
   @doc section: :connections
-  @spec close(%Midiex.OutConn{}) :: any
+  @spec close(%Midiex.OutConn{} | [%Midiex.OutConn{}]) :: any
   @doc """
   Closes a MIDI output connection.
+
+  Accepts as the first parameter either a:
+  - MIDI output connection, e.g. a `%Midiex.OutConn{}` struct
+  - List of output connections.
 
   ## Example
   ```
@@ -207,6 +291,10 @@ defmodule Midiex do
   # Will return :ok if successful
   ```
   """
+  def close([out_conn | rest_conns]) do
+    ([Backend.close_out_conn(out_conn)] ++ close(rest_conns))
+  end
+  def close([]), do: []
   def close(out_conn), do: Backend.close_out_conn(out_conn)
 
   @doc section: :virtual
@@ -237,7 +325,7 @@ defmodule Midiex do
   >
   > Even though this creates an output port, beacause it's a virtual port it is listed as an 'input' when querying the OS for available devices.
   >
-  > That means other software or devices will discover it and use it as a an input as intented, such as to receive messages.
+  > That means other software or devices will discover it and use it as a an input, such as to receive messages.
   >
   > It also means it will show as `%Midiex.MidiPort{direction: :input}` when calling `Midiex.ports()`.
 
@@ -251,7 +339,17 @@ defmodule Midiex do
 
   Takes a name as the first parameter.
 
-  Note this is only available on platforms that support virtual ports (currently every platform but Windows).
+  This is only available on platforms that support virtual ports (currently every platform but Windows).
+
+  > #### Important {: .warning}
+  >
+  > Even though this creates an input port, beacause it's a virtual port it is listed as an 'output' when querying the OS for available devices.
+  >
+  > That means other software or devices will discover it and use it as a an output and can send messages to it.
+  >
+  > It also means it will show as `%Midiex.MidiPort{direction: :output}` when calling `Midiex.ports()`.
+  >
+  > Note that it won't be discoverable until the input port is subscribed.
 
   ## Example
   ```
@@ -270,30 +368,55 @@ defmodule Midiex do
   Likewise, once subscribed to, the virtual input port can be unsubscribed to:
   - `Midiex.unsubscribe(my_virtual_in)`
   - If using a Listener GenServer: `Midiex.Listener.unsubscribe(my_virtual_in)`
-
-  > #### Important {: .warning}
-  >
-  > Even though this creates an input port, beacause it's a virtual port it is listed as an 'output' when querying the OS for available devices.
-  >
-  > That means other software or devices will discover it and use it as a an output and can send messages to it.
-  >
-  > It also means it will show as `%Midiex.MidiPort{direction: :output}` when calling `Midiex.ports()`.
-  >
-  > Note that it won't be discoverable until the input port is subscribed.
   """
   def create_virtual_input(name), do: Backend.create_virtual_input(name)
 
   # MIDI messaging functions
 
   @doc section: :messages
+  @spec send_msg(%Midiex.OutConn{} | [%Midiex.OutConn{}], binary) :: %Midiex.OutConn{} | [%Midiex.OutConn{}]
   @doc """
   Sends a binary MIDI message to a specified output connection.
 
   Takes the following parameters:
   - Output connection: which is an %Midiex.OutConn{} struct
   - MIDI message: which is in a binary format, such as <<0x90, 60, 127>>
+
+  Returns the same output connection or a list of output connectsions passed to it. This is so you can chain messages together.
+
+  ## Example
+  ### Send a message to single output connection
+  ```
+  # Connect to the first available MIDI output port
+  out_conn = Midiex.ports(:output) |> List.first() |> Midiex.open()
+
+  # Play the note D3 on all that connection for 3 seconds
+
+  out_conn
+  |> Midiex.send_msg(Midiex.Message.note_on(:D3))
+  |> tap(fn _ -> :timer.sleep(3000) end) # wait 3 seconds
+  |> Midiex.send_msg(Midiex.Message.note_off(:D3))
+
+  ```
+  ### Send the same message to ALL available outputs
+  ```
+  # Get a list of output ports and create connections for them
+  out_conns = Midiex.ports(:output) |> Midiex.open()
+
+  # Play the note D3 on all those connections for 3 seconds
+
+  out_conns
+  |> Midiex.send_msg(Midiex.Message.note_on(:D3))
+  |> tap(fn _ -> :timer.sleep(3000) end) # wait 3 seconds
+  |> Midiex.send_msg(Midiex.Message.note_off(:D3))
+  ```
   """
-  def send_msg(out_port_conn, midi_msg), do: Backend.send_msg(out_port_conn, midi_msg)
+  def send_msg([out_port_conn | rest_conn], midi_msg) when is_output_conn(out_port_conn) do
+    [Backend.send_msg(out_port_conn, midi_msg)] ++ send_msg(rest_conn, midi_msg)
+  end
+  def send_msg([], _midi_msg), do: []
+  def send_msg(out_port_conn, midi_msg) when is_output_conn(out_port_conn), do: Backend.send_msg(out_port_conn, midi_msg)
+
 
   @doc section: :messages
   # Midiex callback functions

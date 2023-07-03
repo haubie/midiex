@@ -483,9 +483,9 @@ defmodule Midiex.Message do
   ```
   """
   def polyphonic_aftertouch(note, opts \\ []) do
-    velocity = Keyword.get(opts, :pressure, 127)
+    pressure = Keyword.get(opts, :pressure, 127)
     channel = Keyword.get(opts, :channel, 0)
-    <<0xA, channel::4, note(note), velocity>>
+    <<0xA, channel::4, note(note), pressure>>
   end
 
   @doc """
