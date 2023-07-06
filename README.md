@@ -4,7 +4,7 @@
 [![Package](https://img.shields.io/hexpm/v/supercollider.svg)](https://hex.pm/packages/midiex)
 
 # Midiex overview
-Midiex is a cross-platform, real-time MIDI processing in Elixir library.
+Midiex is a cross-platform, real-time MIDI processing library in Elixir.
 
 ## midir Rust library
 Using [Rustler](https://github.com/rusterlium/rustler), Midiex wraps the excellent [midir](https://github.com/Boddlnagg/midir) Rust library.
@@ -31,7 +31,7 @@ At it's most basic level, the core functions of Midiex are for:
 - **creating a virtual input connection** so your Elixir application appears as a MIDI output port on the host OS.
 
 ## Feature support
-Not all midir features have been wraped and some features are backend specific:
+Not all midir features have been wrapped and some features are backend specific:
 - **Virtual output connection**: currently on every platform but Windows
 - **Virtual input connection**: currently on every platform but Windows.
 
@@ -71,19 +71,19 @@ Midiex.send_msg(piano, note_off)
 
 ## Getting started
 
-### Adding it to your Elixir project (coming soon)
-The package can be installed by adding supercollider to your list of dependencies in mix.exs:
+### Adding it to your Elixir project
+The package can be installed by adding midiex to your list of dependencies in mix.exs:
 ```
 def deps do
   [
-    {:midiex, "~> 0.1.0"}
+    {:midiex, "~> 0.1.1"}
   ]
 End
 ```
 
 ### Using within LiveBook and IEx
 ```
-Mix.install([{:midiex, "~> 0.1.0"}])
+Mix.install([{:midiex, "~> 0.1.1"}])
 ```
 
 #### LiveBook tour

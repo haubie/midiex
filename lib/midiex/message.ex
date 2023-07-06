@@ -1,13 +1,9 @@
 defmodule Midiex.Message do
 
 
-  # TO DO
-  #
-  # PolyphonicAftertouch(note_number, pressure)
-  # ChannelAftertouch(pressure)
-  # SysEx(manufacturer_id, data1, data2..., dataN)
-
-
+  # References
+  # https://anotherproducer.com/online-tools-for-musicians/midi-cc-list/
+  # https://docs.rs/midi-msg/latest/midi_msg/enum.ChannelVoiceMsg.html
 
   @moduledoc """
   Conveniences for creating MIDI messages.
@@ -24,16 +20,25 @@ defmodule Midiex.Message do
   ## MIDI message functions
   So that you don't have to remember all the MIDI message codes, this library has the following functions to generate messages:
 
-  - note_on(note_number, velocity, opts)
-  - note_off(note_number, velocity, opts)
-  - polyphonic_aftertouch(note_number, pressure, opts)
-  - channel_aftertouch(note_number, pressure, opts)
-  - control_change(control_number, value, opts)
-  - program_change(program_number, opts)
-  - pitch_wheel(lsbyte, msbyte, opts)
-  - sysex - coming soon
+  - note_off/2
+  - note_on/2
+  - polyphonic_aftertouch/2
+  - control_change/2
+  - program_change/2
+  - pitch_bend/3
+  - pan/2
+  - volume/2
 
+  ## More information
+  https://www.midi.org/midi-articles/about-midi-part-3-midi-messages
   """
+  # - note_on(note_number, velocity, opts)
+  # - note_off(note_number, velocity, opts)
+  # - polyphonic_aftertouch(note_number, pressure, opts)
+  # - channel_aftertouch(note_number, pressure, opts)
+  # - control_change(control_number, value, opts)
+  # - program_change(program_number, opts)
+  # - sysex - coming soon
 
 
   # status_byte, note_number (0-127), velocity (0-127)
@@ -41,6 +46,7 @@ defmodule Midiex.Message do
   # midi_note_off_msg = <<0x80, note, 127>>
 
 
+  # http://www.midibox.org/dokuwiki/doku.php?id=midi_specification
   # https://www.inspiredacoustics.com/en/MIDI_note_numbers_and_center_frequencies
 
   @notes_string_list [
@@ -392,14 +398,16 @@ defmodule Midiex.Message do
     note
   end
 
+  @doc section: :channel_voice
   @spec note_on(atom | binary | number, keyword) :: <<_::24>>
   @doc """
   Creates a MIDI note-on message.
 
-  Takes a note as a string (e.g. "C4"), atom (e.g. :C4) or number (e.g. 60) as the first parameter.
+  Takes as it's parameters:
+  1. note: a note as a string (e.g. "C4"), atom (e.g. :C4) or number (e.g. 60) as the first parameter
+  2. velocity: a number between 0 and 127 representing how hard (or loud) a key was pressed. By defaut 127 is used.
 
   The following options can be passed:
-  - velocity: a number between 0 and 127 representing how hard (or loud) a key was pressed. By defaut 127 is used.
   - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 0 is used.
 
   Note that MIDI channels are in the range 0 - 15. But in MIDI software and hardware it may be offset by +1, so MIDI channel 0 might be called MIDI channel 1 and so on to channel 16.
@@ -428,20 +436,23 @@ defmodule Midiex.Message do
   Midiex.send_msg(out_conn, Message.note_on(:C4, channel: 2, velocity: 40))
   ```
   """
-  def note_on(note, opts \\ []) do
-    velocity = Keyword.get(opts, :velocity, 127)
+  def note_on(note, velocity \\ 127, opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
     <<@note_on, channel::4, note(note), velocity>>
   end
 
+  @doc section: :channel_voice
   @doc """
   Creates a MIDI note-off message.
 
-  Takes a note as a string (e.g. "C4"), atom (e.g. :C4) or number (e.g. 60) as the first parameter.
+  Takes as it's parameters:
+  1. note: a note as a string (e.g. "C4"), atom (e.g. :C4) or number (e.g. 60) as the first parameter
+  2. velocity: a number between 0 and 127 representing how hard (or loud) a key was pressed. By defaut 127 is used.
 
   The following options can be passed:
-  - velocity: a number between 0 and 127 representing how hard (or loud) a key was pressed. By defaut 127 is used.
   - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 0 is used.
+
+  All notes can be switched off with `Message.all_notes_off/1`.
 
   ## Example
   ```
@@ -451,26 +462,24 @@ defmodule Midiex.Message do
   # Returns: <<128, 60, 127>>
   ```
   """
-  def note_off(note, opts \\ [])
-  def note_off(:all, opts) do
-    channel = Keyword.get(opts, :channel, 0)
-    control_change(123, channel: channel)
-  end
-  def note_off(note, opts) do
-    velocity = Keyword.get(opts, :velocity, 127)
+  def note_off(note, velocity \\ 123, opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
     <<@note_off, channel::4, note(note), velocity>>
   end
 
+  @doc section: :channel_voice
   @doc """
   Creates a polyphonic aftertouch message.
 
-  On a keyboard, a polyphonic aftertouch message is sent by pressing down further on a key after it has already reached the bottom. Not all keyboards have aftertouch.
+  On a keyboard, polyphonic aftertouch (or key pressure) is message sent by pressing down further on a key after it has already reached the bottom. Not all keyboards have aftertouch.
 
   Note: `polyphonic_aftertouch` is specific to each key, where as `channel_aftertouch` is average amount of pressure applied to whichever keys are held down.
 
-  Takes a note as the first parameter and the following options:
-  - pressure: a number between 0 and 127 representing the pressure on the key. By defaut 127 is used.
+  The function takes as it's parameters:
+  1. note: a note as a string (e.g. "C4"), atom (e.g. :C4) or number (e.g. 60) as the first parameter
+  2. pressure: a number between 0 and 127 representing the pressure on the key. By defaut 127 is used.
+
+  The following options can be passed:
   - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 0 is used.
 
   ## Example
@@ -488,15 +497,53 @@ defmodule Midiex.Message do
     <<0xA, channel::4, note(note), pressure>>
   end
 
+  @doc section: :channel_voice
   @doc """
-  Creates a MIDI CC or 'control change' message.
+  Creates a channel aftertouch (also known as channel pressure) message.
 
-  The following options can be passed:
-  - value: depends on the control function, but usually is a a number between 0 and 127. See the MIDI 1.0 Control Change Messages Spec or consult the MIDI device manual for specific codes an values.
+  On a keyboard, an aftertouch message is sent by pressing down further on keys after it has already reached the bottom. Not all keyboards have aftertouch.
+
+  With channel aftertouch, one of the following is used; Either the:
+  - average amount of pressure of all the keys held down; or the
+  - single greatest pressure value of all the current depressed keys.
+  Therefore channel aftertouch is independent of which key or how many keys are held. `polyphonic_aftertouch` is specific to each key however.
+
+  This function takes as it's parameters:
+  1. note: a note as a string (e.g. "C4"), atom (e.g. :C4) or number (e.g. 60) as the first parameter
+  2. pressure: a number between 0 and 127 representing the pressure on the key. By defaut 127 is used.
+
+  The following option can also be passed:
   - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 0 is used.
 
   ## Example
-  The MIDI CC message of `123` equates to "All Notes Off", thus stopping all notes being played.
+  ```
+  alias Midiex.Message
+
+  # Create a series of aftertouch messages from 0 to 127 for the note middle-C (C4)
+  0..127//1
+  |> Enum.map(fn pressure -> Message.channel_aftertouch(:C4, pressure: pressure) end)
+  ```
+  """
+  def channel_aftertouch(note, pressure, opts \\ []) do
+    channel = Keyword.get(opts, :channel, 0)
+    <<0xD, channel::4, note(note), pressure>>
+  end
+
+  @doc section: :channel_voice
+  @doc """
+  Creates a MIDI CC or 'control change' message.
+
+  MIDI Control Change messages are used to control functions in a synthesiser. Controllers include devices such as pedals, levers/sliders, wheels, switches and other control-oriented devices.
+
+  This function takes as its parameters:
+  1. contoller number: a number between 0-119. Controller numbers between 120-127 are reserved as "Channel Mode Messages".
+  2. value: depends on the control function, but usually is a a number between 0 and 127. See the MIDI 1.0 Control Change Messages Spec or consult the MIDI device manual for specific codes an values.
+
+  The following option can be passed:
+  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 0 is used.
+
+  ## Example
+  The MIDI CC message of `123` equates to "All Notes Off" (a Channel Mode Message), thus stopping all notes being played.
   ```
   # Create a 'all notes off' CC message.
   Midiex.control_change(127)
@@ -504,34 +551,198 @@ defmodule Midiex.Message do
   ## Reference
   See the official [MIDI 1.0 Control Change Messages Spec](https://www.midi.org/specifications-old/item/table-3-control-change-messages-data-bytes-2).
   """
-  def control_change(control_number, opts \\ []) do
-    value = Keyword.get(opts, :value, 127)
+  def control_change(control_number, value \\ 0, opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
     <<0xB::4, channel::4, control_number, value>>
   end
 
+  @doc section: :channel_voice
   @doc """
-  Creates a program change message, used select the instrument type to play sounds with.
+  Creates a program change message, used select the instrument type to play sounds with or a different 'patch'.
 
+  This function takes one data byte which specifies the new program number.
+
+  To apply this to a particular channel, use the channel option, e.g.:
+  ```
+  Message.program_change(1, channel: 3)
+  ```
   """
   def program_change(prog_num, opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
     <<0xC::4, channel::4, prog_num>>
   end
 
-  def change_sound_bank(bank, opts \\ []) do
+  @doc section: :channel_voice
+  @doc """
+  Creates a pitch bend message, representing a change in pitch.
+
+  Pitch bend change messages a usually sent from a keyboard with a pitch bend wheel or lever.
+
+  Takes as it's first parameter, the pitch bend amount. The channel cane be passed as an option.
+
+  The range of a pitch bend is as follows:
+  - 0-8191 represent negative bends,
+  - 8192 (Hex: 0x2000) is no bend and
+  - 8193-16383 are positive bends
+
+  ## Example
+  ```
+  alias Midiex.Message, as: M
+
+  # Play a note
+  Midiex.send_msg(piano, M.note_on(:D3))
+
+  # Bend up, then down, then back to center (8192)
+  (Enum.to_list(8193..16383//1) ++ Enum.to_list(8191..0//-1) ++ [8192])
+  |> Enum.each(fn pitch -> Midiex.send_msg(piano, M.pitch_bend(pitch)) end)
+  ```
+  """
+  def pitch_bend(bend, opts \\ []) do
+    channel = Keyword.get(opts, :channel, 0)
+    <<msb::7, lsb::7>> = <<bend::14>>
+    <<0xE::4, channel::4, lsb, msb>>
+  end
+
+  @doc section: :control_change
+  @doc """
+  Creates a bank select (also known as bank switch) message.
+
+  Takes a bank number as it's first parameter, in the range of 0-16383. The number of banks is dependent on the device.
+
+  A channel number can be provided as an option.
+  """
+  def bank_select(bank, opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
     <<msb::7, lsb::7>> = <<bank::14>>
-    msb_binary = control_change(0, value: msb, channel: channel)
-    lsb_binary = control_change(0x20, value: lsb, channel: channel)
+    msb_binary = control_change(0, msb, channel: channel)
+    lsb_binary = control_change(0x20, lsb, channel: channel)
     <<msb_binary::binary, lsb_binary::binary>>
   end
 
-  def volume(volume_num, opts \\ []) do
+  @doc section: :control_change
+  @doc """
+  Creates a modulation (mod) wheel message.
+
+  Modulation wheels are often used for vibrato effects (pitch, loudness, brighness), however what is modulated is based on the patch.
+
+  Takes a number as it's first parameter, in the range of 0-16383.
+
+  A channel number can be provided as an option.
+  """
+  def mod_wheel(bank, opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
-    control_change(7, value: volume_num, channel: channel)
+    <<msb::7, lsb::7>> = <<bank::14>>
+    msb_binary = control_change(1, msb, channel: channel)
+    lsb_binary = control_change(0x21, lsb, channel: channel)
+    <<msb_binary::binary, lsb_binary::binary>>
   end
 
+  @doc section: :control_change
+  @doc """
+  Creates a breath controller messsage.
+
+  Breath controller messages were originally intended for use with a breath MIDI controller. Blowing harder into the breath controller would produce higher MIDI control values.
+
+  Outside of breath control, is can be associated with aftertouch messages or used for modulation.
+
+  Takes a number as it's first parameter, in the range of 0-16383.
+
+  A channel number can be provided as an option.
+  """
+  def breath_controller(value, opts \\ []) do
+    channel = Keyword.get(opts, :channel, 0)
+    <<msb::7, lsb::7>> = <<value::14>>
+    msb_binary = control_change(2, msb, channel: channel)
+    lsb_binary = control_change(0x22, lsb, channel: channel)
+    <<msb_binary::binary, lsb_binary::binary>>
+  end
+
+  @doc section: :control_change
+  @doc """
+  Creates a foot or pedal controller messsage.
+
+  Takes a number as it's first parameter, in the range of 0-16383.
+
+  A channel number can be provided as an option.
+  """
+  def foot_controller(value, opts \\ []) do
+    channel = Keyword.get(opts, :channel, 0)
+    <<msb::7, lsb::7>> = <<value::14>>
+    msb_binary = control_change(4, msb, channel: channel)
+    lsb_binary = control_change(0x24, lsb, channel: channel)
+    <<msb_binary::binary, lsb_binary::binary>>
+  end
+
+  @doc section: :control_change
+  @doc """
+  Creates a portamento (slide or glide) time	messsage.
+
+  Portamento is the rate to slide between 2 notes played in sequence, sliding the pitch up or down from one note to the next.
+
+  Takes a number as it's first parameter, in the range of 0-16383.
+
+  A channel number can be provided as an option.
+  """
+  def portamento_time(value, opts \\ []) do
+    channel = Keyword.get(opts, :channel, 0)
+    <<msb::7, lsb::7>> = <<value::14>>
+    msb_binary = control_change(5, msb, channel: channel)
+    lsb_binary = control_change(0x25, lsb, channel: channel)
+    <<msb_binary::binary, lsb_binary::binary>>
+  end
+
+  @doc section: :control_change
+  @doc """
+  Creates an data entry message for MSB.
+
+  Used to control the value for NRPN (Non-Registered Parameter Number) or RPN (Registered Parameter Number) parameters.
+
+  Takes a number as it's first parameter, in the range of 0-16383.
+
+  A channel number can be provided as an option.
+  """
+  def data_entry_msb(value, opts \\ []) do
+    channel = Keyword.get(opts, :channel, 0)
+    # control_change(7, volume_num, channel: channel)
+    <<msb::7, lsb::7>> = <<value::14>>
+    msb_binary = control_change(6, msb, channel: channel)
+    lsb_binary = control_change(0x26, lsb, channel: channel)
+    <<msb_binary::binary, lsb_binary::binary>>
+  end
+
+  @doc section: :control_change
+  @doc """
+  Creates a volume messsage. This was formally called 'Main Volume' in the MIDI 1.0 spec.
+
+  Takes a number as it's first parameter, in the range of 0-127.
+
+  A channel number can be provided as an option.
+  """
+  def volume(volume_num, opts \\ []) do
+    channel = Keyword.get(opts, :channel, 0)
+    control_change(7, volume_num, channel: channel)
+
+    # High-res (14 bit version below)
+    # <<msb::7, lsb::7>> = <<volume_num::14>>
+    # msb_binary = control_change(7, msb, channel: channel)
+    # lsb_binary = control_change(0x27, lsb, channel: channel)
+    # <<msb_binary::binary, lsb_binary::binary>>
+  end
+
+  @doc section: :control_change
+  @doc """
+  Controls the left and right balance, generally for stereo patches.
+
+  A value of 64 equals the center.
+
+  Values below 64 moves the sound to the left, and above to the right.
+  """
+  def balance(pan, opts \\ []) do
+    channel = Keyword.get(opts, :channel, 0)
+    control_change(8, pan, channel: channel)
+  end
+
+  @doc section: :control_change
   @doc """
   Change the panoramic (pan) of a channel.
   This shifts the sound from the left or right ear in when playing stereo.
@@ -539,26 +750,61 @@ defmodule Midiex.Message do
   """
   def pan(pan, opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
-    control_change(10, value: pan, channel: channel)
+    control_change(10, pan, channel: channel)
   end
 
 
-  @doc """
-  Creates a pitch bend message, representing a change in pitch.
-
-  Pitch bend change messages a usually sent from a keyboard with a pitch bend wheel.
-
-  A pitch bend message includes two data bytes to specify the pitch bend value. Having two bites allows creates a higher resolution, making the pitch changes smoother.
-  """
-  def pitch_bend(msb, lsb, opts \\ []) do
+  @doc section: :channel_mode
+  def sound_off(opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
-    <<0xE::4, channel::4, lsb, msb>>
+    control_change(120, 0, channel: channel)
   end
-  # Values below 0x2000 will decrease the pitch, and higher values will increase it.
-  # def pitch_bend(bend, opts \\ []) do
-  #   channel = Keyword.get(opts, :channel, 0)
-  #   <<msb::7, lsb::7>> = <<bend::14>>
-  #   <<0xE::4, channel::4, lsb, msb>>
-  # end
+
+  @doc section: :channel_mode
+  def all_notes_off(opts \\ []) do
+    channel = Keyword.get(opts, :channel, 0)
+    control_change(123, 0, channel: channel)
+  end
+
+  @doc section: :channel_mode
+  def reset_controllers(opts \\ []) do
+    channel = Keyword.get(opts, :channel, 0)
+    control_change(121, 0 ,channel: channel)
+  end
+
+  @doc section: :channel_mode
+  def omni_mode(true_or_false \\ true, opts \\ []) do
+    channel = Keyword.get(opts, :channel, 0)
+    case true_or_false do
+      true -> control_change(125, 0, channel: channel)
+      false -> control_change(124, 0, channel: channel)
+    end
+  end
+
+  @doc section: :channel_mode
+  def poly_mode(true_or_false \\ true, number_of_channels \\ 0, opts \\ []) do
+    channel = Keyword.get(opts, :channel, 0)
+    case true_or_false do
+      true -> control_change(127, 0, channel: channel)
+      false -> control_change(126, number_of_channels, channel: channel)
+    end
+  end
+
+  @doc section: :channel_mode
+  def mono_mode(true_or_false \\ true, number_of_channels \\ 0, opts \\ []) do
+    case true_or_false do
+      true -> poly_mode(false, number_of_channels, opts)
+      false -> poly_mode(true, number_of_channels, opts)
+    end
+  end
+
+  @doc section: :channel_mode
+  def local_control(true_or_false \\ true, opts \\ []) do
+    channel = Keyword.get(opts, :channel, 0)
+    case true_or_false do
+      true -> control_change(124, 127, channel: channel)
+      false -> control_change(125, 0, channel: channel)
+    end
+  end
 
 end

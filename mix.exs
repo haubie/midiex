@@ -6,7 +6,7 @@ defmodule Midiex.MixProject do
       app: :midiex,
       name: "Midiex",
       description: "A cross-platform, realtime MIDI processing in Elixir library which wraps the midir Rust library.",
-      version: "0.1.0",
+      version: "0.1.1",
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -44,6 +44,9 @@ defmodule Midiex.MixProject do
           "Output connections": &(&1[:section] == :connections),
           "Virtual ports & connections": &(&1[:section] == :virtual),
           "Send & receive messages": &(&1[:section] == :messages),
+          "Channel voice messages": &(&1[:section] == :channel_voice),
+          "Channel change messages": &(&1[:section] == :control_change),
+          "Channel mode messages": &(&1[:section] == :channel_mode),
         ]
       ]
     ]

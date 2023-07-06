@@ -3,17 +3,62 @@
 # MIDIex notebook
 
 ```elixir
-Mix.install([{:midiex, path: "/Users/haubie/Development/midiex"}])
+Mix.install([:midiex])
 ```
 
 <!-- livebook:{"output":true} -->
 
 ```
+Resolving Hex dependencies...
+Resolution completed in 0.478s
+New:
+  jason 1.4.0
+  midiex 0.1.1
+  rustler 0.26.0
+  toml 0.7.0
+* Getting midiex (Hex package)
+* Getting rustler (Hex package)
+* Getting jason (Hex package)
+* Getting toml (Hex package)
+==> toml
+Compiling 10 files (.ex)
+Generated toml app
+==> jason
+Compiling 10 files (.ex)
+Generated jason app
+==> rustler
+Compiling 7 files (.ex)
+Generated rustler app
 ==> midiex
-Compiling 1 file (.ex)
+Compiling 7 files (.ex)
 Compiling crate midiex in release mode (native/midiex)
-   Compiling midiex v0.1.0 (/Users/haubie/Development/midiex/native/midiex)
-    Finished release [optimized] target(s) in 0.55s
+   Compiling memchr v2.5.0
+   Compiling core-foundation-sys v0.8.3
+   Compiling libc v0.2.138
+   Compiling proc-macro2 v1.0.63
+   Compiling regex-syntax v0.6.28
+   Compiling coremidi-sys v3.1.0
+   Compiling quote v1.0.28
+   Compiling unicode-ident v1.0.5
+   Compiling void v1.0.2
+   Compiling rustler v0.29.0
+   Compiling heck v0.4.0
+   Compiling lazy_static v1.4.0
+   Compiling unreachable v1.0.0
+   Compiling block v0.1.6
+   Compiling bitflags v1.3.2
+   Compiling aho-corasick v0.7.20
+   Compiling regex v1.7.0
+   Compiling rustler_sys v2.3.0
+   Compiling syn v2.0.22
+   Compiling core-foundation v0.9.3
+   Compiling coremidi v0.6.0
+   Compiling coremidi v0.7.0
+   Compiling midir v0.9.1
+   Compiling rustler_codegen v0.29.0
+   Compiling midiex v0.1.0 (/Users/haubie/Library/Caches/mix/installs/elixir-1.15.2-erts-14.0.2/5b3bac939799884e617fbffe06cae9cf/deps/midiex/native/midiex)
+    Finished release [optimized] target(s) in 6.28s
+Generated midiex app
 ```
 
 <!-- livebook:{"output":true} -->
@@ -22,7 +67,46 @@ Compiling crate midiex in release mode (native/midiex)
 :ok
 ```
 
-## Setup
+## Introduction
+
+### Learning objectives
+
+This will get you started with Midiex. By the end of this Livebook you'll be able to:
+
+* **Find** and **connect** to MIDI ports on your system
+* **Create virtual ports** (on supported systems, like MacOS and Linux)
+* **Send** and **recieve** messages.
+
+### Setup
+
+Just to make our code a bit more compact when experimenting with live-music coding, we'll alias the `Midiex.Message` module as `M`.
+
+Midiex function names have been kept compact as possible with live-music coding in mind.
+
+```elixir
+alias Midiex.Listener
+alias Midiex.Message, as: M
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+Midiex.Message
+```
+
+## MIDI concepts
+
+Skip this section you're familiar with MIDI concepts and want to start playing with the library.
+
+At it's most basic, MIDI consists of:
+
+* **Ports**, which represent input or output connections to MIDI hardware or software. You can recieve MIDI messages from a MIDI input, or send MIDI messages to a MIDI output.
+* **Connections**, just like with all IO operations, you'll need to make a connection with a MIDI port to send or recieve messages to it.
+* **Messages**, which are usually music related, such switching a note on or off.
+
+<!-- livebook:{"break_markdown":true} -->
+
+![](images/grokking_midi.png)
 
 ## Finding devices (ports)
 
@@ -35,7 +119,7 @@ Midiex.port_count()
 <!-- livebook:{"output":true} -->
 
 ```
-%{input: 4, output: 4}
+%{input: 1, output: 1}
 ```
 
 ### List devices (ports)
@@ -52,49 +136,13 @@ ports = Midiex.ports()
     direction: :input,
     name: "IAC Driver Bus 1",
     num: 0,
-    port_ref: #Reference<0.522475107.1026162712.215786>
-  },
-  %Midiex.MidiPort{
-    direction: :input,
-    name: "Arturia MicroFreak",
-    num: 1,
-    port_ref: #Reference<0.522475107.1026162712.215787>
-  },
-  %Midiex.MidiPort{
-    direction: :input,
-    name: "KeyStep Pro",
-    num: 2,
-    port_ref: #Reference<0.522475107.1026162712.215788>
-  },
-  %Midiex.MidiPort{
-    direction: :input,
-    name: "MiniFuse 2",
-    num: 3,
-    port_ref: #Reference<0.522475107.1026162712.215789>
+    port_ref: #Reference<0.1927633033.259915800.175566>
   },
   %Midiex.MidiPort{
     direction: :output,
     name: "IAC Driver Bus 1",
     num: 0,
-    port_ref: #Reference<0.522475107.1026162712.215790>
-  },
-  %Midiex.MidiPort{
-    direction: :output,
-    name: "Arturia MicroFreak",
-    num: 1,
-    port_ref: #Reference<0.522475107.1026162712.215791>
-  },
-  %Midiex.MidiPort{
-    direction: :output,
-    name: "KeyStep Pro",
-    num: 2,
-    port_ref: #Reference<0.522475107.1026162712.215792>
-  },
-  %Midiex.MidiPort{
-    direction: :output,
-    name: "MiniFuse 2",
-    num: 3,
-    port_ref: #Reference<0.522475107.1026162712.215793>
+    port_ref: #Reference<0.1927633033.259915800.175567>
   }
 ]
 ```
@@ -113,56 +161,23 @@ Midiex.ports(:output)
     direction: :output,
     name: "IAC Driver Bus 1",
     num: 0,
-    port_ref: #Reference<0.522475107.1026162712.215798>
-  },
-  %Midiex.MidiPort{
-    direction: :output,
-    name: "Arturia MicroFreak",
-    num: 1,
-    port_ref: #Reference<0.522475107.1026162712.215799>
-  },
-  %Midiex.MidiPort{
-    direction: :output,
-    name: "KeyStep Pro",
-    num: 2,
-    port_ref: #Reference<0.522475107.1026162712.215800>
-  },
-  %Midiex.MidiPort{
-    direction: :output,
-    name: "MiniFuse 2",
-    num: 3,
-    port_ref: #Reference<0.522475107.1026162712.215801>
+    port_ref: #Reference<0.1927633033.259915800.175569>
   }
 ]
 ```
 
 ```elixir
-out_port = Midiex.ports("Arturia", :output) |> List.first()
+out_port = Midiex.ports(~r/Arturia/, :output) |> List.first()
 ```
 
 <!-- livebook:{"output":true} -->
 
 ```
-%Midiex.MidiPort{
-  direction: :output,
-  name: "Arturia MicroFreak",
-  num: 1,
-  port_ref: #Reference<0.522475107.1026162712.215807>
-}
+nil
 ```
 
 ```elixir
 out_conn = Midiex.open(out_port)
-```
-
-<!-- livebook:{"output":true} -->
-
-```
-%Midiex.OutConn{
-  conn_ref: #Reference<0.522475107.1026162689.216660>,
-  name: "Arturia MicroFreak",
-  port_num: 1
-}
 ```
 
 ```elixir

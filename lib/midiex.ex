@@ -7,9 +7,11 @@ defmodule Midiex do
     - **list** or **count** MIDI ports availble (for example, a keyboard or synth)
   2. **Connections:**
     - **open** or **close** connections to MIDI ports
-    - **create a virtual output connection** so your Elixir application appears as a MIDI device
+    - **create a virtual input or output connections** so your Elixir application appears as a MIDI device
   3. **Messages:**
     - **send** or **receive messages** to and from connections.
+
+  ![Midiex](assets/grokking_midi.png)
 
   ## Examples
   ```
@@ -244,23 +246,20 @@ defmodule Midiex do
 
   # Returns a list of MIDI output connections, e.g.:
   [
-    %Midiex.MidiPort{
-      direction: :output,
+    %Midiex.OutConn{
+      conn_ref: #Reference<0.1633267383.3718381569.210768>,
       name: "Arturia MicroFreak",
-      num: 1,
-      port_ref: #Reference<0.3139841870.4103995416.58431>
+      port_num: 1
     },
-    %Midiex.MidiPort{
-      direction: :output,
+    %Midiex.OutConn{
+      conn_ref: #Reference<0.3139841870.4103995416.58432>,
       name: "KeyStep Pro",
-      num: 2,
-      port_ref: #Reference<0.3139841870.4103995416.58432>
+      port_num: 2
     },
-    %Midiex.MidiPort{
-      direction: :output,
+    %Midiex.OutConn{
+      conn_ref: #Reference<0.3139841870.4103995416.58433>,
       name: "MiniFuse 2",
-      num: 3,
-      port_ref: #Reference<0.3139841870.4103995416.58433>
+      port_num: 3
     }
   ]
   ```

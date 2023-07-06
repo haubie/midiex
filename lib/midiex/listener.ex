@@ -19,6 +19,8 @@ defmodule Midiex.Listener do
     Listener.add_handler(listener, fn (midi_msg) -> IO.inspect(midi_msg) end)
     ```
 
+  ![Midiex](assets/how_listener_works.png)
+
   ## Example
   ```
   alias Midiex.Listener
