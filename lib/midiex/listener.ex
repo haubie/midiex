@@ -46,7 +46,7 @@ defmodule Midiex.Listener do
 
   @impl true
   def init(state \\ %__MODULE__{}) do
-    if state.port, do: subscribe(self(), state.port)
+    if state.port && state.port != [], do: subscribe(self(), state.port)
     {:ok, state}
   end
 

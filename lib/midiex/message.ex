@@ -15,7 +15,30 @@ defmodule Midiex.Message do
 
   For example, taking the status byte for Note On which in HEX is `0x90`, and the note Middle C which is 60 and a maximum key velocity of 127, the MIDI message in binary format is:
 
-    <<0x90, 60, 127>>
+    `<<0x90, 60, 127>>`
+
+  ## Resolution (bits)
+  ### Coarse resolution
+  This type of message format is sometimes called 'coarse' or 7-bit MIDI, as it takes a maximum of 128 values only (from 0 to 127).
+
+  ### High resolution
+  However, 'high resolution' or 14-bit MIDI messages are possible, giving a maximum of 16,384 values (from 0 to 16,383). When working with controllers such as mod wheels, it allows for finer and smoother changes.
+
+  To achieve this higher 14-bit resolution, the MIDI message combines two 7-bit values called:
+  - **MSB (Most Significant Byte)**, which is used for 'coarser' values. This is the bit which has the greatest effect.
+  - **LSB (Least Significant Byte)**, which is used for 'finer' values.
+
+  In Elixir, We can unpack a 14-bit value into it's MSB and LSB bits using binary pattern matching, e.g.:
+
+  `<<msb::7, lsb::7>> = <<value::14>>`
+
+  The MSB and LSB values are sent as two different messages. Below is what it would look like for a Mod wheel which uses two control change command messages (`0x01` and `0x21`) to send the MSB and LSB respectively
+  ```
+  <<msb::7, lsb::7>> = <<mod_wheel_value::14>>
+  msb_binary = control_change(1, msb)
+  lsb_binary = control_change(0x21, lsb)
+  <<msb_binary::binary, lsb_binary::binary>>
+  ```
 
   ## MIDI message functions
   So that you don't have to remember all the MIDI message codes, this library has the following functions to generate messages:
