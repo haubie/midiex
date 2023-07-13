@@ -31,10 +31,6 @@ use std::time::Duration;
 use std::io::{stdin, stdout, Write};
 use std::ops::Add;
 
-
-// Send messages to Erlang PID
-// use tokio::sync::mpsc::{channel, Receiver, Sender};
-
 use midir::{MidiInput, MidiOutput, MidiInputConnection, MidiOutputConnection, MidiInputPort, MidiOutputPort, Ignore, InitError};
 
 use midir::os::unix::{VirtualInput, VirtualOutput};
@@ -48,12 +44,6 @@ use rustler::Encoder;
 thread_local!(static GLOBAL_MIDI_INPUT_RESULT: Result<MidiInput, InitError> = MidiInput::new("MIDIex"));
 thread_local!(static GLOBAL_MIDI_OUTPUT_RESULT: Result<MidiOutput, InitError> = MidiOutput::new("MIDIex"));
 
-
-
-// REMOVE: GLOBAL_MIDI_BINARY_MESSAGES - SHOULD NOT BE USED
-lazy_static!{
-    static ref GLOBAL_MIDI_BINARY_MESSAGES: Mutex<Vec<OwnedBinary>> = Mutex::new(Vec::<OwnedBinary>::new());
-}
 
 // GLOBALS FOR INPUT PORTS BEING SUBSCRIBED TO
 lazy_static!{
@@ -88,43 +78,6 @@ mod atoms {
 
 
 
-// Send message to Erlang
-// Refactor to spin off a thread which listens to input events and sends them to an Erlang process.
-// The rust side will need to keep a list of input connections being listened too. Ideally these will be identified by a key (string?)
-// There will also need to be a function to close and remove an input connection from the list.
-// REFERNCE: Look at this project to see how they did it: https://github.com/rrx/rust-synth/blob/b632bdd915979ad6d8e7973b5362dfdb9853fcb2/src/midi.rs
-// RUSTLER REFERENCE: https://github.com/rusterlium/rustler/blob/d8aa66d976fa5ebbc6f74662992448a79a7d2fbf/rustler_tests/native/rustler_test/src/test_env.rs
-
-// fn check_msg_callback<T>(microsecond: u64, message: &[u8], _: &mut T) {
-
-//     let mut owned_env = GLOBAL_OWNED_ENV.lock().unwrap();
-
-//     match *GLOBAL_RETURN_PID.lock().unwrap() {
-//         Some(pid) => {
-//             owned_env.send_and_clear(&pid, |env| {
-
-//                 let mut the_message = Term::map_new(env);
-//                 let mut s = format!("You received this message from Rust.");
-//                 // the_message = the_message.map_put("port_name", midi_port.name).unwrap();
-//                 // the_message = the_message.map_put("port_num", midi_port.num).unwrap();
-//                 the_message = the_message.map_put("message", message).unwrap();
-        
-//                 the_message
-            
-//             });
-//         },
-//         None => println!("No pid"),
-//     }
-
-   
-
-//     // println!("Midi message is {:?}", message);
-    
-// }
-
-
-
-
 
 #[rustler::nif]
 fn unsubscribe_all_ports(env: Env) -> Result<Vec<MidiPort>, Error> {
@@ -132,12 +85,6 @@ fn unsubscribe_all_ports(env: Env) -> Result<Vec<MidiPort>, Error> {
     GLOBAL_LISTEN_LIST.lock().unwrap().clear();
     Ok(GLOBAL_LISTEN_LIST.lock().unwrap().to_vec())
 }
-
-// #[rustler::nif]
-// fn unsubscribe_all_ports(env: Env) -> Result<Vec<usize>, Error> {
-//     GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().clear();
-//     Ok(GLOBAL_LISTEN_LIST_INDEX.lock().unwrap().to_vec())
-// }
 
 #[rustler::nif]
 fn unsubscribe_port(env: Env, midi_port: MidiPort) -> Result<Vec<MidiPort>, Error> {
@@ -214,61 +161,6 @@ fn close_out_conn(midi_out_conn: OutConn) -> Atom {
 
     atoms::ok()
 }
-
-
-// THIS ISN'T NEEDED ANYMORE - fn subscribe/1 is used instead.
-#[rustler::nif(schedule="DirtyIo")]
-fn listen(env: Env, midi_port: MidiPort) -> Result<Vec<Binary>, Error> {
-
-    let mut midi_msg = Arc::new(Mutex::new(Vec::new()));
-
-    if midi_port.direction == atoms::input()  {
-
-        let mut midi_msg = midi_msg.clone();
-
-        if let MidiexMidiPortRef::Input(in_port) = &midi_port.port_ref.0 { 
-        
-            let mut midi_input = MidiInput::new("MIDIex").expect("Midi input"); 
-
-            let port_name = midi_input.port_name(in_port).unwrap();
-
-            // _conn_in needs to be a named parameter, because it needs to be kept alive until the end of the scope
-            let _conn_in = midi_input.connect(
-                &in_port,
-                "MIDIex input port",
-                move |stamp, message, _| {
-
-                let mut midi_msg_clone = midi_msg.clone();
-                let mut vec_msg =  message.to_vec();
-
-                let mut bin_msg: OwnedBinary = OwnedBinary::new(message.len()).expect("Owned binary message created");
-                bin_msg.as_mut_slice().copy_from_slice(&vec_msg);
-
-                midi_msg_clone.lock().unwrap().push(bin_msg);
-                                
-            }, ());   
-    
-            sleep(Duration::from_millis(5));
-          
-        };
-
-    } else {
-        // println!("\nCannot listen to an output port - use the Midiex.open/1 function instead");
-        return Err(Error::RaiseTerm(Box::new(
-            "Cannot listen to an output port - use the Midiex.open/1 function instead".to_string(),
-        ))) 
-    }
-
-    let mut midi_msg_lock =  midi_msg.lock().unwrap();
-    let new_vec_of_bin_msgs: Vec<Binary> = (midi_msg_lock
-                                        .drain(..)
-                                        .map(|owned_bin_msg| owned_bin_msg.release(env))
-                                        .collect::<Vec<Binary>>()).to_vec();
-
-    Ok(new_vec_of_bin_msgs)
-
-}
-
 
 
 #[rustler::nif]
@@ -499,27 +391,6 @@ impl OutConnRef {
 }
 
 
-// #[derive(NifStruct, Clone)]
-// #[module = "Midiex.InConn"]
-// pub struct InConn {
-//     conn_ref: ResourceArc<InConnRef>,
-//     // midi_port: MidiPort,
-//     name: String,
-//     port_num: usize,
-// }
-
-// WRAP IN AN OPTION AS WELL SO THE CONN CAN BE DESTROYED LATER
-// Use of Option mean ownership of the connection can be taken with .take() and then .closed() can be called.
-
-// pub struct InConnRef(pub Mutex<Option<MidiInputConnection<()>>>);
-
-// impl InConnRef {
-//     pub fn new(data: MidiInputConnection<()>) -> Self {
-//         Self(Mutex::new(Some(data)))
-//     }
-// }
-
-
 
 // ==========
 // MIDI Ports
@@ -683,8 +554,6 @@ fn count_ports() -> Result<NumPorts, Error>{
 }
 
 
-
-
 fn on_load(env: Env, _info: Term) -> bool {
   
     // MIDI Input and Output object for the OS
@@ -696,10 +565,7 @@ fn on_load(env: Env, _info: Term) -> bool {
     rustler::resource!(MidiexMidiPortRef, env);
 
     // MIDI connection to a MIDI port
-    // rustler::resource!(FlexiConn, env);
-    // rustler::resource!(MidiexConnRef, env);
     rustler::resource!(OutConnRef, env);
-    // rustler::resource!(InConnRef, env);
 
     true
 }
@@ -718,7 +584,6 @@ rustler::init!(
         unsubscribe_port_by_index,
         create_virtual_output_conn,
         create_virtual_input,
-        listen,
         subscribe_virtual_input,
         unsubscribe_virtual_port,
         unsubscribe_all_virtual_ports,

@@ -11,7 +11,7 @@ defmodule Midiex do
   3. **Messages:**
     - **send** or **receive messages** to and from connections.
 
-  ![Midiex](assets/grokking_midi.png)
+  ![Grokking MIDI](assets/grokking_midi.png)
 
   ## Examples
   ```
@@ -561,9 +561,6 @@ defmodule Midiex do
   """
   @spec subscribed_ports :: []
   def subscribed_ports(), do: Backend.get_subscribed_ports() ++ Backend.get_subscribed_virtual_ports()
-
-  # @doc section: :messages
-  # def listen(input_port), do: Backend.listen(input_port)
 
 
   # #######

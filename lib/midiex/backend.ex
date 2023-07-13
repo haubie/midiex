@@ -28,7 +28,6 @@ defmodule Midiex.Backend do
   def unsubscribe_port(_midi_port), do: err()
   def unsubscribe_port_by_index(_port_index), do: err()
 
-  def listen(_input_port), do: err()
   def subscribe_virtual_input(_name \\ "MIDIex-virtual-input"), do: err()
   def unsubscribe_virtual_port(_name), do: err()
   def unsubscribe_all_virtual_ports(), do: err()
