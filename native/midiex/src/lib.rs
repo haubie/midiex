@@ -10,39 +10,19 @@ use core_foundation::runloop::CFRunLoop;
 use coremidi::{Client, Notification, AddedRemovedInfo, ObjectType};
 use coremidi::Notification::{ObjectAdded, ObjectRemoved};
 
-// CORE MIDI TEST
-// use coremidi::{Destinations, Endpoint, Sources};
-
 use std::sync::Mutex;
-// use std::sync::{Arc, Mutex};
-// use std::sync::RwLock; // Potentially use this instead of Mutex for MidiInput and MidiOutput
 use std::result::Result;
-
-// use std::iter::FromIterator;
-
-// use std::hash::{Hash, Hasher};
-
-// use std::ops::{Deref, DerefMut};
-use std::ops::DerefMut;
-// use std::sync::mpsc;
-
-// PLAY TEST
-// use std::thread::sleep;
-// use std::time::Duration;
-// use rustler::thread;
-
-// use std::io::{stdin, stdout};
-// use std::io::Write;
-
-
-use std::ops::Add;
+use std::ops::{DerefMut, Add};
 
 use midir::{MidiInput, MidiOutput, MidiOutputConnection, MidiInputPort, MidiOutputPort, Ignore, InitError};
 use midir::os::unix::{VirtualInput, VirtualOutput};
 
-use rustler::{Atom, Env, Error, NifStruct, NifMap, ResourceArc, Term, Binary, OwnedEnv};
-use rustler::Encoder;
+use rustler::{Atom, Env, Error, NifStruct, NifMap, ResourceArc, Term, Binary, OwnedEnv, Encoder};
 
+
+// --------------
+// GLOBALS
+// --------------
 
 // IS THIS NEEDED ANYMORE?
 // This version uses threadlocal to create the MidiInput and MidiOutput objects
@@ -64,8 +44,10 @@ lazy_static!{
 }
 
 
+// --------------
+// ATOMS
+// --------------
 
-// Atoms
 pub mod atoms {
     rustler::atoms! {
         ok,
@@ -86,16 +68,14 @@ pub mod atoms {
 }
 
 
-
-
-
-
+// ----------
+// SUBSCRIBE
+// ----------
 
 #[rustler::nif]
 fn unsubscribe_all_ports() -> Result<Vec<MidiPort>, Error> {
     GLOBAL_LISTEN_LIST.lock().unwrap().clear();
     Ok(GLOBAL_LISTEN_LIST.lock().unwrap().to_vec())
-
 }
 
 #[rustler::nif]
@@ -162,20 +142,9 @@ pub fn subscribe(env: Env, midi_port: MidiPort) -> Atom {
     atoms::ok()
 }
 
-
-
-#[rustler::nif]
-fn close_out_conn(midi_out_conn: OutConn) -> Atom {
-    midi_out_conn.conn_ref.0
-    .lock()
-    .expect("lock should not be poisoned")
-    .take()
-    .expect("there should be a connection")
-    .close();
-
-    atoms::ok()
-}
-
+// ------------------
+// VIRTUAL INPUT
+// ------------------
 
 #[rustler::nif]
 fn create_virtual_input(port_name: String) -> Result<VirtualMidiPort, Error> {
@@ -250,7 +219,7 @@ pub fn subscribe_virtual_input(env: Env, virtual_midi_port: VirtualMidiPort) -> 
 
 
 // ---------------------------------------
-// NOTIFICATIONS
+// NOTIFICATIONS AND HOTPLUG
 // ---------------------------------------
 // Supported on MacOS only at the moment
 // ---------------------------------------
@@ -289,10 +258,36 @@ pub fn notifications(env: Env) -> Result<Atom, Error> {
 #[rustler::nif]
 pub fn notifications() -> Result<Atom, Error> {
     Err(Error::RaiseTerm(Box::new(
-        "Notications are not yet enabled for this platform (currently MacOS)".to_string(),
+        "Notications are not yet enabled for this platform (currently MacOS only)".to_string(),
     )))
 }
 
+#[cfg(all(target_os = "macos"))]
+#[rustler::nif]
+pub fn hotplug() -> Result<Atom, Error> {
+
+    std::thread::spawn(move || {        
+        let cb_fb = move |_notification: &Notification| {}; 
+        let _client = Client::new_with_notifications("MIDIex notifications client", cb_fb).unwrap();
+        CFRunLoop::run_current();
+    });
+
+    Ok(atoms::ok())
+}
+
+
+#[cfg(not(any(target_os = "macos")))]
+#[rustler::nif]
+pub fn hotplug() -> Result<Atom, Error> {
+    Err(Error::RaiseTerm(Box::new(
+        "Hotplug is not yet enabled for this platform (currently MacOS only)".to_string(),
+    )))
+}
+
+
+// ------------------
+// OUTPUT CONNECTION
+// ------------------
 
 #[rustler::nif]
 fn connect(midi_port: MidiPort) -> Result<OutConn, Error>{
@@ -366,7 +361,26 @@ fn connect(midi_port: MidiPort) -> Result<OutConn, Error>{
     )))
 }
 
+// ------------------------
+// OUPUT CONNECTION CLOSING
+// ------------------------
 
+#[rustler::nif]
+fn close_out_conn(midi_out_conn: OutConn) -> Atom {
+    midi_out_conn.conn_ref.0
+    .lock()
+    .expect("lock should not be poisoned")
+    .take()
+    .expect("there should be a connection")
+    .close();
+
+    atoms::ok()
+}
+
+
+// ------------------------
+// VIRTUAL OUPUT
+// ------------------------
 
 #[rustler::nif]
 fn create_virtual_output_conn(name: String) -> Result<OutConn, Error>{
@@ -401,6 +415,9 @@ fn create_virtual_output_conn(name: String) -> Result<OutConn, Error>{
 
 }
 
+// ------------------------
+// SENDING MIDI MESSAGES
+// ------------------------
 
 #[rustler::nif(schedule = "DirtyCpu")]
 fn send_msg(midi_out_conn: OutConn, message: Binary) -> Result<OutConn, Error>{
@@ -583,56 +600,40 @@ impl MidiexMidiOutputRef {
 }
 
 
+// ------------------------
+// LIST PORTS
+// ------------------------
+
 // List all the ports, taking midi_io as input
 #[rustler::nif(schedule = "DirtyCpu")]
 fn list_ports() -> Result<Vec<MidiPort>, Error> {
 
     let mut vec_of_devices: Vec<MidiPort> = Vec::new();
 
-    // GLOBAL_MIDI_INPUT_RESULT.with(|midi_input_result| {
+    GLOBAL_MIDI_INPUT_RESULT.with(|midi_input_result| {
 
-    //     let midi_input = match midi_input_result {
-    //         Ok(midi_device) => midi_device,
-    //         Err(error) => panic!("Problem getting midi input devices. Error: {:?}", error)
-    //     };
+        let midi_input = match midi_input_result {
+            Ok(midi_device) => midi_device,
+            Err(error) => panic!("Problem getting midi input devices. Error: {:?}", error)
+        };
 
-    //     // println!("\nMidi input ports: {:?}\n\r", midi_input.port_count());
+        // println!("\nMidi input ports: {:?}\n\r", midi_input.port_count());
 
-    //     for (i, p) in midi_input.ports().iter().enumerate() {
+        for (i, p) in midi_input.ports().iter().enumerate() {
         
-    //         let port_name = if let Ok(port_name) = midi_input.port_name(&p) { port_name } else { "No device name given".to_string() };
+            let port_name = if let Ok(port_name) = midi_input.port_name(&p) { port_name } else { "No device name given".to_string() };
     
-    //             vec_of_devices.push(
-    //                 MidiPort{
-    //                     direction: atoms::input(),
-    //                     name: port_name,
-    //                     num: i,
-    //                     port_ref: ResourceArc::new(FlexiPort::new(MidiexMidiPortRef::Input(MidiInputPort::clone(p))))         
-    //                 });
+                vec_of_devices.push(
+                    MidiPort{
+                        direction: atoms::input(),
+                        name: port_name,
+                        num: i,
+                        port_ref: ResourceArc::new(FlexiPort::new(MidiexMidiPortRef::Input(MidiInputPort::clone(p))))         
+                    });
         
-    //     }
+        }
     
-    // });
-
-    let midi_input = MidiInput::new("MIDIex input #2").expect("Midi input");
-
-    for (i, p) in midi_input.ports().iter().enumerate() {
-    
-        let port_name = if let Ok(port_name) = midi_input.port_name(&p) { port_name } else { "No device name given".to_string() };
-
-            vec_of_devices.push(
-                MidiPort{
-                    direction: atoms::input(),
-                    name: port_name,
-                    num: i,
-                    port_ref: ResourceArc::new(FlexiPort::new(MidiexMidiPortRef::Input(MidiInputPort::clone(p))))         
-                });
-    
-    }
-
-
-
-
+    });
 
     GLOBAL_MIDI_OUTPUT_RESULT.with(|midi_output_result| {
 
@@ -662,6 +663,11 @@ fn list_ports() -> Result<Vec<MidiPort>, Error> {
     return Ok(vec_of_devices)
 
 }
+
+
+// ------------------------
+// COUNT PORTS
+// ------------------------
 
 
 #[rustler::nif(schedule = "DirtyCpu")]
@@ -694,6 +700,11 @@ fn count_ports() -> Result<NumPorts, Error>{
 
     return Ok( NumPorts { input: num_input_ports, output:  num_output_ports } )
 }
+
+
+// ------------------------
+// RUSTLER
+// ------------------------
 
 
 fn on_load(env: Env, _info: Term) -> bool {
@@ -734,7 +745,8 @@ rustler::init!(
         unsubscribe_all_virtual_ports,
         get_subscribed_ports,
         get_subscribed_virtual_ports,
-        notifications
+        notifications,
+        hotplug
         ],
     load = on_load
 );

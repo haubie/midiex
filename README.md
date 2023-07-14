@@ -33,7 +33,8 @@ At it's most basic level, the core functions of Midiex are for:
 ## Feature support
 Not all midir features have been wrapped and some features are backend specific:
 - **Virtual output connection**: currently on every platform but Windows
-- **Virtual input connection**: currently on every platform but Windows.
+- **Virtual input connection**: currently on every platform but Windows
+- **Notification messages** and **hot-plug support**: currently implemented on MacOS (e.g. to receive notifications when a device has been plugged in or removed).
 
 ## MIDI messages
 MIDI messages are in binary format. They're usually in the format of one status byte followed by one or two data bytes.
@@ -76,14 +77,14 @@ The package can be installed by adding midiex to your list of dependencies in mi
 ```
 def deps do
   [
-    {:midiex, "~> 0.1.1"}
+    {:midiex, "~> 0.2.0"}
   ]
 End
 ```
 
 ### Using within LiveBook and IEx
 ```
-Mix.install([{:midiex, "~> 0.1.1"}])
+Mix.install([{:midiex, "~> 0.2.0"}])
 ```
 
 #### LiveBook tour
