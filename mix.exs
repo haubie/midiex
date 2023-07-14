@@ -26,14 +26,16 @@ defmodule Midiex.MixProject do
           Main: [
             Midiex,
             Midiex.Message,
-            Midiex.Listener
+            Midiex.Listener,
+            Midiex.Notifier
           ],
-          Resources: [
+          "Structs and Resources": [
             Midiex.MidiIO,
             Midiex.MidiOutput,
             Midiex.OutConn,
             Midiex.MidiPort,
             Midiex.VirtualMidiPort,
+            Midiex.MidiNotification
           ],
           Backend: [
             Midiex.Backend

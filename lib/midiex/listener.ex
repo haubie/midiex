@@ -2,6 +2,7 @@ defmodule Midiex.Listener do
   @moduledoc """
   GenServer for subscribing and responding to MIDI input ports.
 
+  ## How this works
   This GenServer works by:
   - Subscribing to one or more MIDI input ports (using `Midiex.subscribe/1`). For each MIDI input port, `Midiex.subscribe/1` will create a new OS thread (in Rust) which establishes a connection to the port and listens to messages. Incoming messages are then forwarded to the calling Elixir process (in this case, the `Midiex.Listener` process.)
 
@@ -88,7 +89,6 @@ defmodule Midiex.Listener do
   @impl true
   def handle_info(info, state) do
     # IO.inspect info, label: "INFO MSG"
-    # state = check_and_action_midi_msgs(state)
     state.callback
     |> Enum.each(fn callback_fn -> callback_fn.(info) end)
 

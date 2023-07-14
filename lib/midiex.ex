@@ -570,11 +570,14 @@ defmodule Midiex do
 
   The calling process will receive MIDI notification messages.
 
-  Instead of this function, consider using the `Midiex.Notifer` GenServer, which will listen to notifications and allow you to create handlers to respond to them.
+  Instead of this function, consider using the `Midiex.Notifier` GenServer, which will listen to notifications and allow you to create handlers to respond to them.
 
-  To make sure hotplug support works on `Midiex.ports()` and `Midiex.port_count()`, make sure this function is called first. It only needs to be called once to enable hotmode support mode for the rest of your application's session.
-
-  If you want hotplug support but don't need to receive and respond to MIDI notifications, see `hotplug/0` instead.
+  > #### Important {: .warning}
+  >
+  > To make sure hotplug support works on `Midiex.ports()` and `Midiex.port_count()`, make sure this function is called first. It only needs to be called once to enable hotmode support mode for the rest of your application's session.
+  >
+  > If you want hotplug support but don't need to receive and respond to MIDI notifications, see `hotplug/0` instead.
+  >
   """
   def notifications(), do: Backend.notifications()
 
@@ -584,13 +587,16 @@ defmodule Midiex do
 
   By default on MacOS, Midiex port based functions, such as `Midiex.ports()` will only list ports visible when the Elixir app was first started. That means devices added or removed afterwards will not be reflected in `Midiex.ports()`.
 
-  If you'd like functions like `Midiex.ports()` to reflect the current available ports on your system, such as when plugging or unplugging physical devices, you will need to call the `hotplug/0` function before `Midiex.ports` or `Midiex.port_count`.
-
-  You will only need to call `hotplug/0` once to enable this mode for the rest of your application's session.
+  > #### Important {: .warning}
+  >
+  > If you'd like functions like `Midiex.ports()` to reflect the current available ports on your system, such as when plugging or unplugging physical devices, **you will need to call the `hotplug/0` function *before* `Midiex.ports` or `Midiex.port_count`**.
+  >
+  > You will only need to call `hotplug/0` once to enable this mode for the rest of your application's session.
+  >
 
   This function is similar to the `notifications/0` function, expect the calling Elixir process will not receive any MIDI notification messages.
 
-  If you need to respond to MIDI notification messages, use `notifications/0` instead of this function (or use the `Midiex.Notifer` GenServer) and make sure it has been called before `Midiex.ports` or `Midiex.port_count` so hot-plugging is supported.
+  If you need to respond to MIDI notification messages, use `notifications/0` instead of this function (or use the `Midiex.Notifier` GenServer) and make sure it has been called before `Midiex.ports` or `Midiex.port_count` so hot-plugging is supported.
   """
   def hotplug(), do: Backend.hotplug()
 

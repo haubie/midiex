@@ -104,6 +104,9 @@ pub fn subscribe(env: Env, midi_port: MidiPort) -> Atom {
     g_list_lock.sort_unstable_by_key(|midi_port| (midi_port.num));
     g_list_lock.dedup();
 
+
+    let m_port_clone = midi_port.clone();
+
     let pid = env.pid();
     
     let mut owned_env = OwnedEnv::new();
@@ -122,8 +125,19 @@ pub fn subscribe(env: Env, midi_port: MidiPort) -> Atom {
             .connect(
                 &in_port,
                 "midir-read-input",
-                move |_stamp, message, _| {
-                    owned_env.send_and_clear(&pid, |the_env| { message.encode(the_env) });
+                move |stamp, message, _| {
+
+                    owned_env.send_and_clear(&pid, |the_env| {
+                        // message.encode(the_env)
+
+                        let m_port_clone = m_port_clone.clone();
+
+                        MidiMessage{  
+                            data: message.to_vec(),
+                            port: m_port_clone,
+                            timestamp: stamp
+                        }.encode(the_env)
+                    });
                     ()
                 },
                 (),
@@ -175,6 +189,7 @@ fn unsubscribe_all_virtual_ports() -> Result<Vec<VirtualMidiPort>, Error> {
 fn get_subscribed_virtual_ports() -> Result<Vec<VirtualMidiPort>, Error> {
     Ok(GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().to_vec()) 
 }
+
 
 // This replaces all other create_virtual_input stuff
 #[rustler::nif]
@@ -434,6 +449,19 @@ fn send_msg(midi_out_conn: OutConn, message: Binary) -> Result<OutConn, Error>{
     }
     
     Ok(midi_out_conn)
+}
+
+
+
+// =================
+// MIDI Message
+// =================
+#[derive(NifStruct)]
+#[module = "Midiex.MidiMessage"]
+pub struct MidiMessage {
+    port: MidiPort,
+    data: Vec<u8>,
+    timestamp: u64
 }
 
 
@@ -722,6 +750,9 @@ fn on_load(env: Env, _info: Term) -> bool {
 
     // MIDI notification
     rustler::resource!(MidiNotification, env);
+
+    // MIDI message
+    rustler::resource!(MidiMessage, env);
     
     true
 }

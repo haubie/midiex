@@ -1,6 +1,5 @@
 defmodule Midiex.Message do
 
-
   # References
   # https://anotherproducer.com/online-tools-for-musicians/midi-cc-list/
   # https://docs.rs/midi-msg/latest/midi_msg/enum.ChannelVoiceMsg.html

@@ -4,6 +4,14 @@ defmodule Midiex.Notifier do
 
   This is currently implemented for Mac only.
 
+  ## How this works
+  On Mac, a callback function needs to be created to specially handle MIDI notification messages, such as when a device has been physically plugged (`:added`) or unplugged (`:removed`). This callback is implemented in the Rust side of this library.
+  The notifications will be delivered on MacOS to a Rust thread with the specific 'run loop' that was created when the `Midiex.notifications/0` function was first called. This function is called automatically when this GenServer is started.
+
+  Any (`:added`) or (`:removed`) notifications will be sent to this GenServer from the Rust thread.
+
+  The `Midiex.Notifier` GenServer then forwards these notifications to any handlers added in with the `add_handler/2` function or passed to it through the `start/1` function.
+
   ## Example
   ```
   # Start the Notifier GenServer
@@ -84,7 +92,6 @@ defmodule Midiex.Notifier do
 
   @impl true
   def handle_info(info, state) do
-    # state = check_and_action_midi_msgs(state)
     state.callback
     |> Enum.each(fn callback_fn -> callback_fn.(info) end)
 
