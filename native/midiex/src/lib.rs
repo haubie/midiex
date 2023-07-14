@@ -7,7 +7,7 @@ extern crate lazy_static;
 
 #[cfg(all(target_os = "macos"))]
 use core_foundation::runloop::CFRunLoop;
-use coremidi::{Client, Notification};
+use coremidi::{Client, Notification, AddedRemovedInfo, ObjectType};
 use coremidi::Notification::{ObjectAdded, ObjectRemoved};
 
 // CORE MIDI TEST
@@ -74,9 +74,20 @@ pub mod atoms {
         input,
         output,
 
-        message
+        device,
+        entity,
+        other,
+
+        message,
+
+        added,
+        removed
     }
 }
+
+
+
+
 
 
 
@@ -245,34 +256,29 @@ pub fn subscribe_virtual_input(env: Env, virtual_midi_port: VirtualMidiPort) -> 
 // ---------------------------------------
 
 #[cfg(all(target_os = "macos"))]
-fn handle_notification(notification: &Notification) {
-    // println!("\n{:?}\n", notification);
-
-    match notification {
-        ObjectAdded(info) => println!("\n\nAdded event: \tP:{:?}, {:?} ({:?})\t C:{:?}, {:?} ({:?})\n", info.parent.name(), info.parent.unique_id(), info.parent_type, info.child.display_name(), info.child.unique_id(), info.child_type),
-        ObjectRemoved(info) => println!("\n\nRemoved event: \tP:{:?}, {:?} ({:?})\t C:{:?}, {:?} ({:?})\n", info.parent.name(), info.parent.unique_id(), info.parent_type, info.child.display_name(), info.child.unique_id(), info.child_type),
-        _ => (),
-    }
-
-    let midi_input = MidiInput::new("MIDIex input").expect("Midi input");
-
-    for (i, p) in midi_input.ports().iter().enumerate() {
-    
-        let port_name = if let Ok(port_name) = midi_input.port_name(&p) { port_name } else { "No device name given".to_string() };
-
-        // println!("\nCallback: {:?} Port name {:?}\n", i, port_name);
-    
-    }
-}
-
-#[cfg(all(target_os = "macos"))]
 #[rustler::nif]
-pub fn notifications() -> Result<Atom, Error> {
+pub fn notifications(env: Env) -> Result<Atom, Error> {
 
-    // let mut owned_env = OwnedEnv::new();
-
+    let pid = env.pid();
+    let mut owned_env = OwnedEnv::new();
+    
     std::thread::spawn(move || { 
-        let _client = Client::new_with_notifications("MIDIex notifications client", handle_notification).unwrap();
+            
+        let cb_fb = move |notification: &Notification| {
+
+        match notification {
+            ObjectAdded(info) => owned_env.send_and_clear(&pid, |the_env| {
+                MidiNotification::new(atoms::added(), info).encode(the_env)
+            }),
+            ObjectRemoved(info) => owned_env.send_and_clear(&pid, |the_env| {
+                MidiNotification::new(atoms::removed(), info).encode(the_env)
+            }),
+                _ => (),
+            };
+        
+        };
+    
+        let _client = Client::new_with_notifications("MIDIex notifications client", cb_fb).unwrap();
         CFRunLoop::run_current();
     });
 
@@ -286,11 +292,6 @@ pub fn notifications() -> Result<Atom, Error> {
         "Notications are not yet enabled for this platform (currently MacOS)".to_string(),
     )))
 }
-
-
-
-
-
 
 
 #[rustler::nif]
@@ -403,9 +404,6 @@ fn create_virtual_output_conn(name: String) -> Result<OutConn, Error>{
 
 #[rustler::nif(schedule = "DirtyCpu")]
 fn send_msg(midi_out_conn: OutConn, message: Binary) -> Result<OutConn, Error>{
-
-    // let mut midi_output = MidiOutput::new("MIDIex").expect("Midi output"); 
-
     { 
         let mut binding = midi_out_conn.conn_ref.0.lock().unwrap();
         let out_conn = binding.deref_mut();
@@ -420,6 +418,73 @@ fn send_msg(midi_out_conn: OutConn, message: Binary) -> Result<OutConn, Error>{
     
     Ok(midi_out_conn)
 }
+
+
+// =================
+// MIDI Notification
+// =================
+#[derive(NifStruct)]
+#[module = "Midiex.MidiNotification"]
+pub struct MidiNotification {
+    notification_type: Atom,
+    parent_name: String,
+    parent_id: u32,
+    parent_type: Atom,
+    name: String,
+    native_id: u32,
+    direction: Atom
+}
+
+impl MidiNotification {
+    pub fn new(notification_type: Atom, info: &AddedRemovedInfo) -> Self {
+
+        let parent_name = match info.parent.name() {
+            Some(name) => name,
+            None => "".to_string()
+        };
+
+        let parent_id = match info.parent.unique_id() {
+            Some(id) => id,
+            None => 0
+        };
+
+        let child_name = match info.child.display_name() {
+            Some(name) => name,
+            None => "".to_string()
+        };
+
+        let child_id = match info.child.unique_id() {
+            Some(id) => id,
+            None => 0
+        }; 
+
+        Self{
+            notification_type: notification_type,
+            parent_name: parent_name,
+            parent_id: parent_id,
+            parent_type: midi_obj_type_to_atom(info.parent_type),
+            name: child_name,
+            native_id: child_id,
+            direction: midi_obj_type_to_atom(info.child_type)
+        }
+        
+    }
+}
+
+fn midi_obj_type_to_atom(object_type: ObjectType) -> Atom {
+    match object_type {
+        ObjectType::Other => atoms::other(),
+        ObjectType::Device => atoms::device(),
+        ObjectType::Entity => atoms::entity(),
+        ObjectType::Source => atoms::input(),
+        ObjectType::Destination => atoms::output(),
+        ObjectType::ExternalDevice => atoms::device(),
+        ObjectType::ExternalEntity => atoms::entity(),
+        ObjectType::ExternalSource => atoms::input(),
+        ObjectType::ExternalDestination => atoms::output(),
+    }
+}
+
 
 
 // ===============
@@ -644,6 +709,9 @@ fn on_load(env: Env, _info: Term) -> bool {
     // MIDI connection to a MIDI port
     rustler::resource!(OutConnRef, env);
 
+    // MIDI notification
+    rustler::resource!(MidiNotification, env);
+    
     true
 }
 

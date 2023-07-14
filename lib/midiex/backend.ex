@@ -35,6 +35,7 @@ defmodule Midiex.Backend do
   def get_subscribed_virtual_ports(), do: err()
 
   def notifications(), do: err()
+  def hotplug(), do: err()
 
 
   defp err(), do: :erlang.nif_error(:nif_not_loaded)

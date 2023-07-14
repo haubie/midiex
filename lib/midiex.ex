@@ -562,6 +562,34 @@ defmodule Midiex do
   @spec subscribed_ports :: []
   def subscribed_ports(), do: Backend.get_subscribed_ports() ++ Backend.get_subscribed_virtual_ports()
 
+  @doc section: :notifications
+  @doc """
+  Low-level API for subscribing to MIDI notification messages.
+
+  Currently only MacOS is supported to recieve notifications.
+
+  The calling process will receive MIDI notification messages.
+
+  Instead of this function, consider using the `Midiex.Notifer` GenServer, which will listen to notifications and allow you to create handlers to respond to them.
+  """
+  def notifications(), do: Backend.notifications()
+
+  @doc section: :notifications
+  @doc """
+  Ensures that hot-plugging of devices is support on MacOS.
+
+  By default on MacOS, Midiex port based functions, such as `Midiex.ports()` will only list ports visible when Elixir app was started.
+
+  If you'd like functions like `Midiex.ports()` to reflect the current state of ports on your system, such as when plugging or unplugging physical devices, you will need to call the `hotplug/0` function before `Midiex.ports` or `Midiex.port_count`.
+
+  You will only need to call `hotplug/0` once to enable this mode for the rest of your applications session.
+
+  This function is similar to the `notificatons/0` function, expect you it will not send any MIDI notification messages to the calling Elixir process.
+
+  If you need to respond to MIDI notification messages, use `notifications/0 instead (or use the `Midiex.Notifer` GenServer) and make sure it has been called before `Midiex.ports` or `Midiex.port_count`.
+  """
+  def hotplug(), do: Backend.hotplug()
+
 
   # #######
   # HELPERS

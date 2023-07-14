@@ -87,7 +87,7 @@ defmodule Midiex.Listener do
 
   @impl true
   def handle_info(info, state) do
-    IO.inspect info, label: "INFO MSG"
+    # IO.inspect info, label: "INFO MSG"
     # state = check_and_action_midi_msgs(state)
     state.callback
     |> Enum.each(fn callback_fn -> callback_fn.(info) end)

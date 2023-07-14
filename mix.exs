@@ -44,6 +44,7 @@ defmodule Midiex.MixProject do
           "Output connections": &(&1[:section] == :connections),
           "Virtual ports & connections": &(&1[:section] == :virtual),
           "Send & receive messages": &(&1[:section] == :messages),
+          "Notifications & hot-plugging": &(&1[:section] == :notifications),
           "Channel voice messages": &(&1[:section] == :channel_voice),
           "Channel change messages": &(&1[:section] == :control_change),
           "Channel mode messages": &(&1[:section] == :channel_mode),
