@@ -426,7 +426,7 @@ defmodule Midiex do
   - A single `%Midiex.MidiPort{direction: :input}` or `%Midiex.VirtualMidiPort{direction: :input}` struct
   - A list of `%Midiex.MidiPort{direction: :input}` or `%Midiex.VirtualMidiPort{direction: :input}` structs.
 
-  The calling process will receive MIDI messages from the ports subscribed to. The source of the message will be undifferentiated, so consider using a different calling process for different inputs if they need to be handled separately.
+  The calling process will receive MIDI messages from the ports subscribed to. The source of the message will be differentiated by the input port, but also consider using a different calling process for different inputs if they need to be handled separately.
 
   ## Example
   ```
@@ -472,7 +472,7 @@ defmodule Midiex do
   {:ok, listner} = Listener.start(port: midi_input_ports)
 
   # Create a handler than inspects the MIDI messages received:
-  Listener.add_handler(listener, fn (midi_msg) -> IO.inspect(midi_msg, label: "Msg received") end)
+  Listener.add_handler(listener, fn (midi_msg) -> IO.inspect(midi_msg.data, label: "Msg received") end)
 
   # Any messages received will be inspected on the console, e.g.:
   # Msg received: [130, 84, 0]

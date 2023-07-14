@@ -35,7 +35,8 @@ defmodule Midiex.MixProject do
             Midiex.OutConn,
             Midiex.MidiPort,
             Midiex.VirtualMidiPort,
-            Midiex.MidiNotification
+            Midiex.MidiNotification,
+            Midiex.MidiMessage,
           ],
           Backend: [
             Midiex.Backend

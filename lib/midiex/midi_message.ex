@@ -2,11 +2,18 @@ defmodule Midiex.MidiMessage do
   @moduledoc """
   A struct representing MIDI messages.
 
-  These are recieved via the `Midiex.subscribe()` function or from the `Midiex.Listener` GenServer
+  These are recieved via the `Midiex.subscribe()` function or from the `Midiex.Listener` GenServer.
+
+  The keys are as follows:
+  - `port:` which is the input port (`%Midiex.MidiPort{}`) that sent the message
+  - `data:` the MIDI message data, usually in the form of a three item list, e.g. [153, 60, 70]
+  - `timestamp:` from the Midir docs: "a timestamp (in microseconds) designating the time since some unspecified point in the past (which will not change during the lifetime of an input connection)".
+
+
 
   ## Example messages
   ```
-  %Midiex.Message{
+  %Midiex.MidiMessage{
     port: %Midiex.MidiPort{
       direction: :input,
       name: "KeyStep Pro",
@@ -17,7 +24,7 @@ defmodule Midiex.MidiMessage do
     timestamp: 283146647865
   }
 
-  %Midiex.Message{
+  %Midiex.MidiMessage{
     port: %Midiex.MidiPort{
       direction: :input,
       name: "Arturia MicroFreak",
@@ -28,7 +35,7 @@ defmodule Midiex.MidiMessage do
     timestamp: 283145644340
   }
 
-  %Midiex.Message{
+  %Midiex.MidiMessage{
     port: %Midiex.MidiPort{
       direction: :input,
       name: "Arturia DrumBrute Impact",
