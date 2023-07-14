@@ -43,7 +43,7 @@ defmodule Midiex.Message.ChannelVoice do
   end
 
   defp get_status_code(status), do: Keyword.get(@stats_codes, status)
-  defp to_status_atom(status_code), do: Keyword.filter(fn {k,v} -> v == status_code end)
+  defp to_status_atom(status_code), do: Keyword.filter(@stats_codes, fn {_k,v} -> v == status_code end)
 
   defp get_channel(opts), do: Keyword.get(opts, :channel, 0)
 end

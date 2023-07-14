@@ -12,5 +12,8 @@ crate-type = ["cdylib"]
 [dependencies]
 rustler = "0.29.0"
 midir = "0.9.1"
-coremidi = "0.7"
 lazy_static = "1.4.0"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+core-foundation = "0.9.3"
+coremidi = "0.7.0"
