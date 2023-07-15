@@ -1,15 +1,13 @@
 defmodule Midiex.MidiMessage do
   @moduledoc """
-  A struct representing MIDI messages.
+  A struct representing MIDI messages recieved from MIDI inputs.
 
   These are recieved via the `Midiex.subscribe()` function or from the `Midiex.Listener` GenServer.
 
   The keys are as follows:
   - `port:` which is the input port (`%Midiex.MidiPort{}`) that sent the message
   - `data:` the MIDI message data, usually in the form of a three item list, e.g. [153, 60, 70]
-  - `timestamp:` from the Midir docs: "a timestamp (in microseconds) designating the time since some unspecified point in the past (which will not change during the lifetime of an input connection)".
-
-
+  - `timestamp:` from the [midir docs](https://docs.rs/midir/latest/midir/struct.MidiInput.html#method.connect): "a timestamp (in microseconds) designating the time since some unspecified point in the past (which will not change during the lifetime of an input connection)".
 
   ## Example messages
   ```
@@ -46,6 +44,8 @@ defmodule Midiex.MidiMessage do
     timestamp: 283147540161
   }
   ```
+  ## Other examples
+  See `Midiex.Listener` for examples of subscribing to MIDI messages and adding your own callback functions to process them.
   """
 
   defstruct ~w/port data timestamp/a

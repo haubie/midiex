@@ -5,12 +5,13 @@ defmodule Midiex.Notifier do
   This is currently implemented for Mac only.
 
   ## How this works
-  On Mac, a callback function needs to be created to specially handle MIDI notification messages, such as when a device has been physically plugged (`:added`) or unplugged (`:removed`). This callback is implemented in the Rust side of this library.
-  The notifications will be delivered on MacOS to a Rust thread with the specific 'run loop' that was created when the `Midiex.notifications/0` function was first called. This function is called automatically when this GenServer is started.
+  On Mac, a callback function needs to be created to specially handle MIDI notification messages, such as when a device has been physically plugged (`:added`) or unplugged (`:removed`). This callback is implemented in the Rust side of this library using [coremidi](https://chris-zen.github.io/coremidi/coremidi/struct.Client.html#method.new_with_notifications).
+
+  The notifications will be delivered on MacOS to a Rust thread with the specific 'run loop' (using [CFRunLoop from the core_foundation](https://docs.rs/core-foundation/latest/core_foundation/runloop/struct.CFRunLoop.html) Rust library) that was created when the `Midiex.notifications/0` function was first called. This function is called automatically when this GenServer is started.
 
   Any (`:added`) or (`:removed`) notifications will be sent to this GenServer from the Rust thread.
 
-  The `Midiex.Notifier` GenServer then forwards these notifications to any handlers added in with the `add_handler/2` function or passed to it through the `start/1` function.
+  The `Midiex.Notifier` GenServer then forwards these notifications to any handler functions added in with the `add_handler/2` function or passed to it through the `start/1` function.
 
   ## Example
   ```
@@ -40,7 +41,7 @@ defmodule Midiex.Notifier do
     direction: :output
   }
 
-  # KeyStep Pro keyboard has been unplugged into the Mac:
+  # KeyStep Pro keyboard has been unplugged from the Mac:
   %Midiex.MidiNotification{
     notification_type: :removed,
     parent_name: "KeyStep Pro",

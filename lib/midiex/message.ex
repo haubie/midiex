@@ -5,7 +5,23 @@ defmodule Midiex.Message do
   # https://docs.rs/midi-msg/latest/midi_msg/enum.ChannelVoiceMsg.html
 
   @moduledoc """
-  Conveniences for creating MIDI messages.
+  Convenience functions for creating binary MIDI messages.
+
+  ## Example
+  ```
+  alias Midiex.Message, as: M
+  # Connect to the synth, in this case the Arturia MicroFreak
+  synth = Midiex.ports("Arturia MicroFreak", :output) |> Midiex.open()
+
+  # Send the note on message, for D3
+  Midiex.send_msg(synth, M.note_on(:D3))
+
+  # Wait 1 second
+  :timer.sleep(1000)
+
+  # Send the note off message, for D3
+  Midiex.send_msg(synth, M.note_off(:D3))
+  ```
 
   ## About MIDI messages
   MIDI messages are in the format of:
@@ -40,16 +56,22 @@ defmodule Midiex.Message do
   ```
 
   ## MIDI message functions
-  So that you don't have to remember all the MIDI message codes, this library has the following functions to generate messages:
+  So that you don't have to remember all the MIDI message codes, this library has a large range of message generating functions. Some common types are below:
 
-  - note_off/2
-  - note_on/2
-  - polyphonic_aftertouch/2
-  - control_change/2
-  - program_change/2
-  - pitch_bend/3
-  - pan/2
-  - volume/2
+  - `note_on/3`
+  - `note_off/3`
+  - `all_notes_off/1`
+  - `sound_off/1`
+  - `polyphonic_aftertouch/3`
+  - `channel_aftertouch/3`
+  - `control_change/3`
+  - `program_change/2`
+  - `pitch_bend/2`
+  - `pan/2`
+  - `volume/2`
+
+  ## Note
+  More message types will be coming to the `Midiex.Message`, including SysEx messages.
 
   ## More information
   https://www.midi.org/midi-articles/about-midi-part-3-midi-messages
@@ -441,13 +463,8 @@ defmodule Midiex.Message do
 
   # Returns: <<144, 60, 127>>
 
-  # Note-on message for middle-C on channel 2
-  Midiex.Message.note_on(:C4, channel: 2)
-
-  # Returns: <<146, 60, 127>>
-
   # Note-on message for middle-C on channel 2 with a velocity of 40
-  Midiex.Message.note_on(:C4, channel: 2, velocity: 40)
+  Midiex.Message.note_on(:C4, 40, channel: 2)
 
   # Returns: <<146, 60, 40>>
   ```
@@ -455,7 +472,7 @@ defmodule Midiex.Message do
   These can be sent to a connection using `Midiex.send_msg/2`, for example:
   ```
   alias Midiex.Message
-  Midiex.send_msg(out_conn, Message.note_on(:C4, channel: 2, velocity: 40))
+  Midiex.send_msg(out_conn, Message.note_on(:C4, 40, channel: 2))
   ```
   """
   def note_on(note, velocity \\ 127, opts \\ []) do
@@ -510,11 +527,10 @@ defmodule Midiex.Message do
 
   # Create a series of aftertouch messages from 0 to 127 for the note middle-C (C4)
   0..127//1
-  |> Enum.map(fn pressure -> Message.polyphonic_aftertouch(:C4, pressure: pressure) end)
+  |> Enum.map(fn pressure -> Message.polyphonic_aftertouch(:C4, pressure) end)
   ```
   """
-  def polyphonic_aftertouch(note, opts \\ []) do
-    pressure = Keyword.get(opts, :pressure, 127)
+  def polyphonic_aftertouch(note, pressure, opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
     <<0xA, channel::4, note(note), pressure>>
   end
@@ -705,7 +721,7 @@ defmodule Midiex.Message do
 
   A channel number can be provided as an option.
   """
-  def portamento_time(value, opts \\ []) do
+  def portamento(value, opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
     <<msb::7, lsb::7>> = <<value::14>>
     msb_binary = control_change(5, msb, channel: channel)
@@ -738,17 +754,36 @@ defmodule Midiex.Message do
 
   Takes a number as it's first parameter, in the range of 0-127.
 
+  For example, to set to maximum volume:
+  ```
+  Midiex.Message.volume(127)
+
+  # Returns:
+  <<176, 7, 127>>
+  ```
+
+  ## 14-bit version
+  If you want a high-resolution volume message (e.g. in the range of 0-16383), you can pass the option `high_res: true`, e.g.:
+  ```
+  Midiex.Message.volume(16383, high_res: true)
+
+  # Returns:
+  <<176, 7, 127, 176, 39, 127>>
+  ```
   A channel number can be provided as an option.
   """
   def volume(volume_num, opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
-    control_change(7, volume_num, channel: channel)
-
-    # High-res (14 bit version below)
-    # <<msb::7, lsb::7>> = <<volume_num::14>>
-    # msb_binary = control_change(7, msb, channel: channel)
-    # lsb_binary = control_change(0x27, lsb, channel: channel)
-    # <<msb_binary::binary, lsb_binary::binary>>
+    high_res = Keyword.get(opts, :high_res, false)
+    if high_res do
+      # High-res (14 bit version)
+      <<msb::7, lsb::7>> = <<volume_num::14>>
+      msb_binary = control_change(7, msb, channel: channel)
+      lsb_binary = control_change(0x27, lsb, channel: channel)
+      <<msb_binary::binary, lsb_binary::binary>>
+    else
+      control_change(7, volume_num, channel: channel)
+    end
   end
 
   @doc section: :control_change
@@ -758,43 +793,112 @@ defmodule Midiex.Message do
   A value of 64 equals the center.
 
   Values below 64 moves the sound to the left, and above to the right.
+
+  ## Example
+  ```
+  Midiex.Message.balance(64)
+  ```
+
+  ## 14-bit version
+  If you want a high-resolution balance message (e.g. in the range of 0-16383), you can pass the option `high_res: true`, e.g.:
+  ```
+  # Center channel (high res)
+  Midiex.Message.balance(8191, high_res: true)
+
+  # Returns:
+  <<176, 8, 63, 176, 40, 127>>
+  ```
   """
-  def balance(pan, opts \\ []) do
+  def balance(value, opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
-    control_change(8, pan, channel: channel)
+    high_res = Keyword.get(opts, :high_res, false)
+
+    if high_res do
+       # High-res (14 bit version)
+       <<msb::7, lsb::7>> = <<value::14>>
+       msb_binary = control_change(8, msb, channel: channel)
+       lsb_binary = control_change(0x28, lsb, channel: channel)
+       <<msb_binary::binary, lsb_binary::binary>>
+    else
+      control_change(8, value, channel: channel)
+    end
   end
 
   @doc section: :control_change
   @doc """
   Change the panoramic (pan) of a channel.
+
   This shifts the sound from the left or right ear in when playing stereo.
+
   Values below 64 moves the sound to the left, and above to the right.
+
+  ## Example
+  ```
+  # Pan to middle
+  Midiex.Message.pan(64)
+  ```
+
+  ## 14-bit version
+  If you want a high-resolution pan message (e.g. in the range of 0-16383), you can pass the option `high_res: true`.
+  ```
+  # Pan to middle (high res version)
+  Midiex.Message.pan(8191, high_res: true)
+  ```
   """
   def pan(pan, opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
-    control_change(10, pan, channel: channel)
+    high_res = Keyword.get(opts, :high_res, false)
+
+    if high_res do
+      # High-res (14 bit version)
+      <<msb::7, lsb::7>> = <<pan::14>>
+      msb_binary = control_change(8, msb, channel: channel)
+      lsb_binary = control_change(42, lsb, channel: channel)
+      <<msb_binary::binary, lsb_binary::binary>>
+    else
+      control_change(10, pan, channel: channel)
+    end
   end
 
-
   @doc section: :channel_mode
+  @doc """
+  Creates an all sound off message. This mutes all sound regardless of release time or sustain.
+  """
   def sound_off(opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
     control_change(120, 0, channel: channel)
   end
 
   @doc section: :channel_mode
+  @doc """
+  Creates an all notes off message. This mutes all sounding notes.
+
+  The release time will still be maintained.
+
+  Notes held by sustain will not turn off until sustain pedal is depressed.
+  """
   def all_notes_off(opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
     control_change(123, 0, channel: channel)
   end
 
   @doc section: :channel_mode
+  @doc """
+  Creates a message that will reset all controllers to their default.
+  """
   def reset_controllers(opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
     control_change(121, 0 ,channel: channel)
   end
 
   @doc section: :channel_mode
+  @doc """
+  Sets Omni mode on or off.
+
+  The first parameter takes one of the following booleans:
+  - `true` to switch Omni mode on
+  - `false` to swithc Omni mode off
+  """
   def omni_mode(true_or_false \\ true, opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
     case true_or_false do
@@ -804,28 +908,69 @@ defmodule Midiex.Message do
   end
 
   @doc section: :channel_mode
-  def poly_mode(true_or_false \\ true, number_of_channels \\ 0, opts \\ []) do
+  @doc """
+  Creates a message which will set the device to polyphonic mode.
+
+  Takes as it's parameters:
+  1. `true` to set poly mode on, or `false` to switch on mono mode (or use `mono_mode`)
+
+  ## Example
+  ```
+  Midiex.Message.poly_mode()
+
+  # Returns
+  <<176, 127, 0>>
+  ```
+  """
+  def poly_mode(true_or_false \\ true, opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
     case true_or_false do
       true -> control_change(127, 0, channel: channel)
-      false -> control_change(126, number_of_channels, channel: channel)
+      false -> control_change(126, 0, channel: channel)
     end
   end
 
   @doc section: :channel_mode
+  @doc """
+  Creates a message which will set the device to monophonic mode.
+
+  Takes as it's parameters:
+  1. `true` to set mono mode on, or `false` to switch on poly mode
+  2. the number of channels, or 0 if the number of channels equals the number of voices in the receiver.
+
+  ## Example
+  ```
+  # Set device to monophonic mode
+  Midiex.Message.mono_mode()
+
+  # Returns:
+  <<176, 126, 0>>
+  ```
+  """
+  @spec mono_mode(boolean, any, keyword) :: <<_::24>>
   def mono_mode(true_or_false \\ true, number_of_channels \\ 0, opts \\ []) do
+    channel = Keyword.get(opts, :channel, 0)
     case true_or_false do
-      true -> poly_mode(false, number_of_channels, opts)
-      false -> poly_mode(true, number_of_channels, opts)
+      true -> control_change(126, number_of_channels, channel: channel)
+      false -> poly_mode(true, opts)
     end
   end
 
   @doc section: :channel_mode
+  @doc """
+  Switches local control on or off by creating a local control message.
+
+  An example of local control is that you may want the synthesizer to be played by means of its own keyboard, therefore setting `Midiex.Message.local_control(true)`.
+
+  If you were controlling it from a PC only, and didn't want it to have local control, you could send the `Midiex.Message.local_control(false)` message.
+
+  More information at: https://electronicmusic.fandom.com/wiki/Local_control
+  """
   def local_control(true_or_false \\ true, opts \\ []) do
     channel = Keyword.get(opts, :channel, 0)
     case true_or_false do
-      true -> control_change(124, 127, channel: channel)
-      false -> control_change(125, 0, channel: channel)
+      true -> control_change(122, 127, channel: channel)
+      false -> control_change(122	, 0, channel: channel)
     end
   end
 

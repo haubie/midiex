@@ -464,7 +464,6 @@ pub struct MidiMessage {
     timestamp: u64
 }
 
-
 // =================
 // MIDI Notification
 // =================

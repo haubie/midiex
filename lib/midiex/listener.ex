@@ -1,6 +1,6 @@
 defmodule Midiex.Listener do
   @moduledoc """
-  GenServer for subscribing and responding to MIDI input ports.
+  GenServer for subscribing to MIDI input ports and responding to the MIDI messages (`Midiex.MidiMessage`) received.
 
   ## How this works
   This GenServer works by:
@@ -14,7 +14,7 @@ defmodule Midiex.Listener do
     # Start a lister for this MIDI input port
     {:ok, listner} =  Midiex.Listener.start(port: input_port)
     ```
-  - Receieves MIDI messages and passes it onto one or more Elixir handler functions. The handler takes one parameter representing the MIDI message, e.g.:
+  - Receieves MIDI messages in the form of a `Midiex.MidiMessage` struct, and passes it onto one or more Elixir handler functions. The handler takes one parameter representing the MIDI message, e.g.:
     ```
     # Add a simple message handler which inspects each message received:
     Listener.add_handler(listener, fn (midi_msg) -> IO.inspect(midi_msg) end)
