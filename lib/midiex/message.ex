@@ -93,6 +93,8 @@ defmodule Midiex.Message do
   # http://www.midibox.org/dokuwiki/doku.php?id=midi_specification
   # https://www.inspiredacoustics.com/en/MIDI_note_numbers_and_center_frequencies
 
+  use Bitwise
+
   @notes_string_list [
     {"Ab9", 128},
     {"G#9", 128},
@@ -973,5 +975,149 @@ defmodule Midiex.Message do
       false -> control_change(122	, 0, channel: channel)
     end
   end
+
+
+  @doc section: :system
+  @doc """
+  Creates a system exclusive message, also known as a SysEx message.
+
+  This function takes the following parameters:
+  1. **SysEx ID number**: A code representing the device manufacturer, see the [offical list of manurfacturer IDs](https://www.midi.org/specifications-old/item/manufacturer-id-numbers)
+  2. **Data**: series of hex data bytes representing the message body. The hex data bytes values are between 0x00 and 0x7F (0 and 127).
+
+  ## About SysEx
+  SysEx messages can contain any number of hexadecimal bytes. They the message data is specific to each manufacturers device and include the manufacturer's identification code.
+
+  SysEx messages are wrapped in a start (0xF0) and end (0xF7) byte, e.g.:
+
+  ```<<0xF0, id_number, data, 0xF7>>```
+
+  ## Example
+  ```
+  # Send data to a Roland device
+  # Roland uses the ID of 0x41 (or you can pass the integer of 65)
+  Midiex.Message.sysex(0x41, <<0x01, 0x34>>)
+
+  # Returns <<240, 65, 1, 52, 247>>
+
+  # You can pass integer values instead
+  Midiex.Message.sysex(65, <<1, 52>>)
+
+  # Returns <<240, 65, 1, 52, 247>>
+  ```
+  """
+  def sysex(id_number, data) do
+    <<0xF0, id_number>> <> data <> <<0xF7>>
+  end
+
+  @doc section: :system
+  @doc """
+  Creates a MIDI quarter frame message, used to send timing information.
+
+  Takes a single byte as the first parameter.
+
+  Timing information is in the [MIDI time code](https://en.wikipedia.org/wiki/MIDI_timecode) format, which is hours:minutes:seconds:frames. This follows the same timing information as standard [SMPTE timecode](https://en.wikipedia.org/wiki/SMPTE_timecode).
+
+  As MIDI send values in the range of 0-127, a single  byte cannot carry the full time. For this reason, 8 quarter frame messages must be sent to piece together the current MIDI time.
+
+  The `timecode/1` function will automatically convert a hours:minutes:seconds:frames timecode string create the individual quarter frames.
+  """
+  def quarter_frame(data), do: <<0xF1, data>>
+
+  @doc """
+  Creates a series of MIDI quarter frame messages for a hours:minutes:seconds:frames timecode.
+
+  ## Example
+  ```
+  Midiex.Message.timecode("01:00:00:00")
+
+  # Returns
+  # <<241, 0, 241, 16, 241, 32, 241, 48, 241, 64, 241, 80, 241, 97, 241, 112>>
+  ```
+  """
+
+  def timecode(timecode_string) when is_binary(timecode_string) do
+    %{"frame" => frame, "hour" => hour, "minute" => minute, "second" => second} =
+      Regex.named_captures(~r/(?<hour>\d\d)[:](?<minute>\d\d)[:](?<second>\d\d)[:](?<frame>\d\d)/i, timecode_string)
+
+      {frame_msb, frame_lsb}    = String.to_integer(frame)  |> to_nibble()
+      {hour_msb, hour_lsb}      = String.to_integer(hour)   |> to_nibble()
+      {minute_msb, minute_lsb}  = String.to_integer(minute) |> to_nibble()
+      {second_msb, second_lsb}  = String.to_integer(second) |> to_nibble()
+
+      [
+        (0 <<< 4) + frame_lsb,
+        (1 <<< 4) + frame_msb,
+        (2 <<< 4) + second_lsb,
+        (3 <<< 4) + second_msb,
+        (4 <<< 4) + minute_lsb,
+        (5 <<< 4) + minute_msb,
+        (6 <<< 4) + hour_lsb,
+        (7 <<< 4) + hour_msb
+      ]
+      |> Enum.map(fn time_data -> quarter_frame(time_data) end)
+      |> Enum.join(<<>>)
+  end
+
+  defp to_nibble(value) do
+    {value >>> 4, band(value, 0b00001111)}
+  end
+
+
+  @doc section: :system
+  @doc """
+  Creates a MIDI clock message, used for clock synchronization.
+
+  The MIDI clock message is a timing message that is sent at regular intervals to tell the listening devices where it is in terms of time.
+  """
+  def clock, do: <<0xF8>>
+
+  @doc section: :system
+  @doc """
+  Creates a MIDI start message.
+
+  Used to tell listening devices to commence playback of the current MIDI sequence.
+  """
+  def start(), do: <<0xFA>>
+
+  @doc section: :system
+  @doc """
+  Creates a MIDI continue message.
+
+  Used to tell listening devices to resume playback of the current MIDI sequence.
+  """
+  def resume(), do: <<0xFB>>
+
+  @doc section: :system
+  @doc """
+  Creates a MIDI stop message.
+
+  Used to tell listening devices to stop playing the current MIDI sequence.
+  """
+  def stop(), do: <<0xFC>>
+
+
+  @doc section: :system
+  @doc """
+  Creates a MIDI active sense message.
+
+  Used to tell listening devices that the MIDI connection is still active.
+  """
+  def active_sense(), do: <<0xFE>>
+
+  @doc section: :system
+  @doc """
+  Creates a MIDI reset message.
+
+  Various MIDI devices will interpret this message differently. Often it will cause a device to stop playing and set the song position to the beginning.
+
+  The MIDI 1.0 specification says the following should occur when a reset message is sent:
+  - The modulation wheel, hold pedal, portamento pedal, sostenuto pedal and soft pedal are set to 0
+  - The pitch wheel is set to center which is usually 64, but could be set to 0
+  - The channel pressure and the key pressure are set to 0
+  - Registered and nonregistered parameter numbers (98 to 101) are set to 127
+  - Expression is set to 127.
+  """
+  def reset(), do: <<0xFF>>
 
 end

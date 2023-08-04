@@ -35,7 +35,7 @@ defmodule Midiex do
   # ]
 
   # Create a virtual output connection
-  piano = Midiex.create_virtual_output_conn("piano")
+  piano = Midiex.create_virtual_output("piano")
 
   # Returns an output connection:
   # %Midiex.OutConn{

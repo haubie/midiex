@@ -51,6 +51,7 @@ defmodule Midiex.MixProject do
           "Channel voice messages": &(&1[:section] == :channel_voice),
           "Channel change messages": &(&1[:section] == :control_change),
           "Channel mode messages": &(&1[:section] == :channel_mode),
+          "System messages": &(&1[:section] == :system),
         ]
       ]
     ]
