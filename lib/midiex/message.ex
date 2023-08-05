@@ -70,30 +70,17 @@ defmodule Midiex.Message do
   - `pan/2`
   - `volume/2`
 
-  ## Note
-  More message types will be coming to the `Midiex.Message`, including SysEx messages.
+  Various system messages are supported too, such as `sysex/1`.
 
   ## More information
   https://www.midi.org/midi-articles/about-midi-part-3-midi-messages
   """
-  # - note_on(note_number, velocity, opts)
-  # - note_off(note_number, velocity, opts)
-  # - polyphonic_aftertouch(note_number, pressure, opts)
-  # - channel_aftertouch(note_number, pressure, opts)
-  # - control_change(control_number, value, opts)
-  # - program_change(program_number, opts)
-  # - sysex - coming soon
-
-
-  # status_byte, note_number (0-127), velocity (0-127)
-  # midi_note_on_msg = <<0x90, note, 127>>
-  # midi_note_off_msg = <<0x80, note, 127>>
 
 
   # http://www.midibox.org/dokuwiki/doku.php?id=midi_specification
   # https://www.inspiredacoustics.com/en/MIDI_note_numbers_and_center_frequencies
 
-  use Bitwise
+  import Bitwise
 
   @notes_string_list [
     {"Ab9", 128},
@@ -1024,8 +1011,9 @@ defmodule Midiex.Message do
   """
   def quarter_frame(data), do: <<0xF1, data>>
 
+  @doc section: :system
   @doc """
-  Creates a series of MIDI quarter frame messages for a hours:minutes:seconds:frames timecode.
+  Creates a eight MIDI quarter frame messages to represent a single hours:minutes:seconds:frames timecode string.
 
   ## Example
   ```

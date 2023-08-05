@@ -1,5 +1,5 @@
 defmodule Midiex do
-  @moduledoc """
+  @moduledoc ~S"""
   This is the main Midiex module.
 
   It's built around three basic concepts:
