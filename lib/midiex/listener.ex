@@ -207,6 +207,9 @@ defmodule Midiex.Listener do
   def unsubscribe(pid, :all) do
     GenServer.cast(pid, :unsubscribe_all)
   end
+  def unsubscribe(pid, midi_input_ports) when is_list(midi_input_ports) do
+    Enum.each(midi_input_ports, fn midi_input_port -> unsubscribe(pid, midi_input_port) end)
+  end
   def unsubscribe(pid, midi_input_port) do
     GenServer.cast(pid, {:unsubscribe, midi_input_port})
   end
@@ -261,7 +264,10 @@ defmodule Midiex.Listener do
   # ----------------
   # Helper functions
   # ----------------
-
   defp ports_equal?(port_one, port_two), do: (port_one.name == port_two.name) && (port_one.num == port_two.num)
+
+
+
+
 
 end
