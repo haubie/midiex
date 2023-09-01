@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - precompiled
     paths:
       # Just run on main branch if "native" path changed.
       - "native/**"
