@@ -481,6 +481,7 @@ pub struct MidiNotification {
     direction: Atom
 }
 
+#[cfg(all(target_os = "macos"))]
 impl MidiNotification {
     pub fn new(notification_type: Atom, info: &AddedRemovedInfo) -> Self {
 

@@ -6,7 +6,7 @@ defmodule Midiex.MixProject do
       app: :midiex,
       name: "Midiex",
       description: "A cross-platform, realtime MIDI processing in Elixir library which wraps the midir Rust library.",
-      version: "0.5.1",
+      version: "0.5.2",
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
       deps: deps(),

@@ -69,7 +69,7 @@ defmodule Midiex.Notifier do
 
   @impl true
   def init(state \\ %__MODULE__{}) do
-    Midiex.Backend.notifications()
+    Midiex.notifications()
     {:ok, state}
   end
 

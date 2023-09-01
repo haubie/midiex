@@ -12,12 +12,12 @@ defmodule Midiex.Listener do
     input_port = Midiex.ports(:input) |> List.first()
 
     # Start a lister for this MIDI input port
-    {:ok, listner} =  Midiex.Listener.start_link(port: input_port)
+    {:ok, listener} =  Midiex.Listener.start_link(port: input_port)
     ```
   - Receieves MIDI messages in the form of a `Midiex.MidiMessage` struct, and passes it onto one or more Elixir handler functions. The handler takes one parameter representing the MIDI message, e.g.:
     ```
     # Add a simple message handler which inspects each message received:
-    Listener.add_handler(listener, fn (midi_msg) -> IO.inspect(midi_msg) end)
+    Midiex.Listener.add_handler(listener, fn (midi_msg) -> IO.inspect(midi_msg) end)
     ```
 
   ![Midiex](assets/how_listener_works.png)
