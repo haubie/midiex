@@ -518,6 +518,7 @@ impl MidiNotification {
     }
 }
 
+#[cfg(all(target_os = "macos"))]
 fn midi_obj_type_to_atom(object_type: ObjectType) -> Atom {
     match object_type {
         ObjectType::Other => atoms::other(),

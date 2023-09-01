@@ -86,7 +86,7 @@ End
 
 ### Using within LiveBook and IEx
 ```
-Mix.install([{:midiex, "~> 0.5.2"}])
+Mix.install([{:midiex, "~> 0.5.3"}])
 ```
 
 #### LiveBook tour
