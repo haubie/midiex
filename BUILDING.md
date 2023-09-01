@@ -17,14 +17,4 @@ If using the apt package manager, you can install those via the terminal prompt 
 ```sudo apt install libasound2-dev pkg-config.```
 
 ## Future - precompiled binaries
-It is a goal of this project to migrate to [Rustler Precompiled](https://dashbit.co/blog/rustler-precompiled) so that the rust build tools don't have to be installed and the precompiled binaries of the Midiex's Rust-based NIF is downloaded for the correct platform.
-
-
-
-
-
-
-
-
-
-
+It is a goal of this project to migrate to [Rustler Precompiled](https://dashbit.co/blog/rustler-precompiled) so that the rust build tools don't have to be installed and the precompiled binaries of Midiex's Rust-based NIF is downloaded for the correct platform.
