@@ -15,9 +15,11 @@ Midir support a range of platforms and backends, such as:
 - WinMM (Windows)
 - CoreMIDI (MacOS, iOS)
 - WinRT (Windows 8+), 
-- Jack (Linux, macOS), 
+- Jack (Linux, macOS) 
 
 Using WinRT or Jack requires special feature flags enabled. See the [midir GitHub](https://github.com/Boddlnagg/midir) and [create docs](https://docs.rs/crate/midir/latest) for more details.
+
+The hot-plug support of MIDI devices on MacOS is made possible with with the Rust [coremidi](https://github.com/chris-zen/coremidi) library.
 
 ## Status
 This library is currently under active development and it’s API is likely to change. It's been tested on MacOS only.
@@ -27,8 +29,8 @@ At it's most basic level, the core functions of Midiex are for:
 - **listing** or **counting** MIDI ports availble (for example, a keyboard or synth)
 - **opening** or **closing connections** to MIDI ports
 - **sending** or **receiving messages** to and from connections
-- **creating a virtual output connection** so your Elixir application appears as a MIDI input port on the host OS.
-- **creating a virtual input connection** so your Elixir application appears as a MIDI output port on the host OS.
+- **creating virtual output connections** so your Elixir application appears as a MIDI input port on the host OS.
+- **creating virtual input connections** so your Elixir application appears as a MIDI output port on the host OS.
 
 ## Feature support
 Not all midir features have been wrapped and some features are backend specific:
@@ -77,14 +79,14 @@ The package can be installed by adding midiex to your list of dependencies in mi
 ```
 def deps do
   [
-    {:midiex, "~> 0.3.0"}
+    {:midiex, "~> 0.5.0"}
   ]
 End
 ```
 
 ### Using within LiveBook and IEx
 ```
-Mix.install([{:midiex, "~> 0.4.0"}])
+Mix.install([{:midiex, "~> 0.5.0"}])
 ```
 
 #### LiveBook tour

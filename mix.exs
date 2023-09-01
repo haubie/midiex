@@ -84,7 +84,8 @@ defmodule Midiex.MixProject do
       licenses: ["MIT"],
       links: %{
         "GitHub" => "https://github.com/haubie/midiex",
-        "midir" => "https://github.com/Boddlnagg/midir"
+        "midir" => "https://github.com/Boddlnagg/midir",
+        "coremidi" => "https://github.com/chris-zen/coremidi"
         },
       maintainers: ["David Haubenschild"]
     ]

@@ -16,7 +16,7 @@ defmodule Midiex.Notifier do
   ## Example
   ```
   # Start the Notifier GenServer
-  {:ok, pid} = Midiex.Notifier.start()
+  {:ok, pid} = Midiex.Notifier.start_link()
 
   # Add a simple handler callback function. This will just inspect the notification.
   Midiex.Notifier.add_handler(pid, fn msg -> IO.inspect(msg) end)
@@ -123,13 +123,13 @@ defmodule Midiex.Notifier do
   end
 
 
-  @spec start(keyword) :: :ignore | {:error, any} | {:ok, pid}
+  @spec start_link(keyword) :: :ignore | {:error, any} | {:ok, pid}
   @doc """
   Start the Midiex.Notifier GenServer.
 
   Takes an optional keyword list as the first parameter which can be used to populate individual %Midiex.Notifier{} struct keys. See `new/1` for informaton.
   """
-  def start(opts \\ []) do
+  def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, new(opts))
   end
 
@@ -143,7 +143,7 @@ defmodule Midiex.Notifier do
   ## Example
   ```
   # Start the Notifier GenServer
-  {:ok, pid} = Midiex.Notifier.start()
+  {:ok, pid} = Midiex.Notifier.start_link()
 
   # Add a simple handler callback function. This will just inspect the notification.
   Midiex.Notifier.add_handler(pid, fn msg -> IO.inspect(msg) end)

@@ -6,13 +6,13 @@ defmodule Midiex.Listener do
   This GenServer works by:
   - Subscribing to one or more MIDI input ports (using `Midiex.subscribe/1`). For each MIDI input port, `Midiex.subscribe/1` will create a new OS thread (in Rust) which establishes a connection to the port and listens to messages. Incoming messages are then forwarded to the calling Elixir process (in this case, the `Midiex.Listener` process.)
 
-    A subscription can be established on the `start/1` or `subscribe/2` functions, e.g.:
+    A subscription can be established on the `start_link/1` or `subscribe/2` functions, e.g.:
     ```
     # Get the first MIDI input port
     input_port = Midiex.ports(:input) |> List.first()
 
     # Start a lister for this MIDI input port
-    {:ok, listner} =  Midiex.Listener.start(port: input_port)
+    {:ok, listner} =  Midiex.Listener.start_link(port: input_port)
     ```
   - Receieves MIDI messages in the form of a `Midiex.MidiMessage` struct, and passes it onto one or more Elixir handler functions. The handler takes one parameter representing the MIDI message, e.g.:
     ```
@@ -30,7 +30,7 @@ defmodule Midiex.Listener do
   input_port = Midiex.ports(:input) |> List.first()
 
   # Start a lister for this MIDI input port
-  {:ok, listner} = Listener.start(port: input_port)
+  {:ok, listner} = Listener.start_link(port: input_port)
 
   # Create a handler than inspects the MIDI messages received:
   my_msg_hander = fn (midi_msg) -> IO.inspect(midi_msg, label: "MIDI message") end
@@ -127,7 +127,7 @@ defmodule Midiex.Listener do
   end
 
 
-  @spec start(keyword) :: :ignore | {:error, any} | {:ok, pid}
+  @spec start_link(keyword) :: :ignore | {:error, any} | {:ok, pid}
   @doc """
   Start the Midiex.Server GenServer.
 
@@ -136,17 +136,17 @@ defmodule Midiex.Listener do
   ## Examples
   ```
   # Start with no options
-  {:ok, listener} = Midiex.Listener.start()
+  {:ok, listener} = Midiex.Listener.start_link()
 
   # Start, already passing the first available input port to listen to
   first_port = Midiex.ports(:input) |> List.first()
-  {:ok, listener} = Midiex.Listener.start(ports: first_port)
+  {:ok, listener} = Midiex.Listener.start_link(ports: first_port)
 
   # Start, already passing a list of all input ports available to listen to
-  {:ok, listener} = Midiex.Listener.start(ports: Midiex.ports(:input))
+  {:ok, listener} = Midiex.Listener.start_link(ports: Midiex.ports(:input))
   ```
   """
-  def start(opts \\ []) do
+  def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, new(opts))
   end
 
@@ -166,7 +166,7 @@ defmodule Midiex.Listener do
   ## Example
   ```
   # Start your Listener process
-  {:ok, listener} = Listener.start(port: input_port)
+  {:ok, listener} = Listener.start_link(port: input_port)
 
   # Add a single handler
   Listener.add_handler(listener, fn msg -> IO.inspect msg, label: "Inspecting msg" end)
@@ -241,7 +241,7 @@ defmodule Midiex.Listener do
   ]
 
   # Create and start a listener process
-  {:ok, keyboard} = Midiex.Listener.start()
+  {:ok, keyboard} = Midiex.Listener.start_link()
 
   # Listen to MIDI messages from the keyboard
   Midiex.Listener.subscribe(keyboard, keystep_in_port)

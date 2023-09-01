@@ -7,10 +7,39 @@ defmodule Midiex.Message do
   @moduledoc """
   Convenience functions for creating binary MIDI messages.
 
+  ## MIDI message functions
+  So that you don't have to remember all the MIDI message codes, this library has a large range of message generating functions. Some common types are below:
+
+  - `note_on/3`
+  - `note_off/3`
+  - `all_notes_off/1`
+  - `sound_off/1`
+  - `polyphonic_aftertouch/3`
+  - `channel_aftertouch/3`
+  - `control_change/3`
+  - `program_change/2`
+  - `pitch_bend/2`
+  - `pan/2`
+  - `volume/2`
+
+  Various system messages are supported too, such as `sysex/1`.
+
+  Some functions have an optional high-resolution (14-bit) version. This is activated by providing the `high_res: true` option, e.g.:  `Midiex.Message.volume(16383, high_res: true)`. You can learn more about the resolution of MIDI messages below.
+
+  ## Notes
+  Functions that take notes as a parameter can accept a number, string or atom note representation. For example, middle-C can be represented as `60`, `"C4"` or `:C4`.
+
+  Taking the `note_on/1` function as an example, generating a "note on" MIDI message for middle-C `<<144, 60, 127>>` can be achieved in any of these ways:
+  - `Message.note_on(60)`
+  - `Message.note_on("C4")`
+  - `Message.note_on(:C4)`
+
+  To get the MIDI number for a string or atom note representation, see `note/1`.
+
   ## Example
   ```
   alias Midiex.Message, as: M
-  # Connect to the synth, in this case the Arturia MicroFreak
+  # Connect to the synth, in this case the Arturia MicroFreak synth
   synth = Midiex.ports("Arturia MicroFreak", :output) |> Midiex.open()
 
   # Send the note on message, for D3
@@ -54,23 +83,6 @@ defmodule Midiex.Message do
   lsb_binary = control_change(0x21, lsb)
   <<msb_binary::binary, lsb_binary::binary>>
   ```
-
-  ## MIDI message functions
-  So that you don't have to remember all the MIDI message codes, this library has a large range of message generating functions. Some common types are below:
-
-  - `note_on/3`
-  - `note_off/3`
-  - `all_notes_off/1`
-  - `sound_off/1`
-  - `polyphonic_aftertouch/3`
-  - `channel_aftertouch/3`
-  - `control_change/3`
-  - `program_change/2`
-  - `pitch_bend/2`
-  - `pan/2`
-  - `volume/2`
-
-  Various system messages are supported too, such as `sysex/1`.
 
   ## More information
   https://www.midi.org/midi-articles/about-midi-part-3-midi-messages

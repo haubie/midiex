@@ -63,7 +63,7 @@ defmodule MidiexTest do
   #   # Setup listener
   #   input_port = Midiex.ports(port_name, :input)
   #   IO.inspect input_port, label: "IN PORT 1"
-  #   {:ok, pid} = Midiex.Listener.start(port: input_port)
+  #   {:ok, pid} = Midiex.Listener.start_link(port: input_port)
   #   Midiex.Listener.add_handler(pid, fn msg -> IO.inspect(msg.data, label: "MSG 1"); :persistent_term.put(:midi_msg, msg.data) end)
 
   #   # Create MIDI message and send it to the virual output
@@ -82,7 +82,7 @@ defmodule MidiexTest do
   #   GenServer.stop(pid)
   # end
 
-  test "sysex test" do
+  test "sysex and send and recieve MIDI message test" do
     port_name = "SysEx test"
     :persistent_term.put(:sysex_msg, [])
 
@@ -91,8 +91,8 @@ defmodule MidiexTest do
 
     # Setup listener
     input_port = Midiex.ports(port_name, :input)
-    {:ok, pid} = Midiex.Listener.start(port: input_port)
-    Midiex.Listener.add_handler(pid, fn msg -> IO.inspect(msg.data, label: "MSG 2"); :persistent_term.put(:sysex_msg, msg.data) end)
+    {:ok, pid} = Midiex.Listener.start_link(port: input_port)
+    Midiex.Listener.add_handler(pid, fn msg -> :persistent_term.put(:sysex_msg, msg.data) end)
 
     # Create SysEx message, using Roland device id, and send it to the virual output
     roland_device_id = 0x41
