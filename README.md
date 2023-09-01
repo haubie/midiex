@@ -74,6 +74,9 @@ Midiex.send_msg(piano, note_off)
 
 ## Getting started
 
+### Rust build tools
+If you don't already have Rust's build tools installed, you'll likely need to. See [BUILDING.md](BUILDING.md) for more information.
+
 ### Adding it to your Elixir project
 The package can be installed by adding midiex to your list of dependencies in mix.exs:
 ```

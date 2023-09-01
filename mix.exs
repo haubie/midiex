@@ -19,6 +19,7 @@ defmodule Midiex.MixProject do
         assets: "assets",
         extras: [
           "README.md",
+          "BUILDING.md",
           "livebook/midiex_notebook.livemd",
           {:"LICENSE", [title: "License (MIT)"]},
         ],
@@ -81,6 +82,7 @@ defmodule Midiex.MixProject do
         "native",
         "mix.exs",
         "README.md",
+        "BUILDING.md",
         "LICENSE",
         # "checksum-*.exs"
       ],
