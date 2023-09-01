@@ -82,7 +82,7 @@ defmodule Midiex.MixProject do
         "mix.exs",
         "README.md",
         "LICENSE",
-        "checksum-*.exs"
+        # "checksum-*.exs"
       ],
       licenses: ["MIT"],
       links: %{
