@@ -68,9 +68,9 @@ defmodule Midiex.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # {:rustler_precompiled, "~> 0.6"},
-      {:rustler, "~> 0.26.0"},
-      # {:rustler, ">= 0.0.0", optional: true},
+      {:rustler_precompiled, "~> 0.6"},
+      {:rustler, "~> 0.26.0", optional: true},
+      # {:rustler, "~> 0.26.0"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
