@@ -7,7 +7,9 @@ extern crate lazy_static;
 
 #[cfg(all(target_os = "macos"))]
 use core_foundation::runloop::CFRunLoop;
+#[cfg(all(target_os = "macos"))]
 use coremidi::{Client, Notification, AddedRemovedInfo, ObjectType};
+#[cfg(all(target_os = "macos"))]
 use coremidi::Notification::{ObjectAdded, ObjectRemoved};
 
 use std::sync::Mutex;
