@@ -49,7 +49,7 @@ jobs:
       if: ${{ matrix.job.apt }}
       uses: awalsh128/cache-apt-pkgs-action@latest
       with:
-        packages: musl-tools librust-alsa-sys-dev libasound2-dev libudev-dev pkg-config portaudio19-dev build-essential libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang
+        packages: musl-tools alsa-utils alsa-tools librust-alsa-sys-dev libasound2-dev libudev-dev pkg-config portaudio19-dev build-essential libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang
         version: 1.0
 
     - name: Install Rust toolchain
@@ -60,7 +60,8 @@ jobs:
 
     - name: Build the project
       id: build-crate
-      uses: philss/rustler-precompiled-action@v1.0.1
+      # uses: philss/rustler-precompiled-action@v1.0.1
+      uses: philss/rustler-precompiled-action@52c1b8dd1ed8c7fcd90ca71b177aabbd3b29b95b
       with:
         project-name: midiex
         project-version: ${{ env.PROJECT_VERSION }}
