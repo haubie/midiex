@@ -1,12 +1,14 @@
 defmodule Midiex.MixProject do
   use Mix.Project
 
+  @version "0.6.0"
+
   def project do
     [
       app: :midiex,
       name: "Midiex",
       description: "A cross-platform, realtime MIDI processing in Elixir library which wraps the midir Rust library.",
-      version: "0.6.0",
+      version: @version,
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
