@@ -34,3 +34,8 @@ lto = true
 linker = "x86_64-unknown-linux-musl-gcc"
 rustc-link-lib = ["asound"]
 rustc-link-search = ["/lib/x86_64-linux-gnu"]
+
+[target.arm-unknown-linux-gnueabihf.libasound]
+linker = "arm-linux-gnueabihf-gcc"
+rustc-link-lib = ["asound"]
+rustc-link-search = ["/lib/arm-linux-gnueabihf"]

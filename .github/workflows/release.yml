@@ -25,16 +25,15 @@ jobs:
         job:
           # - { target: aarch64-apple-darwin        , os: macos-11      }
           # - { target: x86_64-apple-darwin         , os: macos-11      }
-          # - { target: x86_64-unknown-linux-gnu    , os: ubuntu-20.04  , apt: true  }
-          - { target: x86_64-unknown-linux-musl   , os: ubuntu-20.04  , apt: musl-tools alsa-utils alsa-tools libasound2-dev libudev-dev pkg-config portaudio19-dev build-essential libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang }
-          # - { target: arm-unknown-linux-gnueabihf , os: ubuntu-20.04 , apt: true}
+          # - { target: x86_64-unknown-linux-gnu    , os: ubuntu-20.04  , apt: musl-tools alsa-utils alsa-tools libasound2-dev libudev-dev pkg-config portaudio19-dev build-essential libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang }
+          # - { target: x86_64-unknown-linux-musl   , os: ubuntu-20.04  , apt: musl-tools alsa-utils alsa-tools libasound2-dev libudev-dev pkg-config portaudio19-dev build-essential libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang }
+          - { target: arm-unknown-linux-gnueabihf , os: ubuntu-20.04 , apt: libasound2-dev:armhf libudev-dev:armhf pkg-config:armhf build-essential crossbuild-essential-armhf}
           # - { target: aarch64-unknown-linux-gnu   , os: ubuntu-20.04  , use-cross: true, apt: libasound2-dev pkg-config }
           # - { target: aarch64-unknown-linux-musl  , os: ubuntu-20.04  , use-cross: true, apt: libasound2-dev pkg-config }
           # - { target: riscv64gc-unknown-linux-gnu , os: ubuntu-20.04  , use-cross: true, apt: libasound2-dev pkg-config }     
           # - { target: x86_64-pc-windows-gnu       , os: windows-2019  }
           # - { target: x86_64-pc-windows-msvc      , os: windows-2019  }
           # NO? - { target: x86_64-unknown-freebsd      , os: ubuntu-22.04, use-cross: true, apt: libasound2-dev pkg-config }
-
 
     steps:
     - name: Checkout source code
@@ -53,9 +52,9 @@ jobs:
         packages: ${{ matrix.job.apt }}
         version: 1.0
 
-    - name: Add to the package path
-      shell: bash
-      run: echo "PKG_CONFIG_PATH=$(find /usr/lib/ -name alsa.pc -print | head -1 | xargs -0 dirname):/usr/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+    # - name: Add to the package path
+    #   shell: bash
+    #   run: echo "PKG_CONFIG_PATH=$(find /usr/lib/ -name alsa.pc -print | head -1 | xargs -0 dirname):/usr/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
     - name: PKG_CONFIG_PATH package path
       shell: bash
       run: echo $PKG_CONFIG_PATH
