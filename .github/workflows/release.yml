@@ -27,7 +27,7 @@ jobs:
           # - { target: x86_64-apple-darwin         , os: macos-11      }
           # - { target: x86_64-unknown-linux-gnu    , os: ubuntu-20.04  , apt: musl-tools alsa-utils alsa-tools libasound2-dev libudev-dev pkg-config portaudio19-dev build-essential libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang }
           # - { target: x86_64-unknown-linux-musl   , os: ubuntu-20.04  , apt: musl-tools alsa-utils alsa-tools libasound2-dev libudev-dev pkg-config portaudio19-dev build-essential libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang }
-          - { target: arm-unknown-linux-gnueabihf , os: ubuntu-20.04 , apt: "libasound2-dev:armhf libudev-dev:armhf pkg-config:armhf build-essential crossbuild-essential-armhf" }
+          - { target: arm-unknown-linux-gnueabihf , arch: armhf , os: ubuntu-20.04 , apt: "libasound2-dev:armhf libudev-dev:armhf pkg-config:armhf build-essential crossbuild-essential-armhf" }
           # - { target: aarch64-unknown-linux-gnu   , os: ubuntu-20.04  , use-cross: true, apt: libasound2-dev pkg-config }
           # - { target: aarch64-unknown-linux-musl  , os: ubuntu-20.04  , use-cross: true, apt: libasound2-dev pkg-config }
           # - { target: riscv64gc-unknown-linux-gnu , os: ubuntu-20.04  , use-cross: true, apt: libasound2-dev pkg-config }     
@@ -44,6 +44,12 @@ jobs:
       run: |
         # Get the project version from mix.exs
         echo "PROJECT_VERSION=$(sed -n 's/^  @version "\(.*\)"/\1/p' mix.exs | head -n1)" >> $GITHUB_ENV
+
+    - name: Set architecture for package manager
+      if: ${{ matrix.job.arch }}
+      shell: bash
+      run: dpkg --add-architecture armhf
+      run: apt-get update
 
     - name: Install additional apt packages
       if: ${{ matrix.job.apt }}
