@@ -49,8 +49,8 @@ jobs:
       if: ${{ matrix.job.arch }}
       shell: bash
       run: |
-        dpkg --add-architecture armhf
-        apt-get update
+        sudo dpkg --add-architecture armhf
+        sudo apt-get update
 
     - name: Install additional apt packages
       if: ${{ matrix.job.apt }}
