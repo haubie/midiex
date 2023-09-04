@@ -55,10 +55,15 @@ jobs:
 
     - name: Install additional apt packages
       if: ${{ matrix.job.apt }}
-      uses: awalsh128/cache-apt-pkgs-action@latest
-      with:
-        packages: ${{ matrix.job.apt }}
-        version: 1.0
+      shell: bash
+      run: sudo apt install ${{ matrix.job.apt }}
+
+    # - name: Install additional apt packages
+    #   if: ${{ matrix.job.apt }}
+    #   uses: awalsh128/cache-apt-pkgs-action@latest
+    #   with:
+    #     packages: ${{ matrix.job.apt }}
+    #     version: 1.0
 
     # - name: Add to the package path
     #   shell: bash
