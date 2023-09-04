@@ -30,7 +30,8 @@ jobs:
           # - { target: aarch64-unknown-linux-gnu   , os: ubuntu-20.04  , use-cross: true, apt: libasound2-dev pkg-config }
           # - { target: aarch64-unknown-linux-musl  , os: ubuntu-20.04  , use-cross: true, apt: libasound2-dev pkg-config }
           # - { target: riscv64gc-unknown-linux-gnu , os: ubuntu-20.04  , use-cross: true, apt: libasound2-dev pkg-config }     
-          - { target: x86_64-unknown-linux-musl   , os: ubuntu-20.04  , use-cross: true, apt: true }
+          # - { target: x86_64-unknown-linux-musl   , os: ubuntu-20.04  , use-cross: true, apt: true }
+          - { target: x86_64-unknown-linux-musl   , os: ubuntu-20.04  , apt: true }
           # - { target: x86_64-pc-windows-gnu       , os: windows-2019  }
           # - { target: x86_64-pc-windows-msvc      , os: windows-2019  }
           # - { target: x86_64-unknown-freebsd      , os: ubuntu-22.04, use-cross: true, apt: libasound2-dev pkg-config }
@@ -49,7 +50,7 @@ jobs:
       if: ${{ matrix.job.apt }}
       uses: awalsh128/cache-apt-pkgs-action@latest
       with:
-        packages: musl-tools alsa-utils alsa-tools librust-alsa-sys-dev libasound2-dev libudev-dev pkg-config portaudio19-dev build-essential libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang
+        packages: musl-tools alsa-utils alsa-tools libasound2-dev libudev-dev pkg-config portaudio19-dev build-essential libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang
         version: 1.0
 
     - name: Add to the package path
