@@ -59,6 +59,14 @@ jobs:
         sudo dpkg --add-architecture ${{ matrix.job.arch }}
         sudo apt-get update
 
+    - name: Add ARM64 architecture to packages
+      continue-on-error: true
+      shell: bash
+      run: |
+        sudo dpkg --add-architecture arm64
+        sudo apt-get update
+    
+
     - name: Install additional apt packages
       if: ${{ matrix.job.apt }}
       shell: bash
