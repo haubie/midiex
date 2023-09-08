@@ -27,7 +27,7 @@ jobs:
           # - { target: x86_64-apple-darwin         , os: macos-11      }
           # - { target: x86_64-unknown-linux-gnu    , os: ubuntu-20.04  , apt: musl-tools alsa-utils alsa-tools libasound2-dev libudev-dev pkg-config portaudio19-dev build-essential libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang }
           # - { target: x86_64-unknown-linux-musl   , os: ubuntu-20.04  , apt: musl-tools alsa-utils alsa-tools libasound2-dev libudev-dev pkg-config portaudio19-dev build-essential libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang }
-          - { target: aarch64-unknown-linux-gnu   , os: ubuntu-22.04 , arch: aarch64 , apt: "libasound2-dev libasound2-dev:arm64 pkg-config pkg-config:arm64 gcc-aarch64-linux-gnu build-essential crossbuild-essential-arm64" }
+          - { target: aarch64-unknown-linux-gnu   , os: ubuntu-22.04 , arch: aarch64 , apt: "libasound2-dev libasound2-dev:arm64 pkg-config pkg-config:arm64 gcc-aarch64-linux-gnu build-essential crossbuild-essential-arm64 musl-tools alsa-utils alsa-tools libudev-dev portaudio19-dev libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang" }
           # - { target: aarch64-unknown-linux-musl  , os: ubuntu-20.04  , use-cross: true, apt: libasound2-dev pkg-config }         
           # 32 bit has issues- { target: arm-unknown-linux-gnueabihf , arch: armhf , os: ubuntu-latest , apt: "libasound2-dev:armhf libudev-dev:armhf pkg-config:armhf build-essential crossbuild-essential-armhf" }
           # - { target: aarch64-unknown-linux-gnu   , os: ubuntu-20.04  , use-cross: true, apt: libasound2-dev pkg-config }
@@ -36,6 +36,9 @@ jobs:
           # - { target: x86_64-pc-windows-gnu       , os: windows-2019  }
           # - { target: x86_64-pc-windows-msvc      , os: windows-2019  }
           # NO? - { target: x86_64-unknown-freebsd      , os: ubuntu-22.04, c, apt: libasound2-dev pkg-config }
+
+
+          
 
     steps:
     - name: Checkout source code
@@ -58,14 +61,6 @@ jobs:
         # sudo apt update
         sudo dpkg --add-architecture ${{ matrix.job.arch }}
         sudo apt-get update
-
-    - name: Add ARM64 architecture to packages
-      continue-on-error: true
-      shell: bash
-      run: |
-        sudo dpkg --add-architecture arm64
-        sudo apt-get update
-    
 
     - name: Install additional apt packages
       if: ${{ matrix.job.apt }}
