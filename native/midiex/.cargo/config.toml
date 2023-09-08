@@ -16,17 +16,22 @@ rustflags = [
   "-C", "target-feature=-crt-static"
 ]
 
+[target.aarch64-unknown-linux-gnu]
+linker = "aarch64-linux-gnu-gcc"
+
+# Pi 0/1
 # Libatomic is needed for 32 bits ARM.
 # See: https://github.com/philss/rustler_precompiled/issues/53
 [target.arm-unknown-linux-gnueabihf]
 rustflags = [
   "-l", "dylib=atomic"
 ]
+linker = "arm-linux-gnueabihf-gcc"
+
 
 # Provides a small build size, but takes more time to build.
 [profile.release]
 lto = true
-
 
 [build]
 
@@ -35,7 +40,41 @@ linker = "x86_64-unknown-linux-musl-gcc"
 rustc-link-lib = ["asound"]
 rustc-link-search = ["/lib/x86_64-linux-gnu"]
 
-[target.arm-unknown-linux-gnueabihf.libasound]
+
+[target.arm-unknown-linux-gnueabihf.alsa]
 linker = "arm-linux-gnueabihf-gcc"
 rustc-link-lib = ["asound"]
 rustc-link-search = ["/lib/arm-linux-gnueabihf"]
+
+[target.armv7-unknown-linux-gnueabihf.alsa]
+linker = "arm-none-linux-gnueabihf-gcc"
+rustc-link-lib = ["asound"]
+rustc-link-search = ["/lib/arm-linux-gnueabihf"]
+
+[target.aarch64-unknown-linux-gnu.alsa]
+linker = "aarch64-linux-gnu-gcc"
+rustc-link-lib = ["asound"]
+rustc-link-search = ["/lib/aarch64-linux-gnu"]
+
+
+
+# Pi 2/3/4
+[target.armv7-unknown-linux-gnueabihf]
+linker = "arm-none-linux-gnueabihf-gcc"
+
+# (Optional) Set default target for cargo build
+# target = "armv7-unknown-linux-gnueabihf"
+# rustflags = ["-C", "linker=arm-none-linux-gnueabihf-gcc"]
+
+[target.armeb-unknown-linux-gnueabi]
+linker = "armeb-unknown-linux-gnueabi-gcc"
+
+
+# The (original) Raspberry Pi contained an ARMv6 CPU, and 256 or 512 MB RAM.
+# The Raspberry Pi 2 contains a quad-core ARMv7 CPU, and 1 GB of RAM.
+# The Raspberry Pi 3 and 3+ contain a quad-core ARMv8 (64-bit) CPU,
+# which can also be operated in an ARMv7 compatible mode.
+# It contains the same 1 GB of RAM.
+# The Raspberry Pi Zero and Raspberry Pi Zero W feature the same ARMv6 CPU
+# as the original Raspberry Pi, and 512 MB RAM.
+# They all contain the same Broadcom VideoCore IV graphics processor.
