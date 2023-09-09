@@ -58,6 +58,7 @@ jobs:
         sudo apt-get clean
         sudo apt-get autoclean
         sudo rm -rf /var/lib/apt/lists/
+        sudo dpkg --add-architecture arm64
         sudo dpkg --add-architecture ${{ matrix.job.arch }}
         echo "deb [arch=arm64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy main" | sudo tee -a /etc/apt/sources.list
         echo "deb [arch=arm64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-updates main" | sudo tee -a /etc/apt/sources.list
