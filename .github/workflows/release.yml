@@ -59,10 +59,10 @@ jobs:
         # sudo apt-get autoclean
         # sudo rm -rf /var/lib/apt/lists/
         sudo dpkg --add-architecture ${{ matrix.job.arch }}
-        echo "deb [arch=arm64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy mainecho" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-updates mainecho" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy universeecho" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-updates universeecho" | sudo tee -a /etc/apt/sources.list
+        echo "deb [arch=arm64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy main" | sudo tee -a /etc/apt/sources.list
+        echo "deb [arch=arm64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-updates main" | sudo tee -a /etc/apt/sources.list
+        echo "deb [arch=arm64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy universe" | sudo tee -a /etc/apt/sources.list
+        echo "deb [arch=arm64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-updates universe" | sudo tee -a /etc/apt/sources.list
         sudo apt-get update
 
     - name: Install additional apt packages
