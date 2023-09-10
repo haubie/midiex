@@ -68,11 +68,6 @@ jobs:
         sudo apt-get update
         sudo apt --fix-broken install
 
-    - name: Install additional apt packages
-      if: ${{ matrix.job.apt }}
-      shell: bash
-      run: sudo apt install ${{ matrix.job.apt }}
-
     - name: Install RISCV build tools
       if: ${{ matrix.job.arch }} == 'riscv64'
       shell: bash
@@ -81,6 +76,11 @@ jobs:
         wget -P ~/Downloads/ https://github.com/riscv-collab/riscv-gnu-toolchain/releases/download/2023.07.07/riscv64-glibc-ubuntu-22.04-gcc-nightly-2023.07.07-nightly.tar.gz
         # Unzip it /opt
         tar -xvzf ~/Downloads/riscv64-glibc-ubuntu-22.04-gcc-nightly-2023.07.07-nightly.tar.gz -C /opt/
+
+    - name: Install additional apt packages
+      if: ${{ matrix.job.apt }}
+      shell: bash
+      run: sudo apt install ${{ matrix.job.apt }}
        
     # - name: Install additional apt packages
     #   if: ${{ matrix.job.apt }}
