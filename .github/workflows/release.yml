@@ -30,7 +30,7 @@ jobs:
           # - { target: aarch64-unknown-linux-gnu   , os: ubuntu-22.04 , arch: aarch64 , apt: "libasound2-dev:arm64 pkg-config libgcc-s1:arm64 libc6:arm64 gcc-aarch64-linux-gnu build-essential crossbuild-essential-arm64" }
           # - { target: aarch64-unknown-linux-musl  , os: ubuntu-22.04 , arch: aarch64 , apt: "musl-tools libasound2-dev:arm64 pkg-config libgcc-s1:arm64 libc6:arm64 gcc-aarch64-linux-gnu build-essential crossbuild-essential-arm64" }         
           # 32 bit has issues- { target: arm-unknown-linux-gnueabihf , arch: armhf , os: ubuntu-latest , apt: "libatomic1:armhf libasound2-dev:armhf libudev-dev:armhf pkg-config:armhf build-essential crossbuild-essential-armhf" }
-          - { target: riscv64gc-unknown-linux-gnu , os: ubuntu-20.04  , arch: riscv64 , apt: "wget gcc-riscv64-linux-gnu libc6-riscv64-cross crossbuild-essential-riscv64 libasound2-dev:riscv64 pkg-config" }     
+          - { target: riscv64gc-unknown-linux-gnu , os: ubuntu-22.04  , arch: riscv64 , apt: "wget gcc-riscv64-linux-gnu libc6-riscv64-cross crossbuild-essential-riscv64 libasound2-dev:riscv64 pkg-config" }     
           # - { target: x86_64-pc-windows-gnu       , os: windows-2019  }
           # - { target: x86_64-pc-windows-msvc      , os: windows-2019  }
           # NO? - { target: x86_64-unknown-freebsd      , os: ubuntu-22.04, c, apt: libasound2-dev pkg-config }
@@ -59,13 +59,13 @@ jobs:
         sudo dpkg --add-architecture arm64
         sudo dpkg --add-architecture riscv64
         sudo dpkg --add-architecture ${{ matrix.job.arch }}
-        echo "deb [arch=arm64,riscv64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy main" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64,riscv64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-updates main" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64,riscv64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy universe" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64,riscv64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-updates universe" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64,riscv64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-security main restricted" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64,riscv64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-security universe" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64,riscv64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-security multiverse" | sudo tee -a /etc/apt/sources.list
+        echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy main" | sudo tee -a /etc/apt/sources.list
+        echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-updates main" | sudo tee -a /etc/apt/sources.list
+        echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy universe" | sudo tee -a /etc/apt/sources.list
+        echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-updates universe" | sudo tee -a /etc/apt/sources.list
+        echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-security main restricted" | sudo tee -a /etc/apt/sources.list
+        echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-security universe" | sudo tee -a /etc/apt/sources.list
+        echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-security multiverse" | sudo tee -a /etc/apt/sources.list
         sudo apt-get update
         sudo apt --fix-broken install
 
