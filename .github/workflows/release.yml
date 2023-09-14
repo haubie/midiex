@@ -86,9 +86,9 @@ jobs:
       shell: bash
       run: sudo apt install ${{ matrix.job.apt }}
 
-    - name: Print /riscv64-linux-gnu directory
+    - name: Print /lib/riscv64-linux-gnu directory
       shell: bash
-      run: ls /usr/lib/riscv64-linux-gnu
+      run: ls /lib/riscv64-linux-gnu
 
     - name: Install RISCV build tools
       if: ${{ matrix.job.arch }} == 'riscv64'
