@@ -179,6 +179,15 @@ fn create_virtual_input(port_name: String) -> Result<VirtualMidiPort, Error> {
     )
 }
 
+#[cfg(target_os = "windows")]
+#[rustler::nif]
+fn create_virtual_input(port_name: String) -> Result<VirtualMidiPort, Error> {
+    Err(Error::RaiseTerm(Box::new(
+        "Virtual inputs are not supported on Windows.".to_string(),
+    )))
+}
+
+
 #[cfg(not(any(target_os = "windows")))]
 #[rustler::nif]
 fn unsubscribe_virtual_port(virtual_midi_port: VirtualMidiPort) -> Result<Vec<VirtualMidiPort>, Error> {  
@@ -439,6 +448,15 @@ fn create_virtual_output_conn(name: String) -> Result<OutConn, Error>{
     )
 
 }
+
+#[cfg(target_os = "windows")]
+#[rustler::nif]
+fn create_virtual_output_conn(name: String) -> Result<OutConn, Error>{
+    Err(Error::RaiseTerm(Box::new(
+        "Virtual outputs are not supported on Windows.".to_string(),
+    )))
+}
+
 
 // ------------------------
 // SENDING MIDI MESSAGES
@@ -782,10 +800,14 @@ rustler::init!(
         unsubscribe_port_by_index,
         create_virtual_output_conn,
         create_virtual_input,
+        #[cfg(not(any(target_os = "windows")))]
         subscribe_virtual_input,
+        #[cfg(not(any(target_os = "windows")))]
         unsubscribe_virtual_port,
+        #[cfg(not(any(target_os = "windows")))]
         unsubscribe_all_virtual_ports,
         get_subscribed_ports,
+        #[cfg(not(any(target_os = "windows")))]
         get_subscribed_virtual_ports,
         notifications,
         hotplug
