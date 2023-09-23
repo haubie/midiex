@@ -102,14 +102,14 @@ The package can be installed by adding midiex to your list of dependencies in mi
 ```
 def deps do
   [
-    {:midiex, "~> 0.6.0"}
+    {:midiex, "~> 0.6.1"}
   ]
 End
 ```
 
 ### Using within LiveBook and IEx
 ```
-Mix.install([{:midiex, "~> 0.6.0"}])
+Mix.install([{:midiex, "~> 0.6.1"}])
 ```
 
 #### LiveBook tour

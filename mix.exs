@@ -1,7 +1,9 @@
 defmodule Midiex.MixProject do
   use Mix.Project
 
-  @version "0.6.0"
+  @version "0.6.1"
+  @dev? String.ends_with?(@version, "-dev")
+  @force_build? System.get_env("MIDIEX_BUILD") in ["1", "true"]
 
   def project do
     [
@@ -71,8 +73,7 @@ defmodule Midiex.MixProject do
   defp deps do
     [
       {:rustler_precompiled, "~> 0.6"},
-      {:rustler, "~> 0.26.0", optional: true},
-      # {:rustler, "~> 0.26.0"},
+      {:rustler, "~> 0.29.0", optional: not (@dev? or @force_build?)},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
@@ -86,7 +87,7 @@ defmodule Midiex.MixProject do
         "README.md",
         "BUILDING.md",
         "LICENSE",
-        # "checksum-*.exs"
+        "checksum-*.exs"
       ],
       licenses: ["MIT"],
       links: %{

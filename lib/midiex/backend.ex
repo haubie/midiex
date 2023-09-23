@@ -1,10 +1,6 @@
 defmodule Midiex.Backend do
   @moduledoc false
 
-  # use Rustler,
-  #   otp_app: :midiex,
-  #   crate: :midiex
-
   mix_config = Mix.Project.config()
   version = mix_config[:version]
   github_url = mix_config[:package][:links]["GitHub"]
