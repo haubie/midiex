@@ -1,7 +1,7 @@
 defmodule Midiex.MixProject do
   use Mix.Project
 
-  @version "0.6.1"
+  @version "0.6.2-dev"
   @dev? String.ends_with?(@version, "-dev")
   @force_build? System.get_env("MIDIEX_BUILD") in ["1", "true"]
 
@@ -87,7 +87,7 @@ defmodule Midiex.MixProject do
         "README.md",
         "BUILDING.md",
         "LICENSE",
-        "checksum-*.exs"
+        "checksum-Elixir.Midiex.Backend.exs",
       ],
       licenses: ["MIT"],
       links: %{
