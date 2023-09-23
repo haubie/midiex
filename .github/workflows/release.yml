@@ -114,7 +114,6 @@ jobs:
         whereis riscv64-unknown-linux-gnu-gcc
 
     - name: Raspberry Pi specific build
-      if: contains('raspberrypi', matrix.job.cpu_info)
       uses: pguyot/arm-runner-action@v2
       with:
         base_image: ${{ matrix.job.base_image }}
