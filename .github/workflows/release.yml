@@ -48,6 +48,11 @@ jobs:
         # Get the project version from mix.exs
         echo "PROJECT_VERSION=$(sed -n 's/^  @version "\(.*\)"/\1/p' mix.exs | head -n1)" >> $GITHUB_ENV
 
+    - name: "Patch azure archives for [amd64, i386] use only"
+      shell: bash
+      run: |
+        sudo sed -i'' -E 's/^(deb|deb-src) http:\/\/(archive|azure.archive|security).ubuntu.com/\1 [arch=amd64,i386] http:\/\/\2.ubuntu.com/' /etc/apt/sources.list
+
     - name: Set architecture for package manager
       if: ${{ matrix.job.arch }}
       continue-on-error: true
@@ -66,10 +71,10 @@ jobs:
         # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-security main restricted" | sudo tee -a /etc/apt/sources.list
         # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-security universe" | sudo tee -a /etc/apt/sources.list
         # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-security multiverse" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64,riscv64,amd64] http://ports.ubuntu.com/ubuntu-ports/ jammy main restricted universe" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64,riscv64,amd64] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main restricted universe" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64,riscv64,amd64] http://ports.ubuntu.com/ubuntu-ports/ jammy-backports main restricted universe" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64,riscv64,amd64] http://ports.ubuntu.com/ubuntu-ports/ jammy-security main restricted universe" | sudo tee -a /etc/apt/sources.list
+        echo "deb [arch=arm64,riscv64] http://ports.ubuntu.com/ubuntu-ports/ jammy main restricted universe" | sudo tee -a /etc/apt/sources.list
+        echo "deb [arch=arm64,riscv64] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main restricted universe" | sudo tee -a /etc/apt/sources.list
+        echo "deb [arch=arm64,riscv64] http://ports.ubuntu.com/ubuntu-ports/ jammy-backports main restricted universe" | sudo tee -a /etc/apt/sources.list
+        echo "deb [arch=arm64,riscv64] http://ports.ubuntu.com/ubuntu-ports/ jammy-security main restricted universe" | sudo tee -a /etc/apt/sources.list
         sudo apt-get update
         # sudo apt --fix-broken install
 
