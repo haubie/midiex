@@ -5,6 +5,8 @@ extern crate midir;
 #[macro_use]
 extern crate lazy_static;
 
+
+
 #[cfg(all(target_os = "macos"))]
 use core_foundation::runloop::CFRunLoop;
 #[cfg(all(target_os = "macos"))]
@@ -17,6 +19,7 @@ use std::result::Result;
 use std::ops::{DerefMut, Add};
 
 use midir::{MidiInput, MidiOutput, MidiOutputConnection, MidiInputPort, MidiOutputPort, Ignore, InitError};
+#[cfg(not(any(target_os = "windows")))]
 use midir::os::unix::{VirtualInput, VirtualOutput};
 
 use rustler::{Atom, Env, Error, NifStruct, NifMap, ResourceArc, Term, Binary, OwnedEnv, Encoder};
@@ -162,6 +165,7 @@ pub fn subscribe(env: Env, midi_port: MidiPort) -> Atom {
 // VIRTUAL INPUT
 // ------------------
 
+#[cfg(not(any(target_os = "windows")))]
 #[rustler::nif]
 fn create_virtual_input(port_name: String) -> Result<VirtualMidiPort, Error> {
 
@@ -175,24 +179,41 @@ fn create_virtual_input(port_name: String) -> Result<VirtualMidiPort, Error> {
     )
 }
 
+#[cfg(target_os = "windows")]
+#[rustler::nif]
+fn create_virtual_input(_port_name: String) -> Result<VirtualMidiPort, Error> {
+    Err(Error::RaiseTerm(Box::new(
+        "Virtual inputs are not supported on Windows.".to_string(),
+    )))
+}
+
+
+#[cfg(not(any(target_os = "windows")))]
 #[rustler::nif]
 fn unsubscribe_virtual_port(virtual_midi_port: VirtualMidiPort) -> Result<Vec<VirtualMidiPort>, Error> {  
     GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().retain(|virt_port| virt_port != &virtual_midi_port);
     Ok(GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().to_vec())
 }
 
+#[cfg(not(any(target_os = "windows")))]
 #[rustler::nif]
 fn unsubscribe_all_virtual_ports() -> Result<Vec<VirtualMidiPort>, Error> {
     GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().clear();
     Ok(GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().to_vec())
 }
 
+#[cfg(not(any(target_os = "windows")))]
 #[rustler::nif]
 fn get_subscribed_virtual_ports() -> Result<Vec<VirtualMidiPort>, Error> {
     Ok(GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().to_vec()) 
 }
+#[cfg(target_os = "windows")]
+#[rustler::nif]
+fn get_subscribed_virtual_ports() -> Result<Vec<VirtualMidiPort>, Error> {
+    Ok(Vec::new()) 
+}
 
-
+#[cfg(not(any(target_os = "windows")))]
 // This replaces all other create_virtual_input stuff
 #[rustler::nif]
 pub fn subscribe_virtual_input(env: Env, virtual_midi_port: VirtualMidiPort) -> Atom {    
@@ -399,6 +420,7 @@ fn close_out_conn(midi_out_conn: OutConn) -> Atom {
 // VIRTUAL OUPUT
 // ------------------------
 
+#[cfg(not(any(target_os = "windows")))]
 #[rustler::nif]
 fn create_virtual_output_conn(name: String) -> Result<OutConn, Error>{
 
@@ -431,6 +453,15 @@ fn create_virtual_output_conn(name: String) -> Result<OutConn, Error>{
     )
 
 }
+
+#[cfg(target_os = "windows")]
+#[rustler::nif]
+fn create_virtual_output_conn(_name: String) -> Result<OutConn, Error>{
+    Err(Error::RaiseTerm(Box::new(
+        "Virtual outputs are not supported on Windows.".to_string(),
+    )))
+}
+
 
 // ------------------------
 // SENDING MIDI MESSAGES
@@ -774,8 +805,11 @@ rustler::init!(
         unsubscribe_port_by_index,
         create_virtual_output_conn,
         create_virtual_input,
+        #[cfg(not(any(target_os = "windows")))]
         subscribe_virtual_input,
+        #[cfg(not(any(target_os = "windows")))]
         unsubscribe_virtual_port,
+        #[cfg(not(any(target_os = "windows")))]
         unsubscribe_all_virtual_ports,
         get_subscribed_ports,
         get_subscribed_virtual_ports,

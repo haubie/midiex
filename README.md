@@ -22,7 +22,7 @@ Using WinRT or Jack requires special feature flags enabled. See the [midir GitHu
 The hot-plug support of MIDI devices on MacOS is made possible with with the Rust [coremidi](https://github.com/chris-zen/coremidi) library.
 
 ## Status
-This library is currently under active development and it’s API is likely to change. It's been tested on MacOS only.
+This library is currently under active development and it’s API is likely to change. It's been tested on MacOS only although it is currently building on Mac (M-series and x86), Linux (64-bit ARM, RISC-V and x86) and Windows (x86_64) with precompiled binary packages (see the Getting started section below).
 
 ## API
 At it's most basic level, the core functions of Midiex are for:
@@ -74,22 +74,42 @@ Midiex.send_msg(piano, note_off)
 
 ## Getting started
 
+### Platforms with precompiled binaries 
+Since v0.6, Midiex uses [Rustler Precompiled](https://dashbit.co/blog/rustler-precompiled) to provide precompiled binaries on the following platforms:
+
+- Apple Mac:
+    - M-series: aarch64-apple-darwin
+    - x86-series: x86_64-apple-darwin
+- Linux x86 based:
+    - x86_64-unknown-linux-gnu
+    - x86_64-unknown-linux-musl
+- Linux ARM based:
+    - aarch64-unknown-linux-gnu
+    - aarch64-unknown-linux-musl
+- Linux RISC-V based:
+    - riscv64gc-unknown-linux-gnu
+- Windows x86 based:
+    - x86_64-pc-windows-msvc
+    - x86_64-pc-windows-gnu
+
+This means you shouldn't need the Rust build tools for the above plaforms. Just add midiex as a dependency to your Elixir file and Rustler will download and install the correct binary.
+
 ### Rust build tools
-If you don't already have Rust's build tools installed, you'll likely need to. See [BUILDING.md](BUILDING.md) for more information.
+If you want to use Midiex on a different platform than those listed above, or want to force complication, you'll need to have Rust's build tools installed. See [BUILDING.md](BUILDING.md) for more information.
 
 ### Adding it to your Elixir project
 The package can be installed by adding midiex to your list of dependencies in mix.exs:
 ```
 def deps do
   [
-    {:midiex, "~> 0.5.3"}
+    {:midiex, "~> 0.6.0"}
   ]
 End
 ```
 
 ### Using within LiveBook and IEx
 ```
-Mix.install([{:midiex, "~> 0.5.3"}])
+Mix.install([{:midiex, "~> 0.6.0"}])
 ```
 
 #### LiveBook tour

@@ -1,12 +1,14 @@
 defmodule Midiex.MixProject do
   use Mix.Project
 
+  @version "0.6.0"
+
   def project do
     [
       app: :midiex,
       name: "Midiex",
       description: "A cross-platform, realtime MIDI processing in Elixir library which wraps the midir Rust library.",
-      version: "0.5.3",
+      version: @version,
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -68,9 +70,9 @@ defmodule Midiex.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # {:rustler_precompiled, "~> 0.6"},
-      {:rustler, "~> 0.26.0"},
-      # {:rustler, ">= 0.0.0", optional: true},
+      {:rustler_precompiled, "~> 0.6"},
+      {:rustler, "~> 0.26.0", optional: true},
+      # {:rustler, "~> 0.26.0"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
