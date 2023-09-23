@@ -32,7 +32,7 @@ jobs:
           # - { target: riscv64gc-unknown-linux-gnu , os: ubuntu-22.04  , arch: riscv64 , apt: "wget gcc-riscv64-linux-gnu libc6-riscv64-cross crossbuild-essential-riscv64 libasound2-dev:riscv64 pkg-config" }     
           # - { target: x86_64-pc-windows-gnu       , os: windows-2022  }
           # - { target: x86_64-pc-windows-msvc      , os: windows-2019  },
-          - { cpu_info: raspberrypi_zero_w, pi_arch: armv6l, cpu: arm1176, base_image: raspios_lite:latest, os: ubuntu-22.04 }
+          - { cpu_info: raspberrypi_zero_w, pi_arch: armv6l, cpu: arm1176, base_image: "raspios_lite:latest", os: ubuntu-22.04 }
           # 32 bit cross compiling not working - { target: arm-unknown-linux-gnueabihf , arch: armhf , os: ubuntu-latest , apt: "libatomic1:armhf libasound2-dev:armhf libudev-dev:armhf pkg-config build-essential crossbuild-essential-armhf" }
 
     steps:
