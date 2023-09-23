@@ -49,6 +49,7 @@ jobs:
         echo "PROJECT_VERSION=$(sed -n 's/^  @version "\(.*\)"/\1/p' mix.exs | head -n1)" >> $GITHUB_ENV
 
     - name: "Patch azure archives for [amd64, i386] use only"
+      if: contains(fromJSON('["macos", "ubuntu"]'), matrix.job.os)
       shell: bash
       run: |
         sudo sed -i'' -E 's/^(deb|deb-src) http:\/\/(archive|azure.archive|security).ubuntu.com/\1 [arch=amd64,i386] http:\/\/\2.ubuntu.com/' /etc/apt/sources.list
@@ -79,10 +80,12 @@ jobs:
         # sudo apt --fix-broken install
 
     - name: Print apt sources
+      if: contains(fromJSON('["macos", "ubuntu"]'), matrix.job.os)
       shell: bash
       run: cat /etc/apt/sources.list
 
     - name: List architectures
+      if: contains(fromJSON('["macos", "ubuntu"]'), matrix.job.os)
       shell: bash
       run: |
         sudo dpkg --print-architecture
@@ -99,7 +102,7 @@ jobs:
     #   run: ls /lib/riscv64-linux-gnu
 
     - name: Install RISCV build tools
-      if: ${{ matrix.job.arch }} == 'riscv64'
+      if: ${{ matrix.job.arch == 'riscv64' }}
       shell: bash
       run: |
         # Download RISCV build tools precompile packaged from https://github.com/riscv-collab/riscv-gnu-toolchain/releases/
