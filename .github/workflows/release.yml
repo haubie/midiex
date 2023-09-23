@@ -59,14 +59,17 @@ jobs:
         sudo apt-get update -y
         sudo dpkg --add-architecture arm64
         sudo dpkg --add-architecture ${{ matrix.job.arch }}
-        echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy main" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-updates main" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy universe" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-updates universe" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-security main restricted" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-security universe" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-security multiverse" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=riscv64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy main" | sudo tee -a /etc/apt/sources.list
+        # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy main" | sudo tee -a /etc/apt/sources.list
+        # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-updates main" | sudo tee -a /etc/apt/sources.list
+        # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy universe" | sudo tee -a /etc/apt/sources.list
+        # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-updates universe" | sudo tee -a /etc/apt/sources.list
+        # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-security main restricted" | sudo tee -a /etc/apt/sources.list
+        # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-security universe" | sudo tee -a /etc/apt/sources.list
+        # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-security multiverse" | sudo tee -a /etc/apt/sources.list
+        echo "deb [arch=arm64,riscv64,amd64] http://ports.ubuntu.com/ubuntu-ports/ jammy main restricted universe" | sudo tee -a /etc/apt/sources.list
+        echo "deb [arch=arm64,riscv64,amd64] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main restricted universe" | sudo tee -a /etc/apt/sources.list
+        echo "deb [arch=arm64,riscv64,amd64] http://ports.ubuntu.com/ubuntu-ports/ jammy-backports main restricted universe" | sudo tee -a /etc/apt/sources.list
+        echo "deb [arch=arm64,riscv64,amd64] http://ports.ubuntu.com/ubuntu-ports/ jammy-security main restricted universe" | sudo tee -a /etc/apt/sources.list
         sudo apt-get update
         # sudo apt --fix-broken install
 
