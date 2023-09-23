@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      # - precompiled
+      - rpi0
     paths:
       # Just run on main branch if "native" path changed.
       - "native/**"
