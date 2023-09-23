@@ -50,3 +50,6 @@ midiex-*.tar
 .nix-mix
 .nix-hex
 .direnv
+
+# Ignore checksum file
+checksum-*.exs

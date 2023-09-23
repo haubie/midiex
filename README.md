@@ -22,7 +22,7 @@ Using WinRT or Jack requires special feature flags enabled. See the [midir GitHu
 The hot-plug support of MIDI devices on MacOS is made possible with with the Rust [coremidi](https://github.com/chris-zen/coremidi) library.
 
 ## Status
-This library is currently under active development and it’s API is likely to change. It's been tested on MacOS only although it is currently building on Mac (M-series and x86), Linux (64-bit ARM, RISC-V and x86) and Windows (x86_64) with precompiled binary packages (see the Getting started section below).
+This library is currently under active development and it’s API is likely to change. It's been tested on MacOS only although it is currently building on Mac (M-series and x86), Linux (64-bit ARM, RISC-V and x86) and Windows (x86_64) with precompiled binary packages available (see the Getting started section below).
 
 ## API
 At it's most basic level, the core functions of Midiex are for:
@@ -92,7 +92,7 @@ Since v0.6, Midiex uses [Rustler Precompiled](https://dashbit.co/blog/rustler-pr
     - x86_64-pc-windows-msvc
     - x86_64-pc-windows-gnu
 
-This means you shouldn't need the Rust build tools for the above plaforms. Just add midiex as a dependency to your Elixir file and Rustler will download and install the correct binary.
+This means you shouldn't need the Rust build tools for the above plaforms. Just add midiex as a dependency to your Elixir project and Rustler will download and install the correct binary.
 
 ### Rust build tools
 If you want to use Midiex on a different platform than those listed above, or want to force complication, you'll need to have Rust's build tools installed. See [BUILDING.md](BUILDING.md) for more information.

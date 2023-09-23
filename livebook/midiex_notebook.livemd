@@ -3,7 +3,7 @@
 # MIDIex notebook
 
 ```elixir
-Mix.install([{:midiex, github: "haubie/midiex"}])
+Mix.install([:midiex])
 ```
 
 <!-- livebook:{"output":true} -->
