@@ -107,6 +107,8 @@ jobs:
         # Unzip it /opt
         tar -xvzf ~/Downloads/riscv64-glibc-ubuntu-22.04-gcc-nightly-2023.07.07-nightly.tar.gz -C /opt/
         export PATH="/opt/riscv/bin/:$PATH"
+        which riscv64-unknown-linux-gnu-gcc
+        whereis riscv64-unknown-linux-gnu-gcc
        
     # - name: Install additional apt packages
     #   if: ${{ matrix.job.apt }}
@@ -120,7 +122,11 @@ jobs:
     #   run: echo "PKG_CONFIG_PATH=$(find /usr/lib/ -name alsa.pc -print | head -1 | xargs -0 dirname):/usr/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
     - name: PKG_CONFIG_PATH package path
       shell: bash
-      run: echo $PKG_CONFIG_PATH
+      run: |
+        echo $PKG_CONFIG_PATH
+        echo $PATH
+        which riscv64-unknown-linux-gnu-gcc
+        whereis riscv64-unknown-linux-gnu-gcc
 
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable
