@@ -122,6 +122,7 @@ jobs:
     #   shell: bash
     #   run: echo "PKG_CONFIG_PATH=$(find /usr/lib/ -name alsa.pc -print | head -1 | xargs -0 dirname):/usr/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
     - name: PKG_CONFIG_PATH package path
+      if: contains(fromJSON('["macos", "ubuntu"]'), matrix.job.os)
       shell: bash
       run: |
         echo $PKG_CONFIG_PATH
