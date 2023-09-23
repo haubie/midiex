@@ -207,7 +207,7 @@ fn unsubscribe_all_virtual_ports() -> Result<Vec<VirtualMidiPort>, Error> {
 fn get_subscribed_virtual_ports() -> Result<Vec<VirtualMidiPort>, Error> {
     Ok(GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().to_vec()) 
 }
-#[cfg(arget_os = "windows")]
+#[cfg(target_os = "windows")]
 #[rustler::nif]
 fn get_subscribed_virtual_ports() -> Result<Vec<VirtualMidiPort>, Error> {
     Ok(Vec::new()) 
