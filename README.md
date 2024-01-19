@@ -99,7 +99,7 @@ If you want to use Midiex on a different platform than those listed above, or wa
 
 ### Adding it to your Elixir project
 The package can be installed by adding midiex to your list of dependencies in mix.exs:
-```
+```elixir
 def deps do
   [
     {:midiex, "~> 0.6.1"}
@@ -108,7 +108,7 @@ End
 ```
 
 ### Using within LiveBook and IEx
-```
+```elixir
 Mix.install([{:midiex, "~> 0.6.1"}])
 ```
 

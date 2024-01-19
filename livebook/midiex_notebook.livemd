@@ -6,71 +6,6 @@
 Mix.install([{:midiex, "~> 0.6.1"}])
 ```
 
-<!-- livebook:{"output":true} -->
-
-```
-* Getting midiex (https://github.com/haubie/midiex.git)
-remote: Enumerating objects: 717, done.        
-remote: Counting objects: 100% (174/174), done.        
-remote: Compressing objects: 100% (87/87), done.        
-remote: Total 717 (delta 79), reused 139 (delta 52), pack-reused 543        
-origin/HEAD set to main
-Resolving Hex dependencies...
-Resolution completed in 0.257s
-New:
-  jason 1.4.1
-  rustler 0.26.0
-  toml 0.7.0
-* Getting rustler (Hex package)
-* Getting jason (Hex package)
-* Getting toml (Hex package)
-==> toml
-Compiling 10 files (.ex)
-Generated toml app
-==> jason
-Compiling 10 files (.ex)
-Generated jason app
-==> rustler
-Compiling 7 files (.ex)
-Generated rustler app
-==> midiex
-Compiling 10 files (.ex)
-Compiling crate midiex in release mode (native/midiex)
-   Compiling memchr v2.5.0
-   Compiling core-foundation-sys v0.8.3
-   Compiling libc v0.2.138
-   Compiling proc-macro2 v1.0.63
-   Compiling unicode-ident v1.0.5
-   Compiling coremidi-sys v3.1.0
-   Compiling quote v1.0.28
-   Compiling regex-syntax v0.6.28
-   Compiling void v1.0.2
-   Compiling heck v0.4.0
-   Compiling rustler v0.29.0
-   Compiling lazy_static v1.4.0
-   Compiling unreachable v1.0.0
-   Compiling block v0.1.6
-   Compiling bitflags v1.3.2
-   Compiling aho-corasick v0.7.20
-   Compiling regex v1.7.0
-   Compiling rustler_sys v2.3.0
-   Compiling core-foundation v0.9.3
-   Compiling coremidi v0.6.0
-   Compiling coremidi v0.7.0
-   Compiling midir v0.9.1
-   Compiling syn v2.0.22
-   Compiling rustler_codegen v0.29.0
-   Compiling midiex v0.1.0 (/Users/haubie/Library/Caches/mix/installs/elixir-1.15.2-erts-14.0.2/56c7aef4f3fb67cf9f7eb75d4a18b401/deps/midiex/native/midiex)
-    Finished release [optimized] target(s) in 6.13s
-Generated midiex app
-```
-
-<!-- livebook:{"output":true} -->
-
-```
-:ok
-```
-
 ## Introduction
 
 ### Learning objectives
@@ -135,7 +70,7 @@ Midiex.port_count()
 <!-- livebook:{"output":true} -->
 
 ```
-%{input: 4, output: 3}
+%{input: 3, output: 3}
 ```
 
 ### List devices (ports)
@@ -152,43 +87,37 @@ ports = Midiex.ports()
     direction: :input,
     name: "IAC Driver Bus 1",
     num: 0,
-    port_ref: #Reference<0.34604515.3318349847.1170>
+    port_ref: #Reference<0.1070750276.886702104.1140>
   },
   %Midiex.MidiPort{
     direction: :input,
     name: "IAC Driver Bus 2",
     num: 1,
-    port_ref: #Reference<0.34604515.3318349847.1171>
+    port_ref: #Reference<0.1070750276.886702104.1141>
   },
   %Midiex.MidiPort{
     direction: :input,
     name: "IAC Driver Bus 3",
     num: 2,
-    port_ref: #Reference<0.34604515.3318349847.1172>
-  },
-  %Midiex.MidiPort{
-    direction: :input,
-    name: "My Out",
-    num: 3,
-    port_ref: #Reference<0.34604515.3318349847.1173>
+    port_ref: #Reference<0.1070750276.886702104.1142>
   },
   %Midiex.MidiPort{
     direction: :output,
     name: "IAC Driver Bus 1",
     num: 0,
-    port_ref: #Reference<0.34604515.3318349847.1174>
+    port_ref: #Reference<0.1070750276.886702104.1143>
   },
   %Midiex.MidiPort{
     direction: :output,
     name: "IAC Driver Bus 2",
     num: 1,
-    port_ref: #Reference<0.34604515.3318349847.1175>
+    port_ref: #Reference<0.1070750276.886702104.1144>
   },
   %Midiex.MidiPort{
     direction: :output,
     name: "IAC Driver Bus 3",
     num: 2,
-    port_ref: #Reference<0.34604515.3318349847.1176>
+    port_ref: #Reference<0.1070750276.886702104.1145>
   }
 ]
 ```
@@ -207,25 +136,19 @@ Midiex.ports(:input)
     direction: :input,
     name: "IAC Driver Bus 1",
     num: 0,
-    port_ref: #Reference<0.34604515.3318349847.1177>
+    port_ref: #Reference<0.1070750276.886702104.1146>
   },
   %Midiex.MidiPort{
     direction: :input,
     name: "IAC Driver Bus 2",
     num: 1,
-    port_ref: #Reference<0.34604515.3318349847.1178>
+    port_ref: #Reference<0.1070750276.886702104.1147>
   },
   %Midiex.MidiPort{
     direction: :input,
     name: "IAC Driver Bus 3",
     num: 2,
-    port_ref: #Reference<0.34604515.3318349847.1179>
-  },
-  %Midiex.MidiPort{
-    direction: :input,
-    name: "My Out",
-    num: 3,
-    port_ref: #Reference<0.34604515.3318349847.1180>
+    port_ref: #Reference<0.1070750276.886702104.1148>
   }
 ]
 ```
@@ -242,19 +165,19 @@ Midiex.ports(:output)
     direction: :output,
     name: "IAC Driver Bus 1",
     num: 0,
-    port_ref: #Reference<0.34604515.3318349847.1188>
+    port_ref: #Reference<0.1070750276.886702104.1155>
   },
   %Midiex.MidiPort{
     direction: :output,
     name: "IAC Driver Bus 2",
     num: 1,
-    port_ref: #Reference<0.34604515.3318349847.1189>
+    port_ref: #Reference<0.1070750276.886702104.1156>
   },
   %Midiex.MidiPort{
     direction: :output,
     name: "IAC Driver Bus 3",
     num: 2,
-    port_ref: #Reference<0.34604515.3318349847.1190>
+    port_ref: #Reference<0.1070750276.886702104.1157>
   }
 ]
 ```
@@ -289,7 +212,7 @@ Midiex.ports("IAC Driver Bus 1", :input)
     direction: :input,
     name: "IAC Driver Bus 1",
     num: 0,
-    port_ref: #Reference<0.34604515.3318349847.1198>
+    port_ref: #Reference<0.1070750276.886702104.1164>
   }
 ]
 ```
@@ -324,7 +247,7 @@ Midiex.send_msg(out_conn, <<0x90, 60, 127>>)
 
 ```
 error: undefined variable "out_conn"
-  livebook/midiex_notebook.livemd#cell:752gysgdtdthfmkq2ehlkt5iw5bnzkyw:1
+  /Users/haubie/Development/midiex/livebook/midiex_notebook.livemd#cell:un4kzdmdy3tuhwgnye44qoczfmgs7gf5:1
 
 ```
 

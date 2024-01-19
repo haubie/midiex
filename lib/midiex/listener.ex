@@ -88,9 +88,11 @@ defmodule Midiex.Listener do
 
   @impl true
   def handle_info(info, state) do
-    # IO.inspect info, label: "INFO MSG"
-    state.callback
-    |> Enum.each(fn callback_fn -> callback_fn.(info) end)
+    # Old callback code - now wrapping in a fire-and-forget Task for error isolation
+    # Enum.each(state.callback, fn callback_fn -> callback_fn.(info) end)
+
+    # Call any registered listeners functions. Each callback is run in a separate unlinked Task.
+    Enum.each(state.callback, &Task.start(fn -> &1.(info) end))
 
     {:noreply, state}
   end
@@ -159,7 +161,7 @@ defmodule Midiex.Listener do
 
   @spec add_handler(pid(), function() | [function()]) :: :ok
   @doc """
-  Add one or more callback function(s) which will recieve and handle MIDI messages.
+  Add one or more callback function(s) which will receive and handle MIDI messages.
 
   A single callback function or multiple callback functions can be provided in a list.
 
