@@ -22,7 +22,7 @@ defmodule Midiex.Backend do
       x86_64-pc-windows-msvc
       x86_64-pc-windows-gnu
     ),
-    nif_versions: ["2.15"],
+    nif_versions: ["2.17"],
     mode: mode,
     force_build: System.get_env("MIDIEX_BUILD") in ["1", "true"]
 
