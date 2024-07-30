@@ -151,6 +151,7 @@ pub fn subscribe(env: Env, midi_port: MidiPort) -> Atom {
 
         let mut still_listen = true;
         while still_listen {
+            std::thread::sleep(std::time::Duration::from_millis(100));
             still_listen = GLOBAL_LISTEN_LIST.lock().unwrap().contains(&midi_port);
         }
 
@@ -245,6 +246,7 @@ pub fn subscribe_virtual_input(env: Env, virtual_midi_port: VirtualMidiPort) -> 
 
         let mut still_listen = true;
         while still_listen {
+            std::thread::sleep(std::time::Duration::from_millis(100));
             still_listen = GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().contains(&virtual_midi_port);
         }
 
