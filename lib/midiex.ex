@@ -291,11 +291,16 @@ defmodule Midiex do
   ```
   """
   def close([out_conn | rest_conns]) do
-    ([Backend.close_out_conn(out_conn)] ++ close(rest_conns))
+    r = ([Backend.close_out_conn(out_conn)] ++ close(rest_conns))
+    :timer.sleep(100)
+    r
   end
   def close([]), do: []
-  def close(out_conn), do: Backend.close_out_conn(out_conn)
-
+  def close(out_conn) do
+    r = Backend.close_out_conn(out_conn)
+    :timer.sleep(100)
+    r
+  end
   @doc section: :virtual
   @spec create_virtual_output(String.t()) :: %Midiex.OutConn{}
   @doc """
@@ -515,11 +520,21 @@ defmodule Midiex do
   Midiex.unsubscribe(:all, :virtual)
   ```
   """
-  def unsubscribe(midi_port) when is_input_port(midi_port), do: Backend.unsubscribe_port(midi_port)
-  def unsubscribe(midi_port) when is_virtual_input_port(midi_port), do: Backend.unsubscribe_virtual_port(midi_port)
+  def unsubscribe(midi_port) when is_input_port(midi_port) do
+    r = Backend.unsubscribe_port(midi_port)
+    :timer.sleep(100)
+    r
+  end
+  def unsubscribe(midi_port) when is_virtual_input_port(midi_port) do
+    r = Backend.unsubscribe_virtual_port(midi_port)
+    :timer.sleep(100)
+    r
+  end
   def unsubscribe([midi_port | rest_ports]) when is_input_port(midi_port) or is_virtual_input_port(midi_port) do
     if rest_ports != [], do: unsubscribe(rest_ports)
-    unsubscribe(midi_port)
+    r = unsubscribe(midi_port)
+    :timer.sleep(100)
+    r
   end
   def unsubscribe(:all) do
     Backend.unsubscribe_all_ports()
