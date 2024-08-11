@@ -291,15 +291,11 @@ defmodule Midiex do
   ```
   """
   def close([out_conn | rest_conns]) do
-    r = ([Backend.close_out_conn(out_conn)] ++ close(rest_conns))
-    :timer.sleep(100)
-    r
+    [Backend.close_out_conn(out_conn)] ++ close(rest_conns)
   end
   def close([]), do: []
   def close(out_conn) do
-    r = Backend.close_out_conn(out_conn)
-    :timer.sleep(100)
-    r
+    Backend.close_out_conn(out_conn)
   end
   @doc section: :virtual
   @spec create_virtual_output(String.t()) :: %Midiex.OutConn{}
@@ -521,20 +517,14 @@ defmodule Midiex do
   ```
   """
   def unsubscribe(midi_port) when is_input_port(midi_port) do
-    r = Backend.unsubscribe_port(midi_port)
-    :timer.sleep(100)
-    r
+    Backend.unsubscribe_port(midi_port)
   end
   def unsubscribe(midi_port) when is_virtual_input_port(midi_port) do
-    r = Backend.unsubscribe_virtual_port(midi_port)
-    :timer.sleep(100)
-    r
+    Backend.unsubscribe_virtual_port(midi_port)
   end
   def unsubscribe([midi_port | rest_ports]) when is_input_port(midi_port) or is_virtual_input_port(midi_port) do
     if rest_ports != [], do: unsubscribe(rest_ports)
-    r = unsubscribe(midi_port)
-    :timer.sleep(100)
-    r
+    unsubscribe(midi_port)
   end
   def unsubscribe(:all) do
     Backend.unsubscribe_all_ports()

@@ -1,29 +1,26 @@
-// #![allow(unused)]
-// #![feature(drain_filter)]
+#![allow(clippy::needless_borrows_for_generic_args)]
+#![allow(non_snake_case)]
 extern crate midir;
 
 #[macro_use]
 extern crate lazy_static;
 
-
-
-#[cfg(all(target_os = "macos"))]
+#[cfg(target_os = "macos")]
 use core_foundation::runloop::CFRunLoop;
-#[cfg(all(target_os = "macos"))]
+#[cfg(target_os = "macos")]
 use coremidi::{Client, Notification, AddedRemovedInfo, ObjectType};
-#[cfg(all(target_os = "macos"))]
+#[cfg(target_os = "macos")]
 use coremidi::Notification::{ObjectAdded, ObjectRemoved};
 
 use std::sync::Mutex;
 use std::result::Result;
 use std::ops::{DerefMut, Add};
 
-use midir::{MidiInput, MidiOutput, MidiOutputConnection, MidiInputPort, MidiOutputPort, Ignore, InitError};
+use midir::{Ignore, InitError, MidiInput, MidiInputConnection, MidiInputPort, MidiOutput, MidiOutputConnection, MidiOutputPort};
 #[cfg(not(any(target_os = "windows")))]
 use midir::os::unix::{VirtualInput, VirtualOutput};
 
-use rustler::{Atom, Env, Error, NifStruct, NifMap, ResourceArc, Term, Binary, OwnedEnv, Encoder};
-
+use rustler::{Atom, Binary, Encoder, Env, Error, NifMap, NifStruct, OwnedEnv, ResourceArc, Term};
 
 // --------------
 // GLOBALS
@@ -37,13 +34,14 @@ thread_local!(static GLOBAL_MIDI_OUTPUT_RESULT: Result<MidiOutput, InitError> = 
 
 // GLOBALS FOR INPUT PORTS BEING SUBSCRIBED TO
 lazy_static!{
-    static ref GLOBAL_LISTEN_LIST: Mutex<Vec<MidiPort>> = Mutex::new(Vec::<MidiPort>::new());
+    static ref GLOBAL_INCON: Mutex<Vec<(MidiPort,MidiInputConnection<()>)>> = Mutex::new(Vec::<(MidiPort,MidiInputConnection<()>)>::new());
 }
 
 // GLOBALS FOR VIRTUAL INPUTS
 lazy_static!{
-    static ref GLOBAL_VIRTUAL_LISTEN_LIST: Mutex<Vec<VirtualMidiPort>> = Mutex::new(Vec::<VirtualMidiPort>::new());
+    static ref GLOBAL_VIRTUAL_INCON: Mutex<Vec<(VirtualMidiPort,MidiInputConnection<()>)>> = Mutex::new(Vec::<(VirtualMidiPort,MidiInputConnection<()>)>::new());
 }
+
 lazy_static!{
     static ref GLOBAL_VIRTUAL_INPUT_COUNTER: Mutex<usize> = Mutex::new(0);
 }
@@ -79,86 +77,84 @@ pub mod atoms {
 
 #[rustler::nif]
 fn unsubscribe_all_ports() -> Result<Vec<MidiPort>, Error> {
-    GLOBAL_LISTEN_LIST.lock().unwrap().clear();
-    Ok(GLOBAL_LISTEN_LIST.lock().unwrap().to_vec())
+    let mut v = GLOBAL_INCON.lock().unwrap();
+    while let Some((_port,conn)) = v.pop(){
+        conn.close();
+    };
+    Ok(vec![])
 }
 
 #[rustler::nif]
 fn unsubscribe_port(midi_port: MidiPort) -> Result<Vec<MidiPort>, Error> {
-    GLOBAL_LISTEN_LIST.lock().unwrap().retain(|x| *x != midi_port);
-    Ok(GLOBAL_LISTEN_LIST.lock().unwrap().to_vec())
+    let mut v = GLOBAL_INCON.lock().unwrap();
+    match v.iter().position(|x| x.0 == midi_port) {
+        Some(i) => {
+            let item = v.remove(i);
+            item.1.close();
+        },
+        None => {
+            todo!()
+        },
+    };
+    Ok(v.iter().map(|x|x.0.clone()).collect())
 }
 
 #[rustler::nif]
 fn unsubscribe_port_by_index(port_num: usize) -> Result<Vec<MidiPort>, Error> {  
-    GLOBAL_LISTEN_LIST.lock().unwrap().retain(|x| x.num != port_num);
-    Ok(GLOBAL_LISTEN_LIST.lock().unwrap().to_vec())
+    let mut v = GLOBAL_INCON.lock().unwrap();
+    match v.iter().position(|x| x.0.num == port_num) {
+        Some(i) => {
+            let item = v.remove(i);
+            item.1.close();
+        },
+        None => {
+            todo!()
+        },
+    };
+    Ok(v.iter().map(|x|x.0.clone()).collect())
 }
 
 #[rustler::nif]
 fn get_subscribed_ports() -> Result<Vec<MidiPort>, Error> {
-    Ok(GLOBAL_LISTEN_LIST.lock().unwrap().to_vec()) 
+    Ok(GLOBAL_INCON.lock().unwrap().iter().map(|x|x.0.clone()).collect())
 }
 
 #[rustler::nif]
 pub fn subscribe(env: Env, midi_port: MidiPort) -> Atom {    
-    // Add the whole port struct to a listeners Vec
-
-    let mut g_list_lock = GLOBAL_LISTEN_LIST.lock().unwrap();
-    g_list_lock.push(midi_port.clone());
-    g_list_lock.sort_unstable_by_key(|midi_port| (midi_port.num));
-    g_list_lock.dedup();
-
-
-    let m_port_clone = midi_port.clone();
-
     let pid = env.pid();
-    
     let mut owned_env = OwnedEnv::new();
+    let mut g_map_lock = GLOBAL_INCON.lock().unwrap();
+    if g_map_lock.iter().any(|c|c.0 == midi_port){
+        panic!("midi port already in use maybe improve implementation later")
+    }
 
-    std::thread::spawn(move || {
+    let mut midi_in = MidiInput::new("MIDIex input").expect("Midi input");
+    midi_in.ignore(Ignore::None);
 
-        let mut midi_in = MidiInput::new("MIDIex input").expect("Midi input");
-        midi_in.ignore(Ignore::None);
+    let in_port = match &midi_port.port_ref.0 {
+        MidiexMidiPortRef::Input(in_port) => in_port,
+        MidiexMidiPortRef::Output(_out_port) => panic!("Midi Input Port Error: Problem getting midi input port reference.")
+    };
 
-        let in_port = match &midi_port.port_ref.0 {
-            MidiexMidiPortRef::Input(in_port) => in_port,
-            MidiexMidiPortRef::Output(_out_port) => panic!("Midi Input Port Error: Problem getting midi input port reference.")
-        };
+    let port = midi_port.clone();
+    let conn_in = midi_in
+        .connect(
+            in_port,
+            "midir-read-input",
+            move |stamp, message, _| {
+                owned_env.send_and_clear(&pid, |the_env| {
+                    MidiMessage{  
+                        data: message.to_vec(),
+                        port: port.clone(),
+                        timestamp: stamp
+                    }.encode(the_env)
+                });
+            },
+            (),
+        )
+        .unwrap();
 
-        let _conn_in = midi_in
-            .connect(
-                &in_port,
-                "midir-read-input",
-                move |stamp, message, _| {
-
-                    owned_env.send_and_clear(&pid, |the_env| {
-                        // message.encode(the_env)
-
-                        let m_port_clone = m_port_clone.clone();
-
-                        MidiMessage{  
-                            data: message.to_vec(),
-                            port: m_port_clone,
-                            timestamp: stamp
-                        }.encode(the_env)
-                    });
-                    ()
-                },
-                (),
-            )
-            .unwrap();
-
-        let mut still_listen = true;
-        while still_listen {
-            std::thread::sleep(std::time::Duration::from_millis(100));
-            still_listen = GLOBAL_LISTEN_LIST.lock().unwrap().contains(&midi_port);
-        }
-
-        _conn_in.close();
-
-    });
-
+    g_map_lock.push((midi_port,conn_in));
     atoms::ok()
 }
 
@@ -192,21 +188,33 @@ fn create_virtual_input(_port_name: String) -> Result<VirtualMidiPort, Error> {
 #[cfg(not(any(target_os = "windows")))]
 #[rustler::nif]
 fn unsubscribe_virtual_port(virtual_midi_port: VirtualMidiPort) -> Result<Vec<VirtualMidiPort>, Error> {  
-    GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().retain(|virt_port| virt_port != &virtual_midi_port);
-    Ok(GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().to_vec())
+    let mut v = GLOBAL_VIRTUAL_INCON.lock().unwrap();
+    match v.iter().position(|x| x.0 == virtual_midi_port) {
+        Some(i) => {
+            let item = v.remove(i);
+            item.1.close();
+        },
+        None => {
+            todo!()
+        },
+    };
+    Ok(v.iter().map(|x|x.0.clone()).collect())
 }
 
 #[cfg(not(any(target_os = "windows")))]
 #[rustler::nif]
 fn unsubscribe_all_virtual_ports() -> Result<Vec<VirtualMidiPort>, Error> {
-    GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().clear();
-    Ok(GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().to_vec())
+    let mut v = GLOBAL_VIRTUAL_INCON.lock().unwrap();
+    while let Some((_port,conn)) = v.pop(){
+        conn.close();
+    };
+    Ok(vec![])
 }
 
 #[cfg(not(any(target_os = "windows")))]
 #[rustler::nif]
 fn get_subscribed_virtual_ports() -> Result<Vec<VirtualMidiPort>, Error> {
-    Ok(GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().to_vec()) 
+    Ok(GLOBAL_VIRTUAL_INCON.lock().unwrap().iter().map(|x|x.0.clone()).collect())
 }
 #[cfg(target_os = "windows")]
 #[rustler::nif]
@@ -218,42 +226,28 @@ fn get_subscribed_virtual_ports() -> Result<Vec<VirtualMidiPort>, Error> {
 // This replaces all other create_virtual_input stuff
 #[rustler::nif]
 pub fn subscribe_virtual_input(env: Env, virtual_midi_port: VirtualMidiPort) -> Atom {    
-
-    let mut gv_list_lock = GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap();
-    gv_list_lock.push(virtual_midi_port.clone());
-    gv_list_lock.sort_unstable_by_key(|midi_port| (midi_port.num));
-    gv_list_lock.dedup();
-
-    let pid = env.pid();
-    
+    let pid = env.pid();    
     let mut owned_env = OwnedEnv::new();
 
-    std::thread::spawn(move || {
+    let mut g_map_lock = GLOBAL_VIRTUAL_INCON.lock().unwrap();
+    if g_map_lock.iter().any(|c|c.0 == virtual_midi_port){
+        panic!("midi port already in use maybe improve implementation later")
+    };
 
-        let mut midi_in = MidiInput::new("MIDIex input").expect("Midi input");
-        midi_in.ignore(Ignore::None);
+    let mut midi_in = MidiInput::new("MIDIex input").expect("Midi input");
+    midi_in.ignore(Ignore::None);
 
-        let _conn_in = midi_in
-            .create_virtual(
-                &virtual_midi_port.name,
-                move |_stamp, message, _| {
-                    owned_env.send_and_clear(&pid, |the_env| { message.encode(the_env) });
-                    ()
-                },
-                (),
-            )
-            .unwrap();
+    let conn_in = midi_in
+        .create_virtual(
+            &virtual_midi_port.name,
+            move |_stamp, message, _| {
+                owned_env.send_and_clear(&pid, |the_env| { message.encode(the_env) });
+            },
+            (),
+        )
+        .unwrap();
 
-        let mut still_listen = true;
-        while still_listen {
-            std::thread::sleep(std::time::Duration::from_millis(100));
-            still_listen = GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().contains(&virtual_midi_port);
-        }
-
-        _conn_in.close();
-
-    });
-
+    g_map_lock.push((virtual_midi_port,conn_in));
     atoms::ok()
 }
 
@@ -264,7 +258,7 @@ pub fn subscribe_virtual_input(env: Env, virtual_midi_port: VirtualMidiPort) -> 
 // Supported on MacOS only at the moment
 // ---------------------------------------
 
-#[cfg(all(target_os = "macos"))]
+#[cfg(target_os = "macos")]
 #[rustler::nif]
 pub fn notifications(env: Env) -> Result<Atom, Error> {
 
@@ -302,7 +296,7 @@ pub fn notifications() -> Result<Atom, Error> {
     )))
 }
 
-#[cfg(all(target_os = "macos"))]
+#[cfg(target_os = "macos")]
 #[rustler::nif]
 pub fn hotplug() -> Result<Atom, Error> {
 
@@ -333,26 +327,19 @@ pub fn hotplug() -> Result<Atom, Error> {
 fn connect(midi_port: MidiPort) -> Result<OutConn, Error>{
 
     if midi_port.direction == atoms::output()  {
-        // println!("OUTPUT");
 
         let midi_output = MidiOutput::new("MIDIex").expect("Midi output");  
 
-        // let mut port_ref = midi_port.port_ref.0;
-
         if let MidiexMidiPortRef::Output(port) = &midi_port.port_ref.0 { 
 
-            // println!("OUTPUT PORT");
+            let conn_out_result = midi_output.connect(port, "MIDIex");
 
-            let conn_out_result = midi_output.connect(&port, "MIDIex");
-
-            let mut _conn_out = match conn_out_result {
+            match conn_out_result {
                 Ok(conn_out) => {
-                    // println!("CONNECTION MADE");
                     
                     return Ok(
                         OutConn {
                             conn_ref: ResourceArc::new(OutConnRef::new(conn_out)),
-                            // midi_port: midi_port,   
                             name: midi_port.name,
                             port_num: midi_port.num,
                         }
@@ -361,41 +348,12 @@ fn connect(midi_port: MidiPort) -> Result<OutConn, Error>{
                 },
                 Err(error) => panic!("Midi Output Connection Error: Problem getting midi output connection. Error: {:?}", error)
             };
-    
-            
-
          };
-
-
-    } else {
-        // println!("INPUT");
-
-        // let mut midi_input = MidiInput::new("MIDIex").expect("Midi output");  
-
-        // let mut port_ref = midi_port.port_ref.0;
-
-        if let MidiexMidiPortRef::Input(_port) = &midi_port.port_ref.0 { 
-
-            // println!("INPUT PORT");
-
-            // let mut conn_in_result = midi_input.connect(&port, "MIDIex");
-
-            // let mut conn_in = match conn_in_result {
-            //     Ok(conn_in) => { println!("CONNECTION MADE"); conn_in},
-            //     Err(error) => panic!("Midi Input Connection Error: Problem getting midi input connection. Error: {:?}", error)
-            // };
-
-            return Err(Error::RaiseTerm(Box::new(
-                "Input connection rather than output.".to_string(),
-            )))
-    
-            
-
-         };
+    } else if let MidiexMidiPortRef::Input(_port) = &midi_port.port_ref.0 { 
+       return Err(Error::RaiseTerm(Box::new(
+           "Input connection rather than output.".to_string(),
+       )))
     }
-
-
-
     Err(Error::RaiseTerm(Box::new(
         "No output connection".to_string(),
     )))
@@ -438,10 +396,10 @@ fn create_virtual_output_conn(name: String) -> Result<OutConn, Error>{
     // Just in case added port_ref back into OutConn
     // let new_port: MidiInputPort = midi_input.ports().into_iter().rev().next().unwrap();
 
-    return Ok(
+    Ok(
         OutConn {
             conn_ref: ResourceArc::new(OutConnRef::new(conn_out)),
-            name: name,
+            name,
             port_num: port_index-1,
 
             // Just in case port_ref is added back in:
@@ -514,7 +472,7 @@ pub struct MidiNotification {
     direction: Atom
 }
 
-#[cfg(all(target_os = "macos"))]
+#[cfg(target_os = "macos")]
 impl MidiNotification {
     pub fn new(notification_type: Atom, info: &AddedRemovedInfo) -> Self {
 
@@ -551,7 +509,7 @@ impl MidiNotification {
     }
 }
 
-#[cfg(all(target_os = "macos"))]
+#[cfg(target_os = "macos")]
 fn midi_obj_type_to_atom(object_type: ObjectType) -> Atom {
     match object_type {
         ObjectType::Other => atoms::other(),
@@ -685,7 +643,7 @@ fn list_ports() -> Result<Vec<MidiPort>, Error> {
 
         for (i, p) in midi_input.ports().iter().enumerate() {
         
-            let port_name = if let Ok(port_name) = midi_input.port_name(&p) { port_name } else { "No device name given".to_string() };
+            let port_name = if let Ok(port_name) = midi_input.port_name(p) { port_name } else { "No device name given".to_string() };
     
                 vec_of_devices.push(
                     MidiPort{
@@ -710,7 +668,7 @@ fn list_ports() -> Result<Vec<MidiPort>, Error> {
 
         for (i, p) in midi_output.ports().iter().enumerate() {  
         
-            let port_name = if let Ok(port_name) = midi_output.port_name(&p) { port_name } else { "No device name given".to_string() };
+            let port_name = if let Ok(port_name) = midi_output.port_name(p) { port_name } else { "No device name given".to_string() };
           
                 vec_of_devices.push(
                     MidiPort{
@@ -724,7 +682,7 @@ fn list_ports() -> Result<Vec<MidiPort>, Error> {
 
     });
 
-    return Ok(vec_of_devices)
+    Ok(vec_of_devices)
 
 }
 
@@ -762,7 +720,7 @@ fn count_ports() -> Result<NumPorts, Error>{
 
     });
 
-    return Ok( NumPorts { input: num_input_ports, output:  num_output_ports } )
+    Ok( NumPorts { input: num_input_ports, output:  num_output_ports } )
 }
 
 
