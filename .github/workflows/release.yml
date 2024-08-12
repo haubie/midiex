@@ -23,133 +23,156 @@ jobs:
       matrix:
         nif: ["2.15"]
         job:
-          - { target: aarch64-apple-darwin        , os: macos-11      }
-          - { target: x86_64-apple-darwin         , os: macos-11      }
-          - { target: x86_64-unknown-linux-gnu    , os: ubuntu-20.04  , apt: musl-tools alsa-utils alsa-tools libasound2-dev libudev-dev pkg-config portaudio19-dev build-essential libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang }
-          - { target: x86_64-unknown-linux-musl   , os: ubuntu-20.04  , apt: musl-tools alsa-utils alsa-tools libasound2-dev libudev-dev pkg-config portaudio19-dev build-essential libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang }
-          - { target: aarch64-unknown-linux-gnu   , os: ubuntu-22.04 , arch: aarch64 , apt: "libasound2-dev:arm64 pkg-config libgcc-s1:arm64 libc6:arm64 gcc-aarch64-linux-gnu build-essential crossbuild-essential-arm64" }
-          - { target: aarch64-unknown-linux-musl  , os: ubuntu-22.04 , arch: aarch64 , apt: "musl-tools libasound2-dev:arm64 pkg-config libgcc-s1:arm64 libc6:arm64 gcc-aarch64-linux-gnu build-essential crossbuild-essential-arm64" }
-          - { target: riscv64gc-unknown-linux-gnu , os: ubuntu-22.04  , arch: riscv64 , apt: "wget gcc-riscv64-linux-gnu libc6-riscv64-cross crossbuild-essential-riscv64 libasound2-dev:riscv64 pkg-config" }
-          - { target: x86_64-pc-windows-gnu       , os: windows-2022  }
-          - { target: x86_64-pc-windows-msvc      , os: windows-2019  },
+          - { target: aarch64-apple-darwin, os: macos-11 }
+          - { target: x86_64-apple-darwin, os: macos-11 }
+          - {
+              target: x86_64-unknown-linux-gnu,
+              os: ubuntu-20.04,
+              apt: musl-tools alsa-utils alsa-tools libasound2-dev libudev-dev pkg-config portaudio19-dev build-essential libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang,
+            }
+          - {
+              target: x86_64-unknown-linux-musl,
+              os: ubuntu-20.04,
+              apt: musl-tools alsa-utils alsa-tools libasound2-dev libudev-dev pkg-config portaudio19-dev build-essential libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang,
+            }
+          - {
+              target: aarch64-unknown-linux-gnu,
+              os: ubuntu-22.04,
+              arch: aarch64,
+              apt: "libasound2-dev:arm64 pkg-config libgcc-s1:arm64 libc6:arm64 gcc-aarch64-linux-gnu build-essential crossbuild-essential-arm64",
+            }
+          - {
+              target: aarch64-unknown-linux-musl,
+              os: ubuntu-22.04,
+              arch: aarch64,
+              apt: "musl-tools libasound2-dev:arm64 pkg-config libgcc-s1:arm64 libc6:arm64 gcc-aarch64-linux-gnu build-essential crossbuild-essential-arm64",
+            }
+          - {
+              target: riscv64gc-unknown-linux-gnu,
+              os: ubuntu-22.04,
+              arch: riscv64,
+              apt: "wget gcc-riscv64-linux-gnu libc6-riscv64-cross crossbuild-essential-riscv64 libasound2-dev:riscv64 pkg-config",
+            }
+          - { target: x86_64-pc-windows-gnu, os: windows-2022 }
+          - { target: x86_64-pc-windows-msvc, os: windows-2019 }
           # - { cpu_info: raspberrypi_zero_w, pi_arch: armv6l, cpu: arm1176, base_image: raspios_lite:latest, os: ubuntu-22.04 }
           # 32 bit cross compiling not working - { target: arm-unknown-linux-gnueabihf , arch: armhf , os: ubuntu-latest , apt: "libatomic1:armhf libasound2-dev:armhf libudev-dev:armhf pkg-config build-essential crossbuild-essential-armhf" }
 
     steps:
-    - name: Checkout source code
-      uses: actions/checkout@v3
+      - name: Checkout source code
+        uses: actions/checkout@v3
 
-    - name: Extract project version
-      shell: bash
-      run: |
-        # Get the project version from mix.exs
-        echo "PROJECT_VERSION=$(sed -n 's/^  @version "\(.*\)"/\1/p' mix.exs | head -n1)" >> $GITHUB_ENV
+      - name: Extract project version
+        shell: bash
+        run: |
+          # Get the project version from mix.exs
+          echo "PROJECT_VERSION=$(sed -n 's/^  @version "\(.*\)"/\1/p' mix.exs | head -n1)" >> $GITHUB_ENV
 
-    - name: "Patch azure archives for [amd64, i386] use only"
-      if: contains(fromJSON('["macos", "ubuntu"]'), matrix.job.os)
-      shell: bash
-      run: |
-        sudo sed -i'' -E 's/^(deb|deb-src) http:\/\/(archive|azure.archive|security).ubuntu.com/\1 [arch=amd64,i386] http:\/\/\2.ubuntu.com/' /etc/apt/sources.list
+      - name: "Patch azure archives for [amd64, i386] use only"
+        if: contains(fromJSON('["macos", "ubuntu"]'), matrix.job.os)
+        shell: bash
+        run: |
+          sudo sed -i'' -E 's/^(deb|deb-src) http:\/\/(archive|azure.archive|security).ubuntu.com/\1 [arch=amd64,i386] http:\/\/\2.ubuntu.com/' /etc/apt/sources.list
 
-    - name: Set architecture for package manager
-      if: ${{ matrix.job.arch }}
-      continue-on-error: true
-      shell: bash
-      run: |
-        # sudo apt-get clean
-        # sudo apt-get autoclean
-        # sudo rm -rf /var/lib/apt/lists/
-        sudo apt-get update -y
-        sudo dpkg --add-architecture arm64
-        sudo dpkg --add-architecture ${{ matrix.job.arch }}
-        # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy main" | sudo tee -a /etc/apt/sources.list
-        # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-updates main" | sudo tee -a /etc/apt/sources.list
-        # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy universe" | sudo tee -a /etc/apt/sources.list
-        # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-updates universe" | sudo tee -a /etc/apt/sources.list
-        # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-security main restricted" | sudo tee -a /etc/apt/sources.list
-        # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-security universe" | sudo tee -a /etc/apt/sources.list
-        # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-security multiverse" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64,riscv64,armhf] http://ports.ubuntu.com/ubuntu-ports/ jammy main restricted universe" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64,riscv64,armhf] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main restricted universe" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64,riscv64,armhf] http://ports.ubuntu.com/ubuntu-ports/ jammy-backports main restricted universe" | sudo tee -a /etc/apt/sources.list
-        echo "deb [arch=arm64,riscv64,armhf] http://ports.ubuntu.com/ubuntu-ports/ jammy-security main restricted universe" | sudo tee -a /etc/apt/sources.list
-        sudo apt-get update
-        # sudo apt --fix-broken install
+      - name: Set architecture for package manager
+        if: ${{ matrix.job.arch }}
+        continue-on-error: true
+        shell: bash
+        run: |
+          # sudo apt-get clean
+          # sudo apt-get autoclean
+          # sudo rm -rf /var/lib/apt/lists/
+          sudo apt-get update -y
+          sudo dpkg --add-architecture arm64
+          sudo dpkg --add-architecture ${{ matrix.job.arch }}
+          # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy main" | sudo tee -a /etc/apt/sources.list
+          # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-updates main" | sudo tee -a /etc/apt/sources.list
+          # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy universe" | sudo tee -a /etc/apt/sources.list
+          # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-updates universe" | sudo tee -a /etc/apt/sources.list
+          # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-security main restricted" | sudo tee -a /etc/apt/sources.list
+          # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-security universe" | sudo tee -a /etc/apt/sources.list
+          # echo "deb [arch=arm64,riscv64,amd64] http://mirror.aarnet.edu.au/pub/ubuntu/ports/ jammy-security multiverse" | sudo tee -a /etc/apt/sources.list
+          echo "deb [arch=arm64,riscv64,armhf] http://ports.ubuntu.com/ubuntu-ports/ jammy main restricted universe" | sudo tee -a /etc/apt/sources.list
+          echo "deb [arch=arm64,riscv64,armhf] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main restricted universe" | sudo tee -a /etc/apt/sources.list
+          echo "deb [arch=arm64,riscv64,armhf] http://ports.ubuntu.com/ubuntu-ports/ jammy-backports main restricted universe" | sudo tee -a /etc/apt/sources.list
+          echo "deb [arch=arm64,riscv64,armhf] http://ports.ubuntu.com/ubuntu-ports/ jammy-security main restricted universe" | sudo tee -a /etc/apt/sources.list
+          sudo apt-get update
+          # sudo apt --fix-broken install
 
-    - name: Print apt sources
-      if: contains(fromJSON('["macos", "ubuntu"]'), matrix.job.os)
-      shell: bash
-      run: cat /etc/apt/sources.list
+      - name: Print apt sources
+        if: contains(fromJSON('["macos", "ubuntu"]'), matrix.job.os)
+        shell: bash
+        run: cat /etc/apt/sources.list
 
-    - name: List architectures
-      if: contains(fromJSON('["macos", "ubuntu"]'), matrix.job.os)
-      shell: bash
-      run: |
-        sudo dpkg --print-architecture
-        sudo dpkg --print-foreign-architectures
+      - name: List architectures
+        if: contains(fromJSON('["macos", "ubuntu"]'), matrix.job.os)
+        shell: bash
+        run: |
+          sudo dpkg --print-architecture
+          sudo dpkg --print-foreign-architectures
 
-    - name: Install additional apt packages
-      if: ${{ matrix.job.apt }}
-      continue-on-error: true
-      shell: bash
-      run: sudo apt install ${{ matrix.job.apt }}
+      - name: Install additional apt packages
+        if: ${{ matrix.job.apt }}
+        continue-on-error: true
+        shell: bash
+        run: sudo apt install ${{ matrix.job.apt }}
 
-    - name: Install RISCV build tools
-      if: ${{ matrix.job.arch == 'riscv64' }}
-      shell: bash
-      run: |
-        # Download RISCV build tools precompile packaged from https://github.com/riscv-collab/riscv-gnu-toolchain/releases/
-        wget -P ~/Downloads/ https://github.com/riscv-collab/riscv-gnu-toolchain/releases/download/2023.07.07/riscv64-glibc-ubuntu-22.04-gcc-nightly-2023.07.07-nightly.tar.gz
-        # Unzip it /opt
-        tar -xvzf ~/Downloads/riscv64-glibc-ubuntu-22.04-gcc-nightly-2023.07.07-nightly.tar.gz -C /opt/
-        echo PATH="/opt/riscv/bin/:$PATH" >> $GITHUB_ENV
+      - name: Install RISCV build tools
+        if: ${{ matrix.job.arch == 'riscv64' }}
+        shell: bash
+        run: |
+          # Download RISCV build tools precompile packaged from https://github.com/riscv-collab/riscv-gnu-toolchain/releases/
+          wget -P ~/Downloads/ https://github.com/riscv-collab/riscv-gnu-toolchain/releases/download/2023.07.07/riscv64-glibc-ubuntu-22.04-gcc-nightly-2023.07.07-nightly.tar.gz
+          # Unzip it /opt
+          tar -xvzf ~/Downloads/riscv64-glibc-ubuntu-22.04-gcc-nightly-2023.07.07-nightly.tar.gz -C /opt/
+          echo PATH="/opt/riscv/bin/:$PATH" >> $GITHUB_ENV
 
-    - name: PKG_CONFIG_PATH package path
-      if: contains(fromJSON('["macos", "ubuntu"]'), matrix.job.os)
-      shell: bash
-      run: |
-        echo $PKG_CONFIG_PATH
-        echo $PATH
-        which riscv64-unknown-linux-gnu-gcc
-        whereis riscv64-unknown-linux-gnu-gcc
+      - name: PKG_CONFIG_PATH package path
+        if: contains(fromJSON('["macos", "ubuntu"]'), matrix.job.os)
+        shell: bash
+        run: |
+          echo $PKG_CONFIG_PATH
+          echo $PATH
+          which riscv64-unknown-linux-gnu-gcc
+          whereis riscv64-unknown-linux-gnu-gcc
 
-    - name: Raspberry Pi specific build
-      if: contains('raspberrypi', matrix.job.cpu_info)
-      uses: pguyot/arm-runner-action@v2
-      with:
-        base_image: ${{ matrix.job.base_image }}
-        cpu: ${{ matrix.job.cpu }}
-        cpu_info: ${{ matrix.job.cpu_info }}
-        commands: |
+      - name: Raspberry Pi specific build
+        if: contains('raspberrypi', matrix.job.cpu_info)
+        uses: pguyot/arm-runner-action@v2
+        with:
+          base_image: ${{ matrix.job.base_image }}
+          cpu: ${{ matrix.job.cpu }}
+          cpu_info: ${{ matrix.job.cpu_info }}
+          commands: |
             test `uname -m` = ${{ matrix.job.pi_arch }}
             grep Model /proc/cpuinfo
 
-    - name: Install Rust toolchain
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        toolchain: stable
-        target: ${{ matrix.job.target }}
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          target: ${{ matrix.job.target }}
 
-    - name: Build the project
-      id: build-crate
-      uses: philss/rustler-precompiled-action@v1.0.1
-      with:
-        project-name: midiex
-        project-version: ${{ env.PROJECT_VERSION }}
-        target: ${{ matrix.job.target }}
-        nif-version: ${{ matrix.nif }}
-        use-cross: ${{ matrix.job.use-cross }}
-        project-dir: "native/midiex"
+      - name: Build the project
+        id: build-crate
+        uses: philss/rustler-precompiled-action@v1.0.1
+        with:
+          project-name: midiex
+          project-version: ${{ env.PROJECT_VERSION }}
+          target: ${{ matrix.job.target }}
+          nif-version: ${{ matrix.nif }}
+          use-cross: ${{ matrix.job.use-cross }}
+          project-dir: "native/midiex"
 
-    - name: Artifact upload
-      uses: actions/upload-artifact@v3
-      with:
-        name: ${{ steps.build-crate.outputs.file-name }}
-        path: ${{ steps.build-crate.outputs.file-path }}
+      - name: Artifact upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.build-crate.outputs.file-name }}
+          path: ${{ steps.build-crate.outputs.file-path }}
 
-    - name: Publish archives and packages
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          ${{ steps.build-crate.outputs.file-path }}
-      if: startsWith(github.ref, 'refs/tags/')
+      - name: Publish archives and packages
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ${{ steps.build-crate.outputs.file-path }}
+        if: startsWith(github.ref, 'refs/tags/')
