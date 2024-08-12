@@ -14,8 +14,8 @@ Midir support a range of platforms and backends, such as:
 - ALSA (Linux)
 - WinMM (Windows)
 - CoreMIDI (MacOS, iOS)
-- WinRT (Windows 8+), 
-- Jack (Linux, macOS) 
+- WinRT (Windows 8+),
+- Jack (Linux, macOS)
 
 Using WinRT or Jack requires special feature flags enabled. See the [midir GitHub](https://github.com/Boddlnagg/midir) and [create docs](https://docs.rs/crate/midir/latest) for more details.
 
@@ -74,7 +74,7 @@ Midiex.send_msg(piano, note_off)
 
 ## Getting started
 
-### Platforms with precompiled binaries 
+### Platforms with precompiled binaries
 Since v0.6, Midiex uses [Rustler Precompiled](https://dashbit.co/blog/rustler-precompiled) to provide precompiled binaries on the following platforms:
 
 - Apple Mac:
@@ -102,14 +102,14 @@ The package can be installed by adding midiex to your list of dependencies in mi
 ```
 def deps do
   [
-    {:midiex, "~> 0.6.1"}
+    {:midiex, "~> 0.6.2"}
   ]
 End
 ```
 
 ### Using within LiveBook and IEx
 ```
-Mix.install([{:midiex, "~> 0.6.1"}])
+Mix.install([{:midiex, "~> 0.6.2"}])
 ```
 
 #### LiveBook tour
@@ -119,6 +119,3 @@ Also see the introductory tour in LiveBook at [/livebook/midiex_notebook.livemd]
 
 ## Documentation
 The docs can be found at https://hexdocs.pm/midiex.
-
-
-

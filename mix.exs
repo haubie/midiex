@@ -1,7 +1,7 @@
 defmodule Midiex.MixProject do
   use Mix.Project
 
-  @version "0.6.2-dev"
+  @version "0.6.2"
   @dev? String.ends_with?(@version, "-dev")
   @force_build? System.get_env("MIDIEX_BUILD") in ["1", "true"]
 
@@ -23,6 +23,7 @@ defmodule Midiex.MixProject do
         assets: "assets",
         extras: [
           "README.md",
+          "CHANGELOG.md",
           "BUILDING.md",
           "livebook/midiex_notebook.livemd",
           {:"LICENSE", [title: "License (MIT)"]},

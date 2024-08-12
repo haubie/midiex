@@ -3,17 +3,17 @@
 # MIDIex notebook
 
 ```elixir
-Mix.install([{:midiex, "~> 0.6.1"}])
+Mix.install([{:midiex, "~> 0.6.2"}])
 ```
 
 <!-- livebook:{"output":true} -->
 
 ```
 * Getting midiex (https://github.com/haubie/midiex.git)
-remote: Enumerating objects: 717, done.        
-remote: Counting objects: 100% (174/174), done.        
-remote: Compressing objects: 100% (87/87), done.        
-remote: Total 717 (delta 79), reused 139 (delta 52), pack-reused 543        
+remote: Enumerating objects: 717, done.
+remote: Counting objects: 100% (174/174), done.
+remote: Compressing objects: 100% (87/87), done.
+remote: Total 717 (delta 79), reused 139 (delta 52), pack-reused 543
 origin/HEAD set to main
 Resolving Hex dependencies...
 Resolution completed in 0.257s
