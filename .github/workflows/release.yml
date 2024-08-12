@@ -134,17 +134,6 @@ jobs:
           which riscv64-unknown-linux-gnu-gcc
           whereis riscv64-unknown-linux-gnu-gcc
 
-      - name: Raspberry Pi specific build
-        if: contains('raspberrypi', matrix.job.cpu_info)
-        uses: pguyot/arm-runner-action@v2
-        with:
-          base_image: ${{ matrix.job.base_image }}
-          cpu: ${{ matrix.job.cpu }}
-          cpu_info: ${{ matrix.job.cpu_info }}
-          commands: |
-            test `uname -m` = ${{ matrix.job.pi_arch }}
-            grep Model /proc/cpuinfo
-
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
