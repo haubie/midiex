@@ -1,7 +1,7 @@
 defmodule Midiex.MixProject do
   use Mix.Project
 
-  @version "0.6.2"
+  @version "0.6.3"
   @dev? String.ends_with?(@version, "-dev")
   @force_build? System.get_env("MIDIEX_BUILD") in ["1", "true"]
 
