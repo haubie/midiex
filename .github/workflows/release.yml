@@ -1,6 +1,7 @@
 name: Precompile Rust NIFs
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
