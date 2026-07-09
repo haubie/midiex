@@ -3,15 +3,37 @@ passthrough = [
   "RUSTLER_NIF_VERSION"
 ]
 
+# 1. Standard x86_64 Linux (no extra architecture needed)
+[target.x86_64-unknown-linux-gnu]
+pre-build = [
+  "apt-get update && apt-get install -y musl-tools alsa-utils alsa-tools libasound2-dev libudev-dev pkg-config portaudio19-dev build-essential libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang"
+]
+
+# 2. x86_64 MUSL (often tricky, depends on if musl headers are available)
+[target.x86_64-unknown-linux-musl]
+pre-build = [
+  "apt-get update && apt-get install -y musl-tools alsa-utils alsa-tools libasound2-dev libudev-dev pkg-config portaudio19-dev build-essential libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang"
+]
+
+# 3. ARM64 GNU
 [target.aarch64-unknown-linux-gnu]
 pre-build = [
   "dpkg --add-architecture arm64",
   "apt-get update",
   "apt-get install -y libasound2-dev:arm64 pkg-config"
 ]
-
+# 4. ARM64 MUSL
 [target.aarch64-unknown-linux-musl]
-pre-build = ["apt-get update && apt-get install -y libasound2-dev pkg-config"]
+pre-build = [
+  "dpkg --add-architecture arm64",
+  "apt-get update",
+  "apt-get install -y musl-tools libasound2-dev:arm64 pkg-config libgcc-s1:arm64 libc6:arm64 gcc-aarch64-linux-gnu build-essential crossbuild-essential-arm64"
+]
 
-[target.x86_64-unknown-linux-gnu]
-pre-build = ["apt-get update && apt-get install -y libasound2-dev pkg-config"]
+# 5. RISC-V 64 GNU
+[target.riscv64gc-unknown-linux-gnu]
+pre-build = [
+  "dpkg --add-architecture riscv64",
+  "apt-get update",
+  "apt-get install -y wget gcc-riscv64-linux-gnu libc6-riscv64-cross crossbuild-essential-riscv64 libasound2-dev:riscv64 pkg-config"
+]
