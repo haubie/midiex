@@ -24,23 +24,26 @@ jobs:
       matrix:
         nif: ["2.15"]
         job:
-          - { target: aarch64-apple-darwin, os: macos-12 }
-          - { target: x86_64-apple-darwin, os: macos-12 }
+          - { target: aarch64-apple-darwin, os: macos-15 }
+          - { target: x86_64-apple-darwin, os: macos-15 }
           - {
               target: x86_64-unknown-linux-gnu,
-              os: ubuntu-20.04,
+              # os: ubuntu-20.04,
+              os: ubuntu-22.04,
               apt: musl-tools alsa-utils alsa-tools libasound2-dev libudev-dev pkg-config portaudio19-dev build-essential libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang,
             }
           - {
               target: x86_64-unknown-linux-musl,
-              os: ubuntu-20.04,
+              # os: ubuntu-20.04,
+              os: ubuntu-22.04,
               apt: musl-tools alsa-utils alsa-tools libasound2-dev libudev-dev pkg-config portaudio19-dev build-essential libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang,
             }
           - {
               target: aarch64-unknown-linux-gnu,
               os: ubuntu-22.04,
-              arch: aarch64,
-              apt: "libasound2-dev:arm64 pkg-config libgcc-s1:arm64 libc6:arm64 gcc-aarch64-linux-gnu build-essential crossbuild-essential-arm64",
+              use-cross: true,
+              # arch: aarch64,
+              # apt: "libasound2-dev:arm64 pkg-config libgcc-s1:arm64 libc6:arm64 gcc-aarch64-linux-gnu build-essential crossbuild-essential-arm64",
             }
           - {
               target: aarch64-unknown-linux-musl,
@@ -54,14 +57,15 @@ jobs:
               arch: riscv64,
               apt: "wget gcc-riscv64-linux-gnu libc6-riscv64-cross crossbuild-essential-riscv64 libasound2-dev:riscv64 pkg-config",
             }
-          - { target: x86_64-pc-windows-gnu, os: windows-2022 }
-          - { target: x86_64-pc-windows-msvc, os: windows-2019 }
-          - {
-              target: arm-unknown-linux-gnueabihf,
-              arch: armhf,
-              os: ubuntu-22.04,
-              apt: "libatomic1:armhf libasound2-dev:armhf libudev-dev:armhf pkg-config build-essential crossbuild-essential-armhf",
-            }
+          - { target: x86_64-pc-windows-gnu, os: windows-2025 }
+          - { target: x86_64-pc-windows-msvc, os: windows-2025 }
+          - { target: aarch64-pc-windows-msvc, os: windows-2025}
+          # - {
+          #     target: arm-unknown-linux-gnueabihf,
+          #     arch: armhf,
+          #     os: ubuntu-22.04,
+          #     apt: "libatomic1:armhf libasound2-dev:armhf libudev-dev:armhf pkg-config build-essential crossbuild-essential-armhf",
+          #   }
 
     steps:
       - name: Checkout source code
@@ -74,13 +78,17 @@ jobs:
           echo "PROJECT_VERSION=$(sed -n 's/^  @version "\(.*\)"/\1/p' mix.exs | head -n1)" >> $GITHUB_ENV
 
       - name: "Patch azure archives for [amd64, i386] use only"
-        if: contains(fromJSON('["macos", "ubuntu"]'), matrix.job.os)
+        # Only run if use-cross is NOT true
+        if: ${{ contains(fromJSON('["macos", "ubuntu"]'), matrix.job.os) && !matrix.job.use-cross }}
+        # if: contains(fromJSON('["macos", "ubuntu"]'), matrix.job.os)
         shell: bash
         run: |
           sudo sed -i'' -E 's/^(deb|deb-src) http:\/\/(archive|azure.archive|security).ubuntu.com/\1 [arch=amd64,i386] http:\/\/\2.ubuntu.com/' /etc/apt/sources.list
 
       - name: Set architecture for package manager
-        if: ${{ matrix.job.arch }}
+        # if: ${{ matrix.job.arch }}
+        # Only run if use-cross is NOT true
+        if: ${{ matrix.job.arch && !matrix.job.use-cross }}
         continue-on-error: true
         shell: bash
         run: |
@@ -117,13 +125,17 @@ jobs:
           sudo dpkg --print-foreign-architectures
 
       - name: Install additional apt packages
-        if: ${{ matrix.job.apt }}
+        # if: ${{ matrix.job.apt }}
+        # Only if not use-cross
+        if: ${{ matrix.job.apt && !matrix.job.use-cross }}
         continue-on-error: true
         shell: bash
         run: sudo apt install ${{ matrix.job.apt }}
 
       - name: Install RISCV build tools
-        if: ${{ matrix.job.arch == 'riscv64' }}
+        # if: ${{ matrix.job.arch == 'riscv64' }}
+        # Only if not use-cross
+        if: ${{ matrix.job.arch == 'riscv64' && !matrix.job.use-cross }}
         shell: bash
         run: |
           # Download RISCV build tools precompile packaged from https://github.com/riscv-collab/riscv-gnu-toolchain/releases/
