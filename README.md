@@ -24,6 +24,17 @@ The hot-plug support of MIDI devices on MacOS is made possible with with the Rus
 ## Status
 This library is currently under active development and it’s API is likely to change. It's been tested on MacOS only although it is currently building on Mac (M-series and x86), Linux (64-bit ARM, RISC-V and x86) and Windows (x86_64) with precompiled binary packages available (see the Getting started section below).
 
+## Upgrading to v0.6.4
+In version 0.6.4, a breaking change was introduced where `Midiex` now returns MIDI data as **binaries** (e.g. `<<153, 60, 70>>`) instead of lists.
+
+If your existing application relies on list-based return values, you can use `:binary.bin_to_list/1` to convert the data back to a list:
+
+```elixir
+binary = <<153, 60, 70>>
+list = :binary.bin_to_list(binary)
+#=> [153, 60, 70]
+```
+
 ## API
 At it's most basic level, the core functions of Midiex are for:
 - **listing** or **counting** MIDI ports availble (for example, a keyboard or synth)
@@ -46,7 +57,10 @@ For example, the status byte for 'Note On' is `0x90` in HEX format. The data byt
 Putting that together, the message to play Middle C at a velocity of 127 is: `<<0x90, 60, 127>>`
 You can stop the same note from playing by sending the 'Note Off' status byte `0x80`, which would make the message: `<<0x80, 60, 127>>`.
 
+**Note:** As of v0.6.4, all library functions return MIDI messages as binaries (as shown above) rather than lists.
+
 For more information on MIDI messages, see the offical [MIDI Assocations Specifications](https://www.midi.org/specifications), [Expanded MIDI 1.0 message list](https://www.midi.org/specifications-old/item/table-2-expanded-messages-list-status-bytes) or the various articles online such as [this one](https://www.songstuff.com/recording/article/midi_message_format/).
+
 
 ## Example
 ```
@@ -102,14 +116,14 @@ The package can be installed by adding midiex to your list of dependencies in mi
 ```
 def deps do
   [
-    {:midiex, "~> 0.6.3"}
+    {:midiex, "~> 0.6.4"}
   ]
 End
 ```
 
 ### Using within LiveBook and IEx
 ```
-Mix.install([{:midiex, "~> 0.6.3"}])
+Mix.install([{:midiex, "~> 0.6.4"}])
 ```
 
 #### LiveBook tour

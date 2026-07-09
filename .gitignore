@@ -33,6 +33,8 @@ midiex-*.tar
 
 # Ignore ElixirLS temp files.
 .elixir_ls/
+.elixir-tools/
+.expert/
 
 # Allow folks to use their own .envrc
 .envrc

@@ -11,11 +11,15 @@ defmodule MidiexTest do
     # Connection
     virtual_out_conn = Midiex.create_virtual_output(port_name)
     assert is_struct(virtual_out_conn, Midiex.OutConn), "expected a %Midiex.OutConn{} struct"
-    assert virtual_out_conn.name == port_name, "expected %Midiex.OutConn{} name to be \"#{port_name}\""
+
+    assert virtual_out_conn.name == port_name,
+           "expected %Midiex.OutConn{} name to be \"#{port_name}\""
 
     # Input port count should be +1
     %{input: num_input_ports} = Midiex.port_count()
-    assert num_input_ports == (initial_num_input_ports + 1), "expected the number of input ports to be \"#{initial_num_input_ports + 1}\""
+
+    assert num_input_ports == initial_num_input_ports + 1,
+           "expected the number of input ports to be \"#{initial_num_input_ports + 1}\""
 
     # Port visible
     input_port = Midiex.ports(port_name, :input) |> List.first()
@@ -31,9 +35,15 @@ defmodule MidiexTest do
     %{output: initial_num_output_ports} = Midiex.port_count()
 
     virtual_in_port = Midiex.create_virtual_input(port_name)
-    assert is_struct(virtual_in_port, Midiex.VirtualMidiPort), "expected a %Midiex.VirtualMidiPort{} struct"
-    assert virtual_in_port.name == port_name, "expected %Midiex.VirtualMidiPort{} name to be \"#{port_name}\""
-    assert virtual_in_port.direction == :input, "expected %Midiex.VirtualMidiPort{} direction to be :input"
+
+    assert is_struct(virtual_in_port, Midiex.VirtualMidiPort),
+           "expected a %Midiex.VirtualMidiPort{} struct"
+
+    assert virtual_in_port.name == port_name,
+           "expected %Midiex.VirtualMidiPort{} name to be \"#{port_name}\""
+
+    assert virtual_in_port.direction == :input,
+           "expected %Midiex.VirtualMidiPort{} direction to be :input"
 
     # Subscribe to the port, this will create an %Midiex.MidiPort{direction: :output}
     Midiex.subscribe(virtual_in_port)
@@ -41,12 +51,17 @@ defmodule MidiexTest do
     # Port visible
     output_port = Midiex.ports(port_name, :output) |> List.first()
     assert is_struct(output_port, Midiex.MidiPort), "expected a %Midiex.MidiPort{} struct"
-    assert output_port.name == port_name, "expected %Midiex.MidiPort{} name to be \"#{port_name}\""
+
+    assert output_port.name == port_name,
+           "expected %Midiex.MidiPort{} name to be \"#{port_name}\""
+
     assert output_port.direction == :output, "expected %Midiex.MidiPort{} direction to be :output"
 
     # Output port count should be +1
     %{output: num_output_ports} = Midiex.port_count()
-    assert num_output_ports == (initial_num_output_ports + 1), "expected the number of output ports to be \"#{initial_num_output_ports + 1}\""
+
+    assert num_output_ports == initial_num_output_ports + 1,
+           "expected the number of output ports to be \"#{initial_num_output_ports + 1}\""
 
     # Clean up
     Midiex.unsubscribe(virtual_in_port)
@@ -98,18 +113,21 @@ defmodule MidiexTest do
     roland_device_id = 0x41
     bin_message = <<1, 2, 3, 4>>
     message = Midiex.Message.sysex(roland_device_id, bin_message)
-    Midiex.send_msg(out_conn, message) # sends [240, 65, 1, 2, 3, 4, 247]
+    # sends [240, 65, 1, 2, 3, 4, 247]
+    Midiex.send_msg(out_conn, message)
 
-    :timer.sleep(25) # delay for persistient term to be updated before asserting truth
+    # delay for persistient term to be updated before asserting truth
+    :timer.sleep(25)
 
     # Check if message data was added to persistent term
     received_message = :persistent_term.get(:sysex_msg)
-    assert received_message == [240, 65, 1, 2, 3, 4, 247], "expected message data to be equal to [240, 65, 1, 2, 3, 4, 247], got #{inspect(received_message)}"
+
+    assert received_message == <<240, 65, 1, 2, 3, 4, 247>>,
+           "expected message data to be equal to <<240, 65, 1, 2, 3, 4, 247>>, got #{inspect(received_message)}"
 
     # Clean-up
     Midiex.Listener.unsubscribe(pid, input_port)
     Midiex.close(out_conn)
     GenServer.stop(pid)
   end
-
 end

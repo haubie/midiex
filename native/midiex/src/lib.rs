@@ -22,7 +22,9 @@ use midir::{
     Ignore, InitError, MidiInput, MidiInputPort, MidiOutput, MidiOutputConnection, MidiOutputPort,
 };
 
-use rustler::{Atom, Binary, Encoder, Env, Error, NifMap, NifStruct, OwnedEnv, ResourceArc, Term};
+use rustler::{
+    Atom, Binary, Encoder, Env, Error, NewBinary, NifMap, NifStruct, OwnedEnv, ResourceArc, Term,
+};
 
 // --------------
 // GLOBALS
@@ -135,12 +137,17 @@ pub fn subscribe(env: Env, midi_port: MidiPort) -> Atom {
                 "midir-read-input",
                 move |stamp, message, _| {
                     owned_env.send_and_clear(&pid, |the_env| {
-                        // message.encode(the_env)
-
                         let m_port_clone = m_port_clone.clone();
 
+                        // Allocate a new binary directly on the Erlang heap MIDI bytes directly into the Erlang binary slice
+                        // NewBinary uses enif_make_new_binary, rather than OwnedBinary which uses enif_alloc_binary
+                        // Since a standard MIDI message is only ~3 bytes, Erlang allocates it directly on the process's own heap as a "Heap Binary"
+                        // This faster and gets cleaned up instantly when the process dies or garbage collects, with zero reference-counting overhead.
+                        let mut erl_bin = NewBinary::new(the_env, message.len());
+                        erl_bin.as_mut_slice().copy_from_slice(message);
+
                         MidiMessage {
-                            data: message.to_vec(),
+                            data: Binary::from(erl_bin),
                             port: m_port_clone,
                             timestamp: stamp,
                         }
@@ -470,9 +477,10 @@ fn send_msg(midi_out_conn: OutConn, message: Binary) -> Result<OutConn, Error> {
 // =================
 #[derive(NifStruct)]
 #[module = "Midiex.MidiMessage"]
-pub struct MidiMessage {
+pub struct MidiMessage<'a> {
     port: MidiPort,
-    data: Vec<u8>,
+    // data: Vec<u8>,
+    data: Binary<'a>,
     timestamp: u64,
 }
 
@@ -750,7 +758,7 @@ fn on_load(env: Env, _info: Term) -> bool {
     rustler::resource!(MidiNotification, env);
 
     // MIDI message
-    rustler::resource!(MidiMessage, env);
+    // rustler::resource!(MidiMessage, env);
 
     true
 }

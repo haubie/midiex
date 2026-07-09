@@ -251,7 +251,7 @@ defmodule Midiex.Message do
     {"A0", 21},
   ]
 
-  @notes_atom_list [
+  @notes_atom_list %{
     Ab9: 128,
     Gs9: 128,
     G9: 127,
@@ -405,8 +405,8 @@ defmodule Midiex.Message do
     B0: 23,
     Bb0: 22,
     As0: 22,
-    A0: 21,
-  ]
+    A0: 21
+  }
 
   @note_on <<0x9::4>>
   @note_off <<0x8::4>>
@@ -477,7 +477,7 @@ defmodule Midiex.Message do
   ```
   """
   def note_on(note, velocity \\ 127, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     <<@note_on, channel::4, note(note), velocity>>
   end
 
@@ -503,7 +503,7 @@ defmodule Midiex.Message do
   ```
   """
   def note_off(note, velocity \\ 123, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     <<@note_off, channel::4, note(note), velocity>>
   end
 
@@ -532,7 +532,7 @@ defmodule Midiex.Message do
   ```
   """
   def polyphonic_aftertouch(note, pressure, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     <<0xA, channel::4, note(note), pressure>>
   end
 
@@ -564,7 +564,7 @@ defmodule Midiex.Message do
   ```
   """
   def channel_aftertouch(note, pressure, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     <<0xD, channel::4, note(note), pressure>>
   end
 
@@ -591,7 +591,7 @@ defmodule Midiex.Message do
   See the official [MIDI 1.0 Control Change Messages Spec](https://www.midi.org/specifications-old/item/table-3-control-change-messages-data-bytes-2).
   """
   def control_change(control_number, value \\ 0, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     <<0xB::4, channel::4, control_number, value>>
   end
 
@@ -607,7 +607,7 @@ defmodule Midiex.Message do
   ```
   """
   def program_change(prog_num, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     <<0xC::4, channel::4, prog_num>>
   end
 
@@ -637,7 +637,7 @@ defmodule Midiex.Message do
   ```
   """
   def pitch_bend(bend, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     <<msb::7, lsb::7>> = <<bend::14>>
     <<0xE::4, channel::4, lsb, msb>>
   end
@@ -651,7 +651,7 @@ defmodule Midiex.Message do
   A channel number can be provided as an option.
   """
   def bank_select(bank, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     <<msb::7, lsb::7>> = <<bank::14>>
     msb_binary = control_change(0, msb, channel: channel)
     lsb_binary = control_change(0x20, lsb, channel: channel)
@@ -669,7 +669,7 @@ defmodule Midiex.Message do
   A channel number can be provided as an option.
   """
   def mod_wheel(bank, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     <<msb::7, lsb::7>> = <<bank::14>>
     msb_binary = control_change(1, msb, channel: channel)
     lsb_binary = control_change(0x21, lsb, channel: channel)
@@ -689,7 +689,7 @@ defmodule Midiex.Message do
   A channel number can be provided as an option.
   """
   def breath_controller(value, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     <<msb::7, lsb::7>> = <<value::14>>
     msb_binary = control_change(2, msb, channel: channel)
     lsb_binary = control_change(0x22, lsb, channel: channel)
@@ -705,7 +705,7 @@ defmodule Midiex.Message do
   A channel number can be provided as an option.
   """
   def foot_controller(value, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     <<msb::7, lsb::7>> = <<value::14>>
     msb_binary = control_change(4, msb, channel: channel)
     lsb_binary = control_change(0x24, lsb, channel: channel)
@@ -723,7 +723,7 @@ defmodule Midiex.Message do
   A channel number can be provided as an option.
   """
   def portamento(value, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     <<msb::7, lsb::7>> = <<value::14>>
     msb_binary = control_change(5, msb, channel: channel)
     lsb_binary = control_change(0x25, lsb, channel: channel)
@@ -741,7 +741,7 @@ defmodule Midiex.Message do
   A channel number can be provided as an option.
   """
   def data_entry_msb(value, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     # control_change(7, volume_num, channel: channel)
     <<msb::7, lsb::7>> = <<value::14>>
     msb_binary = control_change(6, msb, channel: channel)
@@ -774,7 +774,7 @@ defmodule Midiex.Message do
   A channel number can be provided as an option.
   """
   def volume(volume_num, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     high_res = Keyword.get(opts, :high_res, false)
     if high_res do
       # High-res (14 bit version)
@@ -811,7 +811,7 @@ defmodule Midiex.Message do
   ```
   """
   def balance(value, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     high_res = Keyword.get(opts, :high_res, false)
 
     if high_res do
@@ -847,7 +847,7 @@ defmodule Midiex.Message do
   ```
   """
   def pan(pan, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     high_res = Keyword.get(opts, :high_res, false)
 
     if high_res do
@@ -866,7 +866,7 @@ defmodule Midiex.Message do
   Creates an all sound off message. This mutes all sound regardless of release time or sustain.
   """
   def sound_off(opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     control_change(120, 0, channel: channel)
   end
 
@@ -879,7 +879,7 @@ defmodule Midiex.Message do
   Notes held by sustain will not turn off until sustain pedal is depressed.
   """
   def all_notes_off(opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     control_change(123, 0, channel: channel)
   end
 
@@ -888,7 +888,7 @@ defmodule Midiex.Message do
   Creates a message that will reset all controllers to their default.
   """
   def reset_controllers(opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     control_change(121, 0 ,channel: channel)
   end
 
@@ -901,7 +901,7 @@ defmodule Midiex.Message do
   - `false` to swithc Omni mode off
   """
   def omni_mode(true_or_false \\ true, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     case true_or_false do
       true -> control_change(125, 0, channel: channel)
       false -> control_change(124, 0, channel: channel)
@@ -924,7 +924,7 @@ defmodule Midiex.Message do
   ```
   """
   def poly_mode(true_or_false \\ true, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     case true_or_false do
       true -> control_change(127, 0, channel: channel)
       false -> control_change(126, 0, channel: channel)
@@ -950,7 +950,7 @@ defmodule Midiex.Message do
   """
   @spec mono_mode(boolean, any, keyword) :: <<_::24>>
   def mono_mode(true_or_false \\ true, number_of_channels \\ 0, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     case true_or_false do
       true -> control_change(126, number_of_channels, channel: channel)
       false -> poly_mode(true, opts)
@@ -968,7 +968,7 @@ defmodule Midiex.Message do
   More information at: https://electronicmusic.fandom.com/wiki/Local_control
   """
   def local_control(true_or_false \\ true, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     case true_or_false do
       true -> control_change(122, 127, channel: channel)
       false -> control_change(122	, 0, channel: channel)
@@ -1119,5 +1119,10 @@ defmodule Midiex.Message do
   - Expression is set to 127.
   """
   def reset(), do: <<0xFF>>
+
+  ## Helpers
+  defp get_channel(opts) do
+    Keyword.get(opts, :channel, 1) - 1
+  end
 
 end

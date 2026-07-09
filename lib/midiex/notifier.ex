@@ -74,25 +74,25 @@ defmodule Midiex.Notifier do
   end
 
   @impl true
-  def handle_cast({:add_handler, handler_fn}, state) do
+  def handle_cast({:add_handler, handler_fn}, %__MODULE__{} = state) do
     handler_fn = if is_list(handler_fn), do: handler_fn, else: [handler_fn]
     new_state = %__MODULE__{state | callback: handler_fn ++ state.callback}
     {:noreply, new_state}
   end
 
   @impl true
-  def handle_cast(:clear_handlers, state) do
+  def handle_cast(:clear_handlers, %__MODULE__{} = state) do
     new_state = %__MODULE__{state | callback: []}
     {:noreply, new_state}
   end
 
   @impl true
-  def handle_call(:state, _from, state) do
+  def handle_call(:state, _from, %__MODULE__{} = state) do
     {:reply, state, state}
   end
 
   @impl true
-  def handle_info(info, state) do
+  def handle_info(info, %__MODULE__{} = state) do
     state.callback
     |> Enum.each(fn callback_fn -> callback_fn.(info) end)
 
@@ -122,7 +122,6 @@ defmodule Midiex.Notifier do
     %__MODULE__{callback: callback}
   end
 
-
   @spec start_link(keyword) :: :ignore | {:error, any} | {:ok, pid}
   @doc """
   Start the Midiex.Notifier GenServer.
@@ -132,7 +131,6 @@ defmodule Midiex.Notifier do
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, new(opts))
   end
-
 
   @spec add_handler(pid(), function() | [function()]) :: :ok
   @doc """
@@ -167,6 +165,4 @@ defmodule Midiex.Notifier do
   def get_state(pid) do
     GenServer.call(pid, :state)
   end
-
-
 end
