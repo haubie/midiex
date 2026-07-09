@@ -56,8 +56,5 @@ defmodule Midiex.Backend do
   def notifications(), do: err()
   def hotplug(), do: err()
 
-
   defp err(), do: :erlang.nif_error(:nif_not_loaded)
-
-
 end
