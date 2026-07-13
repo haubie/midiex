@@ -8,7 +8,8 @@ binary = <<153, 60, 70>>
 list = :binary.bin_to_list(binary)
 #=> [153, 60, 70]
 ```
-- bug fix when using `Midiex.Message` functions with the `channel:` option.
+- fixes a bug when using `Midiex.Message` functions with the `channel:` option.
+- upgrades to Rustler v0.38.
 
 ## 0.6.3 (2024-09-11)
 This release is just a refresh of the checksums for the precompiled binaries.

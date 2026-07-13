@@ -12,7 +12,10 @@ use coremidi::Notification::{ObjectAdded, ObjectRemoved};
 #[cfg(all(target_os = "macos"))]
 use coremidi::{AddedRemovedInfo, Client, Notification, ObjectType};
 
-use std::ops::{Add, DerefMut};
+#[cfg(not(any(target_os = "windows")))]
+use std::ops::Add;
+
+use std::ops::DerefMut;
 use std::result::Result;
 use std::sync::Mutex;
 
@@ -210,9 +213,10 @@ fn unsubscribe_virtual_port(
 #[cfg(target_os = "windows")]
 #[rustler::nif]
 pub fn unsubscribe_virtual_port(
-    _env: Env,
+    env: Env,
     _virtual_midi_port: VirtualMidiPort,
 ) -> Result<Atom, Error> {
+    let _ = env;
     Err(Error::RaiseTerm(Box::new(
         "Virtual ports are not supported on Windows.".to_string(),
     )))
@@ -228,9 +232,10 @@ fn unsubscribe_all_virtual_ports() -> Result<Vec<VirtualMidiPort>, Error> {
 #[cfg(target_os = "windows")]
 #[rustler::nif]
 pub fn unsubscribe_all_virtual_ports(
-    _env: Env,
+    env: Env,
     _virtual_midi_port: VirtualMidiPort,
 ) -> Result<Atom, Error> {
+    let _ = env;
     Err(Error::RaiseTerm(Box::new(
         "Virtual ports are not supported on Windows.".to_string(),
     )))
@@ -292,9 +297,10 @@ pub fn subscribe_virtual_input(env: Env, virtual_midi_port: VirtualMidiPort) -> 
 #[cfg(target_os = "windows")]
 #[rustler::nif]
 pub fn subscribe_virtual_input(
-    _env: Env,
+    env: Env,
     _virtual_midi_port: VirtualMidiPort,
 ) -> Result<Atom, Error> {
+    let _ = env;
     Err(Error::RaiseTerm(Box::new(
         "Virtual inputs are not supported on Windows.".to_string(),
     )))
@@ -521,6 +527,7 @@ pub struct MidiMessage<'a> {
 // =================
 // MIDI Notification
 // =================
+#[cfg(all(target_os = "macos"))]
 #[derive(NifStruct)]
 #[module = "Midiex.MidiNotification"]
 pub struct MidiNotification {
@@ -537,6 +544,7 @@ pub struct MidiNotification {
 #[rustler::resource_impl]
 impl Resource for MidiNotification {}
 
+#[cfg(all(target_os = "macos"))]
 impl MidiNotification {
     pub fn new(notification_type: Atom, info: &AddedRemovedInfo) -> Self {
         let parent_name = match info.parent.name() {
