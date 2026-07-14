@@ -105,6 +105,8 @@ Since v0.6, Midiex uses [Rustler Precompiled](https://dashbit.co/blog/rustler-pr
 - Windows x86 based:
     - x86_64-pc-windows-msvc
     - x86_64-pc-windows-gnu
+- Windows ARM based:
+    - aarch64-pc-windows-msvc
 
 This means you shouldn't need the Rust build tools for the above plaforms. Just add midiex as a dependency to your Elixir project and Rustler will download and install the correct binary.
 

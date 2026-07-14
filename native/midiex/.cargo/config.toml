@@ -14,14 +14,14 @@ rustflags = [
 [target.aarch64-unknown-linux-musl]
 rustflags = [ "-C", "target-feature=-crt-static", "-C", "link-arg=-lgcc" ]
 # rustflags = ["-C", "target-feature=-crt-static"]
-linker = "aarch64-linux-gnu-gcc"
+# linker = "aarch64-linux-gnu-gcc"
 
 [target.arm-unknown-linux-musleabihf]
 # rustflags = [ "-C", "target-feature=-crt-static", "-C", "link-arg=-lgcc" ]
 rustflags = ["-C", "target-feature=-crt-static", "-l", "dylib=atomic"]
 linker = "arm-linux-gnueabihf-gcc"
 
-	
+
 
 [target.aarch64-unknown-linux-gnu]
 linker = "aarch64-linux-gnu-gcc"
@@ -54,10 +54,10 @@ lto = true
 
 [build]
 
-[target.x86_64-unknown-linux-musl.alsa]
-linker = "x86_64-unknown-linux-musl-gcc"
-rustc-link-lib = ["asound"]
-rustc-link-search = ["/lib/x86_64-linux-gnu"]
+# [target.x86_64-unknown-linux-musl.alsa]
+# linker = "x86_64-unknown-linux-musl-gcc"
+# rustc-link-lib = ["asound"]
+# rustc-link-search = ["/lib/x86_64-linux-gnu"]
 
 [target.arm-unknown-linux-gnueabihf.alsa]
 linker = "arm-linux-gnueabihf-gcc"
@@ -74,11 +74,11 @@ linker = "aarch64-linux-gnu-gcc"
 rustc-link-lib = ["asound"]
 rustc-link-search = ["/lib/aarch64-linux-gnu"]
 
-[target.aarch64-unknown-linux-musl.alsa]
-# linker = "aarch64-linux-musl-gcc"
-linker = "aarch64-linux-gnu-gcc"
-rustc-link-lib = ["asound"]
-rustc-link-search = ["/lib/aarch64-linux-gnu"]
+# [target.aarch64-unknown-linux-musl.alsa]
+# # linker = "aarch64-linux-musl-gcc"
+# linker = "aarch64-linux-gnu-gcc"
+# rustc-link-lib = ["asound"]
+# rustc-link-search = ["/lib/aarch64-linux-gnu"]
 
 [target.riscv64gc-unknown-linux-gnu.alsa]
 linker = "riscv64-unknown-linux-gnu-gcc"

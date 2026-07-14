@@ -20,25 +20,54 @@ pre-build = [
 ]
 
 # 3. RISC-V 64 Linux (GLIBC) - Compilers are pre-baked into this image
+# [target.riscv64gc-unknown-linux-gnu]
+# image = "ghcr.io/cross-rs/riscv64gc-unknown-linux-gnu:edge"
+# pre-build = [
+#   "dpkg --add-architecture riscv64",
+#   "apt-get update && apt-get install -y crossbuild-essential-riscv64 libasound2-dev:riscv64 libudev-dev:riscv64 pkg-config"
+# ]
+
 [target.riscv64gc-unknown-linux-gnu]
 image = "ghcr.io/cross-rs/riscv64gc-unknown-linux-gnu:edge"
 pre-build = [
   "dpkg --add-architecture riscv64",
+  "echo 'deb [arch=riscv64] http://ports.ubuntu.com/ubuntu-ports noble main restricted universe multiverse' > /etc/apt/sources.list.d/riscv64.list",
+  "echo 'deb [arch=riscv64] http://ports.ubuntu.com/ubuntu-ports noble-updates main restricted universe multiverse' >> /etc/apt/sources.list.d/riscv64.list",
+  "echo 'deb [arch=riscv64] http://ports.ubuntu.com/ubuntu-ports noble-security main restricted universe multiverse' >> /etc/apt/sources.list.d/riscv64.list",
   "apt-get update && apt-get install -y crossbuild-essential-riscv64 libasound2-dev:riscv64 libudev-dev:riscv64 pkg-config"
 ]
 
-# 4. x86_64 Linux (MUSL)
+# # 4. x86_64 Linux (MUSL)
+# [target.x86_64-unknown-linux-musl]
+# image = "ghcr.io/cross-rs/x86_64-unknown-linux-musl:edge"
+# pre-build = [
+#   "export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" --no-install-recommends musl-tools pkg-config build-essential libasound2-dev libudev-dev"
+# ]
+
+# # 5. ARM64 Linux (MUSL)
+# [target.aarch64-unknown-linux-musl]
+# image = "ghcr.io/cross-rs/aarch64-unknown-linux-musl:edge"
+# pre-build = [
+#   "dpkg --add-architecture arm64",
+#   "export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" --no-install-recommends musl-tools pkg-config gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libasound2-dev:arm64 libudev-dev:arm64"
+# ]
+
+# 4. x86_64 Linux (MUSL) - Compiling static ALSA with unversioned symbols
 [target.x86_64-unknown-linux-musl]
 image = "ghcr.io/cross-rs/x86_64-unknown-linux-musl:edge"
 pre-build = [
-  "export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y --no-install-recommends musl-tools pkg-config build-essential"
+  "apt-get update && apt-get install -y wget bzip2 make build-essential pkg-config",
+  "wget https://www.alsa-project.org/files/pub/lib/alsa-lib-1.2.11.tar.bz2 && tar -xf alsa-lib-1.2.11.tar.bz2",
+  "cd alsa-lib-1.2.11 && CC=x86_64-linux-musl-gcc CFLAGS=\"-fPIC\" ./configure --host=x86_64-linux-musl --enable-static --disable-shared --with-pic --with-versioned=no --prefix=/usr/local && make && make install"
 ]
 
-# 5. ARM64 Linux (MUSL)
+# 5. ARM64 Linux (MUSL) - Cross-compiling static ALSA with unversioned symbols
 [target.aarch64-unknown-linux-musl]
 image = "ghcr.io/cross-rs/aarch64-unknown-linux-musl:edge"
 pre-build = [
-  "export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y --no-install-recommends musl-tools pkg-config gcc-aarch64-linux-gnu g++-aarch64-linux-gnu"
+  "apt-get update && apt-get install -y wget bzip2 make build-essential pkg-config",
+  "wget https://www.alsa-project.org/files/pub/lib/alsa-lib-1.2.11.tar.bz2 && tar -xf alsa-lib-1.2.11.tar.bz2",
+  "cd alsa-lib-1.2.11 && CC=aarch64-linux-musl-gcc CFLAGS=\"-fPIC\" ./configure --host=aarch64-linux-musl --enable-static --disable-shared --with-pic --with-versioned=no --prefix=/usr/local && make && make install"
 ]
 
 # OLD CROSS FILE BELOW
