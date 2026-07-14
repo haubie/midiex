@@ -26,8 +26,8 @@ use midir::{
 };
 
 use rustler::{
-    Atom, Binary, Encoder, Env, Error, NewBinary, NifMap, NifStruct, NifUntaggedEnum, OwnedEnv,
-    Resource, ResourceArc,
+    Atom, Binary, Encoder, Env, Error, NewBinary, NifMap, NifStruct, OwnedEnv, Resource,
+    ResourceArc,
 };
 
 // --------------
@@ -152,8 +152,7 @@ pub fn subscribe(env: Env, midi_port: MidiPort) -> Atom {
 
                         MidiMessage {
                             data: Binary::from(erl_bin),
-                            // port: m_port_clone,
-                            port: MidiexMidiPort::Device(m_port_clone),
+                            port: m_port_clone,
                             timestamp: stamp,
                         }
                         .encode(the_env)
@@ -270,22 +269,11 @@ pub fn subscribe_virtual_input(env: Env, virtual_midi_port: VirtualMidiPort) -> 
         let mut midi_in = MidiInput::new("MIDIex input").expect("Midi input");
         midi_in.ignore(Ignore::None);
 
-        let m_port_clone = virtual_midi_port.clone();
         let _conn_in = midi_in
             .create_virtual(
                 &virtual_midi_port.name,
-                move |stamp, message, _| {
-                    let _ = owned_env.send_and_clear(&pid, |the_env| {
-                        let mut erl_bin = NewBinary::new(the_env, message.len());
-                        erl_bin.as_mut_slice().copy_from_slice(message);
-
-                        MidiMessage {
-                            data: Binary::from(erl_bin),
-                            port: MidiexMidiPort::Virtual(m_port_clone.clone()),
-                            timestamp: stamp,
-                        }
-                        .encode(the_env)
-                    });
+                move |_stamp, message, _| {
+                    let _ = owned_env.send_and_clear(&pid, |the_env| message.encode(the_env));
                     ()
                 },
                 (),
@@ -306,7 +294,6 @@ pub fn subscribe_virtual_input(env: Env, virtual_midi_port: VirtualMidiPort) -> 
 
     atoms::ok()
 }
-
 #[cfg(target_os = "windows")]
 #[rustler::nif]
 pub fn subscribe_virtual_input(
@@ -531,8 +518,7 @@ fn send_msg(midi_out_conn: OutConn, message: Binary) -> Result<OutConn, Error> {
 #[derive(NifStruct)]
 #[module = "Midiex.MidiMessage"]
 pub struct MidiMessage<'a> {
-    port: MidiexMidiPort,
-    // port: MidiPort,
+    port: MidiPort,
     // data: Vec<u8>,
     data: Binary<'a>,
     timestamp: u64,
@@ -683,12 +669,6 @@ impl PartialEq for VirtualMidiPort {
     fn eq(&self, other: &Self) -> bool {
         (self.name == other.name) && (self.direction == other.direction) && (self.num == other.num)
     }
-}
-
-#[derive(NifUntaggedEnum, Clone)]
-pub enum MidiexMidiPort {
-    Device(MidiPort),
-    Virtual(VirtualMidiPort),
 }
 
 #[derive(NifMap)]

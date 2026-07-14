@@ -5,7 +5,7 @@ defmodule Midiex.MidiMessage do
   These are recieved via the `Midiex.subscribe()` function or from the `Midiex.Listener` GenServer.
 
   The keys are as follows:
-  - `port:` which is the input port (`%Midiex.MidiPort{}`) that sent the message
+  - `port:` which is the input port (`%Midiex.MidiPort{}` or `%Midiex.VirtualMidiPort{}`) that sent the message
   - `data:` the MIDI message data, in the form of a binary, e.g. <<153, 60, 70>>
   - `timestamp:` from the [midir docs](https://docs.rs/midir/latest/midir/struct.MidiInput.html#method.connect): "a timestamp (in microseconds) designating the time since some unspecified point in the past (which will not change during the lifetime of an input connection)".
 

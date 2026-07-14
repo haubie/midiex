@@ -105,13 +105,9 @@ defmodule MidiexTest do
     out_conn = Midiex.create_virtual_output(port_name)
 
     # Setup listener
-    input_port = wait_for_port(port_name, :input)
+    input_port = Midiex.ports(port_name, :input)
     {:ok, pid} = Midiex.Listener.start_link(port: input_port)
     Midiex.Listener.add_handler(pid, fn msg -> send(test_pid, {:sysex_msg, msg.data}) end)
-
-    # Force synchronization with the GenServer and allow the Rust background thread to initialize
-    _ = Midiex.Listener.get_state(pid)
-    :timer.sleep(50)
 
     # Create SysEx message, using Roland device id, and send it to the virual output
     roland_device_id = 0x41
@@ -137,10 +133,10 @@ defmodule MidiexTest do
     # Subscribe to the virtual input port using a listener
     test_pid = self()
     {:ok, listener_pid} = Midiex.Listener.start_link(port: virtual_in_port)
-    Midiex.Listener.add_handler(listener_pid, fn msg -> send(test_pid, {:virtual_msg, msg.data}) end)
+    Midiex.Listener.add_handler(listener_pid, fn msg -> send(test_pid, {:virtual_msg, msg}) end)
 
     # Find the corresponding OS-visible output port
-    output_port = wait_for_port(port_name, :output)
+    output_port = Midiex.ports(port_name, :output) |> List.first()
     out_conn = Midiex.open(output_port)
 
     # Send a message to the virtual input via the output connection
@@ -158,18 +154,5 @@ defmodule MidiexTest do
     Midiex.Listener.unsubscribe(listener_pid, virtual_in_port)
     Midiex.close(out_conn)
     GenServer.stop(listener_pid)
-  end
-
-  defp wait_for_port(name, direction, retries \\ 20) do
-    case Midiex.ports(name, direction) do
-      [port | _] -> port
-      [] ->
-        if retries > 0 do
-          :timer.sleep(10)
-          wait_for_port(name, direction, retries - 1)
-        else
-          raise "Timeout waiting for MIDI port #{name} (#{direction})"
-        end
-    end
   end
 end

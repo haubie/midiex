@@ -1,5 +1,4 @@
 defmodule Midiex.Message do
-
   # References
   # https://anotherproducer.com/online-tools-for-musicians/midi-cc-list/
   # https://docs.rs/midi-msg/latest/midi_msg/enum.ChannelVoiceMsg.html
@@ -88,13 +87,12 @@ defmodule Midiex.Message do
   https://www.midi.org/midi-articles/about-midi-part-3-midi-messages
   """
 
-
   # http://www.midibox.org/dokuwiki/doku.php?id=midi_specification
   # https://www.inspiredacoustics.com/en/MIDI_note_numbers_and_center_frequencies
 
   import Bitwise
 
-  @notes_string_list [
+  @notes_string_map %{
     {"Ab9", 128},
     {"G#9", 128},
     {"G9", 127},
@@ -248,10 +246,10 @@ defmodule Midiex.Message do
     {"B0", 23},
     {"Bb0", 22},
     {"A#0", 22},
-    {"A0", 21},
-  ]
+    {"A0", 21}
+  }
 
-  @notes_atom_list %{
+  @notes_atom_map %{
     Ab9: 128,
     Gs9: 128,
     G9: 127,
@@ -434,13 +432,13 @@ defmodule Midiex.Message do
   ```
   """
   def note(num_note) when is_number(num_note), do: num_note
+
   def note(text_note) when is_binary(text_note) do
-    {_, note} = Enum.find(@notes_string_list, fn {note, _midi_num} -> note == text_note end)
-    note
+    Map.get(@notes_string_map, text_note)
   end
+
   def note(atom_note) when is_atom(atom_note) do
-    {_, note} = Enum.find(@notes_atom_list, fn {note, _midi_num} -> note == atom_note end)
-    note
+    Map.get(@notes_atom_map, atom_note)
   end
 
   @doc section: :channel_voice
@@ -776,6 +774,7 @@ defmodule Midiex.Message do
   def volume(volume_num, opts \\ []) do
     channel = get_channel(opts)
     high_res = Keyword.get(opts, :high_res, false)
+
     if high_res do
       # High-res (14 bit version)
       <<msb::7, lsb::7>> = <<volume_num::14>>
@@ -815,11 +814,11 @@ defmodule Midiex.Message do
     high_res = Keyword.get(opts, :high_res, false)
 
     if high_res do
-       # High-res (14 bit version)
-       <<msb::7, lsb::7>> = <<value::14>>
-       msb_binary = control_change(8, msb, channel: channel)
-       lsb_binary = control_change(0x28, lsb, channel: channel)
-       <<msb_binary::binary, lsb_binary::binary>>
+      # High-res (14 bit version)
+      <<msb::7, lsb::7>> = <<value::14>>
+      msb_binary = control_change(8, msb, channel: channel)
+      lsb_binary = control_change(0x28, lsb, channel: channel)
+      <<msb_binary::binary, lsb_binary::binary>>
     else
       control_change(8, value, channel: channel)
     end
@@ -889,7 +888,7 @@ defmodule Midiex.Message do
   """
   def reset_controllers(opts \\ []) do
     channel = get_channel(opts)
-    control_change(121, 0 ,channel: channel)
+    control_change(121, 0, channel: channel)
   end
 
   @doc section: :channel_mode
@@ -902,6 +901,7 @@ defmodule Midiex.Message do
   """
   def omni_mode(true_or_false \\ true, opts \\ []) do
     channel = get_channel(opts)
+
     case true_or_false do
       true -> control_change(125, 0, channel: channel)
       false -> control_change(124, 0, channel: channel)
@@ -925,6 +925,7 @@ defmodule Midiex.Message do
   """
   def poly_mode(true_or_false \\ true, opts \\ []) do
     channel = get_channel(opts)
+
     case true_or_false do
       true -> control_change(127, 0, channel: channel)
       false -> control_change(126, 0, channel: channel)
@@ -951,6 +952,7 @@ defmodule Midiex.Message do
   @spec mono_mode(boolean, any, keyword) :: <<_::24>>
   def mono_mode(true_or_false \\ true, number_of_channels \\ 0, opts \\ []) do
     channel = get_channel(opts)
+
     case true_or_false do
       true -> control_change(126, number_of_channels, channel: channel)
       false -> poly_mode(true, opts)
@@ -969,12 +971,12 @@ defmodule Midiex.Message do
   """
   def local_control(true_or_false \\ true, opts \\ []) do
     channel = get_channel(opts)
+
     case true_or_false do
       true -> control_change(122, 127, channel: channel)
-      false -> control_change(122	, 0, channel: channel)
+      false -> control_change(122, 0, channel: channel)
     end
   end
-
 
   @doc section: :system
   @doc """
@@ -1038,31 +1040,33 @@ defmodule Midiex.Message do
 
   def timecode(timecode_string) when is_binary(timecode_string) do
     %{"frame" => frame, "hour" => hour, "minute" => minute, "second" => second} =
-      Regex.named_captures(~r/(?<hour>\d\d)[:](?<minute>\d\d)[:](?<second>\d\d)[:](?<frame>\d\d)/i, timecode_string)
+      Regex.named_captures(
+        ~r/(?<hour>\d\d)[:](?<minute>\d\d)[:](?<second>\d\d)[:](?<frame>\d\d)/i,
+        timecode_string
+      )
 
-      {frame_msb, frame_lsb}    = String.to_integer(frame)  |> to_nibble()
-      {hour_msb, hour_lsb}      = String.to_integer(hour)   |> to_nibble()
-      {minute_msb, minute_lsb}  = String.to_integer(minute) |> to_nibble()
-      {second_msb, second_lsb}  = String.to_integer(second) |> to_nibble()
+    {frame_msb, frame_lsb} = String.to_integer(frame) |> to_nibble()
+    {hour_msb, hour_lsb} = String.to_integer(hour) |> to_nibble()
+    {minute_msb, minute_lsb} = String.to_integer(minute) |> to_nibble()
+    {second_msb, second_lsb} = String.to_integer(second) |> to_nibble()
 
-      [
-        (0 <<< 4) + frame_lsb,
-        (1 <<< 4) + frame_msb,
-        (2 <<< 4) + second_lsb,
-        (3 <<< 4) + second_msb,
-        (4 <<< 4) + minute_lsb,
-        (5 <<< 4) + minute_msb,
-        (6 <<< 4) + hour_lsb,
-        (7 <<< 4) + hour_msb
-      ]
-      |> Enum.map(fn time_data -> quarter_frame(time_data) end)
-      |> Enum.join(<<>>)
+    [
+      (0 <<< 4) + frame_lsb,
+      (1 <<< 4) + frame_msb,
+      (2 <<< 4) + second_lsb,
+      (3 <<< 4) + second_msb,
+      (4 <<< 4) + minute_lsb,
+      (5 <<< 4) + minute_msb,
+      (6 <<< 4) + hour_lsb,
+      (7 <<< 4) + hour_msb
+    ]
+    |> Enum.map(fn time_data -> quarter_frame(time_data) end)
+    |> Enum.join(<<>>)
   end
 
   defp to_nibble(value) do
     {value >>> 4, band(value, 0b00001111)}
   end
-
 
   @doc section: :system
   @doc """
@@ -1096,7 +1100,6 @@ defmodule Midiex.Message do
   """
   def stop(), do: <<0xFC>>
 
-
   @doc section: :system
   @doc """
   Creates a MIDI active sense message.
@@ -1124,5 +1127,4 @@ defmodule Midiex.Message do
   defp get_channel(opts) do
     Keyword.get(opts, :channel, 1) - 1
   end
-
 end
