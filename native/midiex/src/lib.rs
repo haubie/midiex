@@ -10,7 +10,7 @@ use core_foundation::runloop::CFRunLoop;
 #[cfg(all(target_os = "macos"))]
 use coremidi::Notification::{ObjectAdded, ObjectRemoved};
 #[cfg(all(target_os = "macos"))]
-use coremidi::{AddedRemovedInfo, Client, Notification, ObjectType};
+use coremidi::{AddedRemovedInfo, AnyObject, Client, Notification};
 
 #[cfg(not(any(target_os = "windows")))]
 use std::ops::Add;
@@ -561,22 +561,22 @@ impl Resource for MidiNotification {}
 #[cfg(all(target_os = "macos"))]
 impl MidiNotification {
     pub fn new(notification_type: Atom, info: &AddedRemovedInfo) -> Self {
-        let parent_name = match info.parent.name() {
+        let parent_name = match info.parent.as_ref().name() {
             Some(name) => name,
             None => "".to_string(),
         };
 
-        let parent_id = match info.parent.unique_id() {
+        let parent_id = match info.parent.as_ref().unique_id() {
             Some(id) => id,
             None => 0,
         };
 
-        let child_name = match info.child.display_name() {
+        let child_name = match info.child.as_ref().display_name() {
             Some(name) => name,
             None => "".to_string(),
         };
 
-        let child_id = match info.child.unique_id() {
+        let child_id = match info.child.as_ref().unique_id() {
             Some(id) => id,
             None => 0,
         };
@@ -585,26 +585,26 @@ impl MidiNotification {
             notification_type: notification_type,
             parent_name: parent_name,
             parent_id: parent_id,
-            parent_type: midi_obj_type_to_atom(info.parent_type),
+            parent_type: midi_obj_type_to_atom(&info.parent),
             name: child_name,
             native_id: child_id,
-            direction: midi_obj_type_to_atom(info.child_type),
+            direction: midi_obj_type_to_atom(&info.child),
         }
     }
 }
 
 #[cfg(all(target_os = "macos"))]
-fn midi_obj_type_to_atom(object_type: ObjectType) -> Atom {
-    match object_type {
-        ObjectType::Other => atoms::other(),
-        ObjectType::Device => atoms::device(),
-        ObjectType::Entity => atoms::entity(),
-        ObjectType::Source => atoms::input(),
-        ObjectType::Destination => atoms::output(),
-        ObjectType::ExternalDevice => atoms::device(),
-        ObjectType::ExternalEntity => atoms::entity(),
-        ObjectType::ExternalSource => atoms::input(),
-        ObjectType::ExternalDestination => atoms::output(),
+fn midi_obj_type_to_atom(any_object: &AnyObject) -> Atom {
+    match any_object {
+        AnyObject::Other(_) => atoms::other(),
+        AnyObject::Device(_) => atoms::device(),
+        AnyObject::Entity(_) => atoms::entity(),
+        AnyObject::Source(_) => atoms::input(),
+        AnyObject::Destination(_) => atoms::output(),
+        AnyObject::ExternalDevice(_) => atoms::device(),
+        AnyObject::ExternalEntity(_) => atoms::entity(),
+        AnyObject::ExternalSource(_) => atoms::input(),
+        AnyObject::ExternalDestination(_) => atoms::output(),
     }
 }
 

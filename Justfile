@@ -38,7 +38,7 @@ test-elixir:
     mix deps.get
     mix test
 
-# Test for platforms - requires building a test image
+# Test for linux platforms - requires building a test image
 # Build the test container
 build-test-image:
     docker build --network=host -t midiex-test -f Dockerfile.test .
@@ -52,6 +52,9 @@ test-linux: build-test-image
       midiex-test \
       mix test
 
+# Run the test suite on Windows UTM VM via SSH, required midiex directory to be mounted on Z:\midiex
+test-windows:
+    ssh administrator@windows-vm-ip-or-hostname "cd Z:\midiex && set MIDIEX_BUILD=true && mix test"
 
 # Natively build macOS binaries
 build-mac:

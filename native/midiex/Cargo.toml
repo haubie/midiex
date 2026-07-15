@@ -14,9 +14,9 @@ rustler = { version = "0.38", default-features = false, features = [
     "derive",
     "nif_version_2_15",
 ] }
-midir = "0.9.1"
-lazy_static = "1.4.0"
+midir = "0.11.0"
+lazy_static = "1.5.0"
 
 [target.'cfg(target_os = "macos")'.dependencies]
-core-foundation = "0.9.3"
-coremidi = "0.7.0"
+core-foundation = "0.10.1"
+coremidi = "0.9.1"

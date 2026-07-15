@@ -81,6 +81,7 @@ You can orchestrate the full local pipeline using the following just commands fr
 |------- | --------------- |
 | `just init` | One-time setup to download required target architectures to your local toolchain. |
 | `just up` | Spins up the lightweight Linux engine (colima) optimized for Apple Silicon virtualisation. |
+| `just test-linux` | Builds the local `midiex-test` Docker image and executes the full Elixir & Rust test suite natively on Linux. |
 | `just ci` | Executes the full pipeline: Rust safety checks, Elixir tests, native Mac/Windows builds, and dynamic Linux/RISC-V matrix builds inside the containers. |
 | `just down` | Shuts down the container engine to conserve your system memory and battery life. |
 
@@ -91,6 +92,21 @@ just up
 just ci
 just down
 ```
+
+## Local Linux testing via Docker/Colima (`just test-linux`)
+If you want to run the Linux test suite locally you can execute:
+
+```bash
+just up
+just test-linux
+```
+This compiles your native Rust NIF code from scratch natively inside a container and runs Elixir's ExUnit suite on Linux.
+
+### How it works under the hood:
+- **Prerequisites**: It uses the local `Dockerfile.test` which pulls the official Elixir 1.18 base image, installs native compilers (`gcc`, `pkg-config`), ALSA header files (`libasound2-dev`), and the standard Rust compiler.
+- **Network routing**: The `Justfile` recipe builds the image utilizing the `--network=host` flag, which cleanly routes DNS queries through your host Mac and avoids virtual machine DNS resolution hiccups.
+- **Dynamic device support**: The test container is launched in `--privileged` mode to bridge virtual device channels. If your VM kernel possesses active MIDI sound driver modules, the virtual loopback tests will execute.
+- **Graceful fallbacks**: If the Linux VM's kernel lacks active ALSA sound sequencer devices (specifically `/dev/snd/seq`), our `test/test_helper.exs` dynamically detects this and automatically excludes the `@tag :virtual_ports` tests. The standard API, converter, and message-builder tests will still execute and pass, keeping the suite green.
 
 ## Maintainer architecture notes (`Cross.toml` file rationale)
 Cross-compiling C-dependent libraries like ALSA (`libasound`) and Udev (`libudev`) across multiple distinct C standard library runtimes introduces structural challenges. Below is the technical rationale for how the isolated `Cross.toml` targets are configured.
