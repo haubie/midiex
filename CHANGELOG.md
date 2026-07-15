@@ -24,12 +24,12 @@ end
 ```
 - Fixes message construction bugs when using `Midiex.Message`, such as functions with the `channel:` option.
 - Upgrades to Rustler v0.38.
+- Removes `lazy_static` dependency in favor of Rust's built-in `std::sync::LazyLock`.
 - Updates Rust dependencies to latest versions:
 
 | Library | Old Version | New Version | Scope |
 |---|---|---|---|
 | `midir` | `"0.9.1"` | `"0.11.0"` | Cross-platform MIDI I/O |
-| `lazy_static` | `"1.4.0"` | `"1.5.0"` | Global/Static synchronization |
 | `core-foundation` | `"0.9.3"` | `"0.10.1"` | macOS Foundation wrapper (sys) |
 | `coremidi` | `"0.7.0"` | `"0.9.1"` | macOS CoreMIDI API wrapper |
 

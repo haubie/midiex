@@ -21,7 +21,7 @@ jobs:
     strategy:
       matrix:
         # Define stable, core versions matching your production runtime
-        elixir: ["1.17"]
+        elixir: ["1.18"]
         otp: ["27"]
 
     env:

@@ -2,6 +2,9 @@
 // #![feature(drain_filter)]
 extern crate midir;
 
+#[macro_use]
+extern crate lazy_static;
+
 #[cfg(all(target_os = "macos"))]
 use core_foundation::runloop::CFRunLoop;
 #[cfg(all(target_os = "macos"))]
@@ -14,7 +17,7 @@ use std::ops::Add;
 
 use std::ops::DerefMut;
 use std::result::Result;
-use std::sync::{LazyLock, Mutex};
+use std::sync::Mutex;
 
 #[cfg(not(any(target_os = "windows")))]
 use midir::os::unix::{VirtualInput, VirtualOutput};
@@ -31,19 +34,24 @@ use rustler::{
 // GLOBALS
 // --------------
 
+// IS THIS NEEDED ANYMORE?
 // This version uses threadlocal to create the MidiInput and MidiOutput objects
 thread_local!(static GLOBAL_MIDI_INPUT_RESULT: Result<MidiInput, InitError> = MidiInput::new("MIDIex"));
 thread_local!(static GLOBAL_MIDI_OUTPUT_RESULT: Result<MidiOutput, InitError> = MidiOutput::new("MIDIex"));
 
 // GLOBALS FOR INPUT PORTS BEING SUBSCRIBED TO
-static GLOBAL_LISTEN_LIST: LazyLock<Mutex<Vec<MidiPort>>> =
-    LazyLock::new(|| Mutex::new(Vec::<MidiPort>::new()));
+lazy_static! {
+    static ref GLOBAL_LISTEN_LIST: Mutex<Vec<MidiPort>> = Mutex::new(Vec::<MidiPort>::new());
+}
 
 // GLOBALS FOR VIRTUAL INPUTS
-static GLOBAL_VIRTUAL_LISTEN_LIST: LazyLock<Mutex<Vec<VirtualMidiPort>>> =
-    LazyLock::new(|| Mutex::new(Vec::<VirtualMidiPort>::new()));
-
-static GLOBAL_VIRTUAL_INPUT_COUNTER: LazyLock<Mutex<usize>> = LazyLock::new(|| Mutex::new(0));
+lazy_static! {
+    static ref GLOBAL_VIRTUAL_LISTEN_LIST: Mutex<Vec<VirtualMidiPort>> =
+        Mutex::new(Vec::<VirtualMidiPort>::new());
+}
+lazy_static! {
+    static ref GLOBAL_VIRTUAL_INPUT_COUNTER: Mutex<usize> = Mutex::new(0);
+}
 
 // --------------
 // ATOMS
