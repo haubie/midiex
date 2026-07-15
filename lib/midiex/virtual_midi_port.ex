@@ -2,9 +2,9 @@ defmodule Midiex.VirtualMidiPort do
   @moduledoc """
   A struct representing a virtual MIDI port.
 
-  Currently this is only used for `:input` ports. When a viritual output port is created a `Midiex.OutConn` struct is returned instead.
+  Currently this is only used for `:input` ports. When a virtual output port is created a `Midiex.OutConn` struct is returned instead.
 
-  Note that viritual ports are only available on platforms that them (currently every platform but Windows).
+  Note that viritual ports are only available on platforms that support them (currently every platform but Windows).
 
   The keys of the struct are as follows:
   - *direction* which is an atom currently of value `:input`
@@ -26,5 +26,4 @@ defmodule Midiex.VirtualMidiPort do
   """
 
   defstruct ~w/direction name num/a
-
 end

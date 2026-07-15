@@ -43,7 +43,7 @@ Currently you will need to have Rust's build tools installed on the device you'r
 ### Linux system dependencies
 If you are compiling natively on a Linux distribution (tested on Ubuntu 22.04+), you will need the development headers for ALSA (Advanced Linux Sound Architecture) and pkg-config.
 
-If using the apt package manager, you can install those via the terminal prompt with:
+If using the apt package manager, you can install those via the terminal:
 
 ```bash
 sudo apt update && sudo apt install libasound2-dev pkg-config build-essential
@@ -56,8 +56,8 @@ mix deps.get
 mix test
 ```
 
-## Full CI matrix using `just`
-For developers wishing to cross-compile the entire multi-platform matrix (macOS, Linux, Windows, RISC-V) completely locally, the repository provides a automation pipeline orchestrated via `just` and a lightweight container runner (`colima`).
+## Advanced: Replicating the full CI matrix with `just`
+For developers wishing to cross-compile the entire multi-platform matrix (macOS, Linux, Windows, RISC-V) completely locally, the repository provides an automation pipeline orchestrated via `just` and a lightweight container runner (`colima`).
 
 ### 1. Additional cross-compilation prerequisites
 If you are running on macOS, install the required toolchains, runtimes and Docker plugins:
@@ -92,7 +92,35 @@ just ci
 just down
 ```
 
-### Troubleshooting credential store errors (Mac)
+## Maintainer architecture notes (`Cross.toml` file rationale)
+Cross-compiling C-dependent libraries like ALSA (`libasound`) and Udev (`libudev`) across multiple distinct C standard library runtimes introduces structural challenges. Below is the technical rationale for how the isolated `Cross.toml` targets are configured.
+
+### 1. RISC-V 64 GNU target
+The standard Ubuntu package registry mirrors do not serve RISC-V headers to standard x86/ARM environments by default.
+
+**Implementation:** The pre-build hook explicitly generates a custom package routing source (`/etc/apt/sources.list.d/riscv64.list`) mapping to `ports.ubuntu.com` before invoking `apt-get update`. This allows the container's multi-arch environment to discover and resolve `libasound2-dev:riscv64`.
+
+### 2. MUSL targets (x86_64 and aarch64)
+Standard Linux package managers compile system audio packages dynamically linked against **GLIBC**. Forcing a **MUSL** target to link against GLIBC system packages corrupts the target runtime environment and throws linker compatibility panics.
+
+**Implementation:** To achieve a true, high-fidelity static build, the MUSL target profiles bypass apt audio packages entirely. The hooks download clean upstream alsa-lib source code and compile it directly inside the container utilising the native target MUSL compiler layout.
+
+**Compilation flags required:**
+* `CFLAGS="-fPIC" --with-pic`: Forces the static library archive (`libasound.a`) to generate Position Independent Code. This is mandatory because the final output artifact loaded by Elixir's Rustler layer is a dynamically shifted shared object file (`.so`).
+* `--with-versioned=no`: Disables GNU symbol versioning. Stripping version nodes prevents the dynamic linker from panicking when resolving core symbols inside a fully static environment.
+
+### Upgrading the static `alsa-lib` version
+If you ever need to upgrade the version of `alsa-lib` used by the MUSL targets to patch vulnerabilities or access newer features:
+
+1. Visit the official [ALSA Project Release page](https://www.alsa-project.org/wiki/Main_Page_News) to identify the latest stable version (e.g. `1.2.16`).
+2. Open `Cross.toml` and locate the `[target.x86_64-unknown-linux-musl]` and `[target.aarch64-unknown-linux-musl]` blocks.
+3. In both blocks, update the three instances of the version string inside the `pre-build` array:
+   * The download link (`.../alsa-lib-X.X.XX.tar.bz2`)
+   * The extraction path (`tar -xf alsa-lib-X.X.XX.tar.bz2`)
+   * The directory navigation (`cd alsa-lib-X.X.XX`)
+4. **CRITICAL:** When swapping versions, you must preserve the exact placement parameters: `CFLAGS="-fPIC"`, `--with-pic`, and `--with-versioned=no`. Without these, the resulting dynamic Elixir NIF wrapper will encounter critical linkage faults.
+
+## Troubleshooting
 If you previously had the official Docker desktop application installed on your Mac, running `just ci` might throw a metadata resolution error resembling:
 `error getting credentials - err: exec: "docker-credential-desktop": executable file not found in $PATH`
 
@@ -106,3 +134,5 @@ Open `~/.docker/config.json` and change the `credsStore` line from `"desktop"` t
   "credsStore": "osxkeychain",
   "currentContext": "colima"
 }
+```
+Alternatively, if you are exclusively pulling public target compilation images anonymously, you can safely remove the "credsStore" property entirely.

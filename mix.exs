@@ -21,7 +21,7 @@ defmodule Midiex.MixProject do
         source_url: "https://github.com/haubie/midiex",
         homepage_url: "https://github.com/haubie/midiex",
         logo: "logo-hexdoc.png",
-        assets: "assets",
+        assets: %{"assets" => "assets"},
         extras: [
           "README.md",
           "CHANGELOG.md",
@@ -74,8 +74,6 @@ defmodule Midiex.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # {:rustler_precompiled, "~> 0.6"},
-      # {:rustler, "~> 0.29.0", optional: not (@dev? or @force_build?)},
       {:rustler, "~> 0.38", optional: not (@dev? or @force_build?)},
       {:rustler_precompiled, "~> 0.9"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}

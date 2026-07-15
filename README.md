@@ -25,7 +25,7 @@ The hot-plug support of MIDI devices on MacOS is made possible with with the Rus
 This library is currently under active development and it’s API is likely to change. It's been tested on MacOS only although it is currently building on Mac (M-series and x86), Linux (64-bit ARM, RISC-V and x86) and Windows (x86_64) with precompiled binary packages available (see the Getting started section below).
 
 ## Upgrading to v0.6.4
-In version 0.6.4, a breaking change was introduced where `Midiex` now returns MIDI data as **binaries** (e.g. `<<153, 60, 70>>`) instead of lists.
+In version 0.6.4, a breaking change was introduced where `Midiex` now returns MIDI data as **binaries** (e.g. `<<153, 60, 70>>`) instead of lists. 
 
 If your existing application relies on list-based return values, you can use `:binary.bin_to_list/1` to convert the data back to a list:
 
@@ -34,6 +34,9 @@ binary = <<153, 60, 70>>
 list = :binary.bin_to_list(binary)
 #=> [153, 60, 70]
 ```
+This release also unifies the subscription API for virtual inputs. Subscribing to a `%Midiex.VirtualMidiPort{}` now returns a `%Midiex.MidiMessage{}` struct rather than a raw byte list.
+
+See [CHANGELOG.md](CHANGELOG.md) for more details.
 
 ## API
 At it's most basic level, the core functions of Midiex are for:

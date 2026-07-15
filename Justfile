@@ -38,6 +38,21 @@ test-elixir:
     mix deps.get
     mix test
 
+# Test for platforms - requires building a test image
+# Build the test container
+build-test-image:
+    docker build --network=host -t midiex-test -f Dockerfile.test .
+
+# Run the test suite on Linux (excluding macOS-specific features)
+test-linux: build-test-image
+    docker run --rm --privileged \
+      -v $(pwd):/app \
+      -w /app \
+      -e MIDIEX_BUILD=true \
+      midiex-test \
+      mix test
+
+
 # Natively build macOS binaries
 build-mac:
     @echo "==> Compiling Apple Darwin NIFs..."

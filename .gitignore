@@ -1,8 +1,9 @@
 # The directory Mix will write compiled artifacts to.
 /_build
 
-# The target build directorly under native
+# The target build directory under native
 /native/midiex/target
+priv/native
 
 # If you run "mix test --cover", coverage assets end up here.
 /cover
