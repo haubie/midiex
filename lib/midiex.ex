@@ -371,12 +371,12 @@ defmodule Midiex do
   The `%Midiex.VirtualMidiPort{}` struct can then be passed to MIDI input port listener functions, such as:
   - `Midiex.subscribe(my_virtual_in)`
   - If using a Listener GenServer:
-    - `Midiex.Listener.start_link(port: my_virtual_in)`
-    - `Midiex.Listener.subscribe(listener, my_virtual_in)`
+    - `{:ok, listener_pid} = Midiex.Listener.start_link(port: my_virtual_in)`
+    - `Midiex.Listener.subscribe(listener_pid, my_virtual_in)`
 
   Likewise, once subscribed to, the virtual input port can be unsubscribed to:
   - `Midiex.unsubscribe(my_virtual_in)`
-  - If using a Listener GenServer: `Midiex.Listener.unsubscribe(my_virtual_in)`
+  - If using a Listener GenServer: `Midiex.Listener.unsubscribe(listener_pid, my_virtual_in)`
   """
   def create_virtual_input(name), do: Backend.create_virtual_input(name)
 

@@ -38,6 +38,7 @@ Additionally:
 - Windows ARM based precompiled binary `aarch64-pc-windows-msvc` has been added.
 - Mix test suite has been expanded, including OS/platform specific tests.
 - Local cross-platform build support is available via a `Justfile`. See [BUILDING.md](BUILDING.md) for details.
+- The [Live Book](midiex_notebook.html) has been updated with new examples and documentation.
 
 ## 0.6.3 (2024-09-11)
 This release is just a refresh of the checksums for the precompiled binaries.

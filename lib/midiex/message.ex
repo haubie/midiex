@@ -451,7 +451,7 @@ defmodule Midiex.Message do
   2. velocity: a number between 0 and 127 representing how hard (or loud) a key was pressed. By defaut 127 is used.
 
   The following options can be passed:
-  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 0 is used.
+  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 1 is used.
 
   Note that MIDI channels are in the range 0 - 15. But in MIDI software and hardware it may be offset by +1, so MIDI channel 0 might be called MIDI channel 1 and so on to channel 16.
 
@@ -465,7 +465,7 @@ defmodule Midiex.Message do
   # Note-on message for middle-C on channel 2 with a velocity of 40
   Midiex.Message.note_on(:C4, 40, channel: 2)
 
-  # Returns: <<146, 60, 40>>
+  # Returns: <<145, 60, 40>>
   ```
 
   These can be sent to a connection using `Midiex.send_msg/2`, for example:
@@ -488,7 +488,7 @@ defmodule Midiex.Message do
   2. velocity: a number between 0 and 127 representing how hard (or loud) a key was pressed. By defaut 127 is used.
 
   The following options can be passed:
-  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 0 is used.
+  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 1 is used.
 
   All notes can be switched off with `Message.all_notes_off/1`.
 
@@ -497,7 +497,7 @@ defmodule Midiex.Message do
   # Note-off for middle-C
   Message.note_off(:C4)
 
-  # Returns: <<128, 60, 127>>
+  # Returns: <<128, 60, 123>>
   ```
   """
   def note_off(note, velocity \\ 123, opts \\ []) do
@@ -518,7 +518,7 @@ defmodule Midiex.Message do
   2. pressure: a number between 0 and 127 representing the pressure on the key. By defaut 127 is used.
 
   The following options can be passed:
-  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 0 is used.
+  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 1 is used.
 
   ## Example
   ```
@@ -549,7 +549,7 @@ defmodule Midiex.Message do
   1. pressure: a number between 0 and 127 representing the pressure on the key. By defaut 127 is used.
 
   The following option can also be passed:
-  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 0 is used.
+  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 1 is used.
 
   ## Example
   ```
@@ -576,7 +576,7 @@ defmodule Midiex.Message do
   2. value: depends on the control function, but usually is a a number between 0 and 127. See the MIDI 1.0 Control Change Messages Spec or consult the MIDI device manual for specific codes an values.
 
   The following option can be passed:
-  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 0 is used.
+  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 1 is used.
 
   ## Example
   The MIDI CC message of `123` equates to "All Notes Off" (a Channel Mode Message), thus stopping all notes being played.
