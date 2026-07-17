@@ -20,8 +20,8 @@ jobs:
         nif: ["2.15"]
         job:
           # macOS native matrix
-          - { target: aarch64-apple-darwin, os: macos-15, use-cross: false }
-          - { target: x86_64-apple-darwin, os: macos-15, use-cross: false }
+          - { target: aarch64-apple-darwin, os: macos-15, use-cross: "" }
+          - { target: x86_64-apple-darwin, os: macos-15, use-cross: "" }
 
           # Linux Matrix (leverage Cross.toml automatically)
           - { target: x86_64-unknown-linux-gnu, os: ubuntu-24.04, use-cross: true }
@@ -31,13 +31,16 @@ jobs:
           - { target: riscv64gc-unknown-linux-gnu, os: ubuntu-24.04, use-cross: true }
 
           # Windows matrix
-          - { target: x86_64-pc-windows-gnu, os: windows-2025, use-cross: false }
-          - { target: x86_64-pc-windows-msvc, os: windows-2025, use-cross: false }
-          - { target: aarch64-pc-windows-msvc, os: windows-2025, use-cross: false }
+          - { target: x86_64-pc-windows-gnu, os: windows-2025, use-cross: "" }
+          - { target: x86_64-pc-windows-msvc, os: windows-2025, use-cross: "" }
+          - { target: aarch64-pc-windows-msvc, os: windows-2025, use-cross: "" }
 
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       - name: Extract project version
         shell: bash
