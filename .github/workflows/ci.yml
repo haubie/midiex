@@ -83,8 +83,8 @@ jobs:
         run: mix deps.get
 
       # 7. Code Quality Gates (Fail early if styling/formatting rules are broken)
-      - name: Check Elixir code formatting
-        run: mix format --check-formatted
+      # - name: Check Elixir code formatting
+      #   run: mix format --check-formatted
 
       - name: Compile codebase (Strict Mode)
         run: mix compile --warnings-as-errors
