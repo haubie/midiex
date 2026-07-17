@@ -43,6 +43,12 @@ jobs:
       # Load ALSA dummy/virtual MIDI kernel modules
       - name: Load ALSA dummy kernel modules
         run: |
+          sudo apt-get update
+          # Install the extra kernel modules matching the running Azure kernel
+          sudo apt-get install -y linux-modules-extra-$(uname -r)
+          # Rebuild the module dependency database
+          sudo depmod -a
+          # Load the sequencer and dummy sound modules
           sudo modprobe snd-dummy
           sudo modprobe snd-seq-device
           sudo modprobe snd-seq-midi

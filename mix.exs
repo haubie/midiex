@@ -84,12 +84,19 @@ defmodule Midiex.MixProject do
     [
       files: [
         "lib",
-        "native",
+        "native/midiex/.cargo",
+        "native/midiex/src",
+        "native/midiex/Cargo.*",
+        "native/midiex/Cross.toml",
         "mix.exs",
         "README.md",
         "BUILDING.md",
+        "CHANGELOG.md",
         "LICENSE",
-        "checksum-Elixir.Midiex.Backend.exs"
+        "checksum-Elixir.Midiex.Backend.exs",
+        "logo-hexdoc.png",
+        "assets",
+        "livebook"
       ],
       licenses: ["MIT"],
       links: %{
