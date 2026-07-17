@@ -2,19 +2,19 @@
 // #![feature(drain_filter)]
 extern crate midir;
 
-#[macro_use]
-extern crate lazy_static;
-
 #[cfg(all(target_os = "macos"))]
 use core_foundation::runloop::CFRunLoop;
 #[cfg(all(target_os = "macos"))]
 use coremidi::Notification::{ObjectAdded, ObjectRemoved};
 #[cfg(all(target_os = "macos"))]
-use coremidi::{AddedRemovedInfo, Client, Notification, ObjectType};
+use coremidi::{AddedRemovedInfo, AnyObject, Client, Notification};
 
-use std::ops::{Add, DerefMut};
+#[cfg(not(any(target_os = "windows")))]
+use std::ops::Add;
+
+use std::ops::DerefMut;
 use std::result::Result;
-use std::sync::Mutex;
+use std::sync::{LazyLock, Mutex};
 
 #[cfg(not(any(target_os = "windows")))]
 use midir::os::unix::{VirtualInput, VirtualOutput};
@@ -22,30 +22,28 @@ use midir::{
     Ignore, InitError, MidiInput, MidiInputPort, MidiOutput, MidiOutputConnection, MidiOutputPort,
 };
 
-use rustler::{Atom, Binary, Encoder, Env, Error, NifMap, NifStruct, OwnedEnv, ResourceArc, Term};
+use rustler::{
+    Atom, Binary, Encoder, Env, Error, NewBinary, NifMap, NifStruct, NifUntaggedEnum, OwnedEnv,
+    Resource, ResourceArc,
+};
 
 // --------------
 // GLOBALS
 // --------------
 
-// IS THIS NEEDED ANYMORE?
 // This version uses threadlocal to create the MidiInput and MidiOutput objects
 thread_local!(static GLOBAL_MIDI_INPUT_RESULT: Result<MidiInput, InitError> = MidiInput::new("MIDIex"));
 thread_local!(static GLOBAL_MIDI_OUTPUT_RESULT: Result<MidiOutput, InitError> = MidiOutput::new("MIDIex"));
 
 // GLOBALS FOR INPUT PORTS BEING SUBSCRIBED TO
-lazy_static! {
-    static ref GLOBAL_LISTEN_LIST: Mutex<Vec<MidiPort>> = Mutex::new(Vec::<MidiPort>::new());
-}
+static GLOBAL_LISTEN_LIST: LazyLock<Mutex<Vec<MidiPort>>> =
+    LazyLock::new(|| Mutex::new(Vec::<MidiPort>::new()));
 
 // GLOBALS FOR VIRTUAL INPUTS
-lazy_static! {
-    static ref GLOBAL_VIRTUAL_LISTEN_LIST: Mutex<Vec<VirtualMidiPort>> =
-        Mutex::new(Vec::<VirtualMidiPort>::new());
-}
-lazy_static! {
-    static ref GLOBAL_VIRTUAL_INPUT_COUNTER: Mutex<usize> = Mutex::new(0);
-}
+static GLOBAL_VIRTUAL_LISTEN_LIST: LazyLock<Mutex<Vec<VirtualMidiPort>>> =
+    LazyLock::new(|| Mutex::new(Vec::<VirtualMidiPort>::new()));
+
+static GLOBAL_VIRTUAL_INPUT_COUNTER: LazyLock<Mutex<usize>> = LazyLock::new(|| Mutex::new(0));
 
 // --------------
 // ATOMS
@@ -109,7 +107,7 @@ pub fn subscribe(env: Env, midi_port: MidiPort) -> Atom {
 
     let mut g_list_lock = GLOBAL_LISTEN_LIST.lock().unwrap();
     g_list_lock.push(midi_port.clone());
-    g_list_lock.sort_unstable_by_key(|midi_port| (midi_port.num));
+    g_list_lock.sort_unstable_by_key(|midi_port| midi_port.num);
     g_list_lock.dedup();
 
     let m_port_clone = midi_port.clone();
@@ -134,14 +132,20 @@ pub fn subscribe(env: Env, midi_port: MidiPort) -> Atom {
                 &in_port,
                 "midir-read-input",
                 move |stamp, message, _| {
-                    owned_env.send_and_clear(&pid, |the_env| {
-                        // message.encode(the_env)
-
+                    let _ = owned_env.send_and_clear(&pid, |the_env| {
                         let m_port_clone = m_port_clone.clone();
 
+                        // Allocate a new binary directly on the Erlang heap MIDI bytes directly into the Erlang binary slice
+                        // NewBinary uses enif_make_new_binary, rather than OwnedBinary which uses enif_alloc_binary
+                        // Since a standard MIDI message is only ~3 bytes, Erlang allocates it directly on the process's own heap as a "Heap Binary"
+                        // This faster and gets cleaned up instantly when the process dies or garbage collects, with zero reference-counting overhead.
+                        let mut erl_bin = NewBinary::new(the_env, message.len());
+                        erl_bin.as_mut_slice().copy_from_slice(message);
+
                         MidiMessage {
-                            data: message.to_vec(),
-                            port: m_port_clone,
+                            data: Binary::from(erl_bin),
+                            // port: m_port_clone,
+                            port: MidiexMidiPort::Device(m_port_clone),
                             timestamp: stamp,
                         }
                         .encode(the_env)
@@ -199,11 +203,35 @@ fn unsubscribe_virtual_port(
     Ok(GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().to_vec())
 }
 
+#[cfg(target_os = "windows")]
+#[rustler::nif]
+pub fn unsubscribe_virtual_port(
+    env: Env,
+    _virtual_midi_port: VirtualMidiPort,
+) -> Result<Atom, Error> {
+    let _ = env;
+    Err(Error::RaiseTerm(Box::new(
+        "Virtual ports are not supported on Windows.".to_string(),
+    )))
+}
+
 #[cfg(not(any(target_os = "windows")))]
 #[rustler::nif]
 fn unsubscribe_all_virtual_ports() -> Result<Vec<VirtualMidiPort>, Error> {
     GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().clear();
     Ok(GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap().to_vec())
+}
+
+#[cfg(target_os = "windows")]
+#[rustler::nif]
+pub fn unsubscribe_all_virtual_ports(
+    env: Env,
+    _virtual_midi_port: VirtualMidiPort,
+) -> Result<Atom, Error> {
+    let _ = env;
+    Err(Error::RaiseTerm(Box::new(
+        "Virtual ports are not supported on Windows.".to_string(),
+    )))
 }
 
 #[cfg(not(any(target_os = "windows")))]
@@ -223,7 +251,7 @@ fn get_subscribed_virtual_ports() -> Result<Vec<VirtualMidiPort>, Error> {
 pub fn subscribe_virtual_input(env: Env, virtual_midi_port: VirtualMidiPort) -> Atom {
     let mut gv_list_lock = GLOBAL_VIRTUAL_LISTEN_LIST.lock().unwrap();
     gv_list_lock.push(virtual_midi_port.clone());
-    gv_list_lock.sort_unstable_by_key(|midi_port| (midi_port.num));
+    gv_list_lock.sort_unstable_by_key(|midi_port| midi_port.num);
     gv_list_lock.dedup();
 
     let pid = env.pid();
@@ -234,11 +262,22 @@ pub fn subscribe_virtual_input(env: Env, virtual_midi_port: VirtualMidiPort) -> 
         let mut midi_in = MidiInput::new("MIDIex input").expect("Midi input");
         midi_in.ignore(Ignore::None);
 
+        let m_port_clone = virtual_midi_port.clone();
         let _conn_in = midi_in
             .create_virtual(
                 &virtual_midi_port.name,
-                move |_stamp, message, _| {
-                    owned_env.send_and_clear(&pid, |the_env| message.encode(the_env));
+                move |stamp, message, _| {
+                    let _ = owned_env.send_and_clear(&pid, |the_env| {
+                        let mut erl_bin = NewBinary::new(the_env, message.len());
+                        erl_bin.as_mut_slice().copy_from_slice(message);
+
+                        MidiMessage {
+                            data: Binary::from(erl_bin),
+                            port: MidiexMidiPort::Virtual(m_port_clone.clone()),
+                            timestamp: stamp,
+                        }
+                        .encode(the_env)
+                    });
                     ()
                 },
                 (),
@@ -260,6 +299,18 @@ pub fn subscribe_virtual_input(env: Env, virtual_midi_port: VirtualMidiPort) -> 
     atoms::ok()
 }
 
+#[cfg(target_os = "windows")]
+#[rustler::nif]
+pub fn subscribe_virtual_input(
+    env: Env,
+    _virtual_midi_port: VirtualMidiPort,
+) -> Result<Atom, Error> {
+    let _ = env;
+    Err(Error::RaiseTerm(Box::new(
+        "Virtual inputs are not supported on Windows.".to_string(),
+    )))
+}
+
 // ---------------------------------------
 // NOTIFICATIONS AND HOTPLUG
 // ---------------------------------------
@@ -274,14 +325,15 @@ pub fn notifications(env: Env) -> Result<Atom, Error> {
 
     std::thread::spawn(move || {
         let cb_fb = move |notification: &Notification| {
-            match notification {
+            let _ = match notification {
                 ObjectAdded(info) => owned_env.send_and_clear(&pid, |the_env| {
                     MidiNotification::new(atoms::added(), info).encode(the_env)
                 }),
                 ObjectRemoved(info) => owned_env.send_and_clear(&pid, |the_env| {
                     MidiNotification::new(atoms::removed(), info).encode(the_env)
                 }),
-                _ => (),
+                // _ => (),
+                _ => Ok(()),
             };
         };
 
@@ -470,15 +522,18 @@ fn send_msg(midi_out_conn: OutConn, message: Binary) -> Result<OutConn, Error> {
 // =================
 #[derive(NifStruct)]
 #[module = "Midiex.MidiMessage"]
-pub struct MidiMessage {
-    port: MidiPort,
-    data: Vec<u8>,
+pub struct MidiMessage<'a> {
+    port: MidiexMidiPort,
+    // port: MidiPort,
+    // data: Vec<u8>,
+    data: Binary<'a>,
     timestamp: u64,
 }
 
 // =================
 // MIDI Notification
 // =================
+#[cfg(all(target_os = "macos"))]
 #[derive(NifStruct)]
 #[module = "Midiex.MidiNotification"]
 pub struct MidiNotification {
@@ -492,24 +547,28 @@ pub struct MidiNotification {
 }
 
 #[cfg(all(target_os = "macos"))]
+#[rustler::resource_impl]
+impl Resource for MidiNotification {}
+
+#[cfg(all(target_os = "macos"))]
 impl MidiNotification {
     pub fn new(notification_type: Atom, info: &AddedRemovedInfo) -> Self {
-        let parent_name = match info.parent.name() {
+        let parent_name = match info.parent.as_ref().name() {
             Some(name) => name,
             None => "".to_string(),
         };
 
-        let parent_id = match info.parent.unique_id() {
+        let parent_id = match info.parent.as_ref().unique_id() {
             Some(id) => id,
             None => 0,
         };
 
-        let child_name = match info.child.display_name() {
+        let child_name = match info.child.as_ref().display_name() {
             Some(name) => name,
             None => "".to_string(),
         };
 
-        let child_id = match info.child.unique_id() {
+        let child_id = match info.child.as_ref().unique_id() {
             Some(id) => id,
             None => 0,
         };
@@ -518,26 +577,26 @@ impl MidiNotification {
             notification_type: notification_type,
             parent_name: parent_name,
             parent_id: parent_id,
-            parent_type: midi_obj_type_to_atom(info.parent_type),
+            parent_type: midi_obj_type_to_atom(&info.parent),
             name: child_name,
             native_id: child_id,
-            direction: midi_obj_type_to_atom(info.child_type),
+            direction: midi_obj_type_to_atom(&info.child),
         }
     }
 }
 
 #[cfg(all(target_os = "macos"))]
-fn midi_obj_type_to_atom(object_type: ObjectType) -> Atom {
-    match object_type {
-        ObjectType::Other => atoms::other(),
-        ObjectType::Device => atoms::device(),
-        ObjectType::Entity => atoms::entity(),
-        ObjectType::Source => atoms::input(),
-        ObjectType::Destination => atoms::output(),
-        ObjectType::ExternalDevice => atoms::device(),
-        ObjectType::ExternalEntity => atoms::entity(),
-        ObjectType::ExternalSource => atoms::input(),
-        ObjectType::ExternalDestination => atoms::output(),
+fn midi_obj_type_to_atom(any_object: &AnyObject) -> Atom {
+    match any_object {
+        AnyObject::Other(_) => atoms::other(),
+        AnyObject::Device(_) => atoms::device(),
+        AnyObject::Entity(_) => atoms::entity(),
+        AnyObject::Source(_) => atoms::input(),
+        AnyObject::Destination(_) => atoms::output(),
+        AnyObject::ExternalDevice(_) => atoms::device(),
+        AnyObject::ExternalEntity(_) => atoms::entity(),
+        AnyObject::ExternalSource(_) => atoms::input(),
+        AnyObject::ExternalDestination(_) => atoms::output(),
     }
 }
 
@@ -559,6 +618,9 @@ pub struct OutConn {
 
 pub struct OutConnRef(pub Mutex<Option<MidiOutputConnection>>);
 
+#[rustler::resource_impl]
+impl Resource for OutConnRef {}
+
 impl OutConnRef {
     pub fn new(data: MidiOutputConnection) -> Self {
         Self(Mutex::new(Some(data)))
@@ -572,8 +634,13 @@ pub enum MidiexMidiPortRef {
     Input(MidiInputPort),
     Output(MidiOutputPort),
 }
+#[rustler::resource_impl]
+impl Resource for MidiexMidiPortRef {}
 
 pub struct FlexiPort(pub MidiexMidiPortRef);
+
+#[rustler::resource_impl]
+impl Resource for FlexiPort {}
 
 impl FlexiPort {
     pub fn new(data: MidiexMidiPortRef) -> Self {
@@ -610,6 +677,12 @@ impl PartialEq for VirtualMidiPort {
     }
 }
 
+#[derive(NifUntaggedEnum, Clone)]
+pub enum MidiexMidiPort {
+    Device(MidiPort),
+    Virtual(VirtualMidiPort),
+}
+
 #[derive(NifMap)]
 pub struct NumPorts {
     input: usize,
@@ -621,11 +694,17 @@ pub struct NumPorts {
 pub struct MidiexMidiInputRef(pub Mutex<MidiInput>);
 pub struct MidiexMidiOutputRef(pub Mutex<MidiOutput>);
 
+#[rustler::resource_impl]
+impl Resource for MidiexMidiInputRef {}
+
 impl MidiexMidiInputRef {
     pub fn new(data: MidiInput) -> Self {
         Self(Mutex::new(data))
     }
 }
+
+#[rustler::resource_impl]
+impl Resource for MidiexMidiOutputRef {}
 
 impl MidiexMidiOutputRef {
     pub fn new(data: MidiOutput) -> Self {
@@ -734,51 +813,49 @@ fn count_ports() -> Result<NumPorts, Error> {
 // RUSTLER
 // ------------------------
 
-fn on_load(env: Env, _info: Term) -> bool {
-    // MIDI Input and Output object for the OS
-    rustler::resource!(MidiexMidiInputRef, env);
-    rustler::resource!(MidiexMidiOutputRef, env);
+// fn on_load(env: Env, _info: Term) -> bool {
+//     // MIDI Input and Output object for the OS
+//     // rustler::resource!(MidiexMidiInputRef, env);
+//     // rustler::resource!(MidiexMidiOutputRef, env);
 
-    // MIDI ports (both input and output)
-    rustler::resource!(FlexiPort, env);
-    rustler::resource!(MidiexMidiPortRef, env);
+//     // MIDI ports (both input and output)
+//     // rustler::resource!(FlexiPort, env);
+//     // rustler::resource!(MidiexMidiPortRef, env);
 
-    // MIDI connection to a MIDI port
-    rustler::resource!(OutConnRef, env);
+//     // MIDI connection to a MIDI port
+//     // rustler::resource!(OutConnRef, env);
 
-    // MIDI notification
-    rustler::resource!(MidiNotification, env);
+//     // MIDI notification
+//     // rustler::resource!(MidiNotification, env);
 
-    // MIDI message
-    rustler::resource!(MidiMessage, env);
+//     // MIDI message
+//     // rustler::resource!(MidiMessage, env);
 
-    true
-}
+//     true
+// }
 
-rustler::init!(
-    "Elixir.Midiex.Backend",
-    [
-        count_ports,
-        list_ports,
-        connect,
-        close_out_conn,
-        send_msg,
-        subscribe,
-        unsubscribe_all_ports,
-        unsubscribe_port,
-        unsubscribe_port_by_index,
-        create_virtual_output_conn,
-        create_virtual_input,
-        #[cfg(not(any(target_os = "windows")))]
-        subscribe_virtual_input,
-        #[cfg(not(any(target_os = "windows")))]
-        unsubscribe_virtual_port,
-        #[cfg(not(any(target_os = "windows")))]
-        unsubscribe_all_virtual_ports,
-        get_subscribed_ports,
-        get_subscribed_virtual_ports,
-        notifications,
-        hotplug
-    ],
-    load = on_load
-);
+// rustler::init!(
+//     "Elixir.Midiex.Backend",
+//     [
+//         count_ports,
+//         list_ports,
+//         connect,
+//         close_out_conn,
+//         send_msg,
+//         subscribe,
+//         unsubscribe_all_ports,
+//         unsubscribe_port,
+//         unsubscribe_port_by_index,
+//         create_virtual_output_conn,
+//         create_virtual_input,
+//         subscribe_virtual_input,
+//         unsubscribe_virtual_port,
+//         unsubscribe_all_virtual_ports,
+//         get_subscribed_ports,
+//         get_subscribed_virtual_ports,
+//         notifications,
+//         hotplug
+//     ]
+// );
+
+rustler::init!("Elixir.Midiex.Backend");

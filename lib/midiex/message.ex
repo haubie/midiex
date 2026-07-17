@@ -1,5 +1,4 @@
 defmodule Midiex.Message do
-
   # References
   # https://anotherproducer.com/online-tools-for-musicians/midi-cc-list/
   # https://docs.rs/midi-msg/latest/midi_msg/enum.ChannelVoiceMsg.html
@@ -88,170 +87,169 @@ defmodule Midiex.Message do
   https://www.midi.org/midi-articles/about-midi-part-3-midi-messages
   """
 
-
   # http://www.midibox.org/dokuwiki/doku.php?id=midi_specification
   # https://www.inspiredacoustics.com/en/MIDI_note_numbers_and_center_frequencies
 
   import Bitwise
 
-  @notes_string_list [
-    {"Ab9", 128},
-    {"G#9", 128},
-    {"G9", 127},
-    {"Gb9", 126},
-    {"F#9", 126},
-    {"F9", 125},
-    {"E9", 124},
-    {"Eb9", 123},
-    {"D#9", 123},
-    {"D9", 122},
-    {"Db9", 121},
-    {"C#9", 121},
-    {"C9", 120},
-    {"B8", 119},
-    {"Bb8", 118},
-    {"A#8", 118},
-    {"A8", 117},
-    {"Ab8", 116},
-    {"G#8", 116},
-    {"G8", 115},
-    {"Gb8", 114},
-    {"F#8", 114},
-    {"F8", 113},
-    {"E8", 112},
-    {"Eb8", 111},
-    {"D#8", 111},
-    {"D8", 110},
-    {"Db8", 109},
-    {"C#8", 109},
-    {"C8", 108},
-    {"B7", 107},
-    {"Bb7", 106},
-    {"A#7", 106},
-    {"A7", 105},
-    {"Ab7", 104},
-    {"G#7", 104},
-    {"G7", 103},
-    {"Gb7", 102},
-    {"F#7", 102},
-    {"F7", 101},
-    {"E7", 100},
-    {"Eb7", 99},
-    {"D#7", 99},
-    {"D7", 98},
-    {"Db7", 97},
-    {"C#7", 97},
-    {"C7", 96},
-    {"B6", 95},
-    {"Bb6", 94},
-    {"A#6", 94},
-    {"A6", 93},
-    {"Ab6", 92},
-    {"G#6", 92},
-    {"G6", 91},
-    {"Gb6", 90},
-    {"F#6", 90},
-    {"F6", 89},
-    {"E6", 88},
-    {"Eb6", 87},
-    {"D#6", 87},
-    {"D6", 86},
-    {"Db6", 85},
-    {"C#6", 85},
-    {"C6", 84},
-    {"B5", 83},
-    {"Bb5", 82},
-    {"A#5", 82},
-    {"A5", 81},
-    {"Ab5", 80},
-    {"G#5", 80},
-    {"G5", 79},
-    {"Gb5", 78},
-    {"F#5", 78},
-    {"F5", 77},
-    {"E5", 76},
-    {"Eb5", 75},
-    {"D#5", 75},
-    {"D5", 74},
-    {"Db5", 73},
-    {"C#5", 73},
-    {"C5", 72},
-    {"B4", 71},
-    {"Bb4", 70},
-    {"A#4", 70},
-    {"A4", 69},
-    {"Ab4", 68},
-    {"G#4", 68},
-    {"G4", 67},
-    {"Gb4", 66},
-    {"F#4", 66},
-    {"F4", 65},
-    {"E4", 64},
-    {"Eb4", 63},
-    {"D#4", 63},
-    {"D4", 62},
-    {"Db4", 61},
-    {"C#4", 61},
-    {"MiddleC", 60},
-    {"C4", 60},
-    {"B3", 59},
-    {"Bb3", 58},
-    {"A#3", 58},
-    {"A3", 57},
-    {"Ab3", 56},
-    {"G#3", 56},
-    {"G3", 55},
-    {"Gb3", 54},
-    {"F#3", 54},
-    {"F3", 53},
-    {"E3", 52},
-    {"Eb3", 51},
-    {"D#3", 51},
-    {"D3", 50},
-    {"Db3", 49},
-    {"C#3", 49},
-    {"C3", 48},
-    {"B2", 47},
-    {"Bb2", 46},
-    {"A#2", 46},
-    {"A2", 45},
-    {"Ab2", 44},
-    {"G#2", 44},
-    {"G2", 43},
-    {"Gb2", 42},
-    {"F#2", 42},
-    {"F2", 41},
-    {"E2", 40},
-    {"Eb2", 39},
-    {"D#2", 39},
-    {"D2", 38},
-    {"Db2", 37},
-    {"C#2", 37},
-    {"C2", 36},
-    {"B1", 35},
-    {"Bb1", 34},
-    {"A#1", 34},
-    {"A1", 33},
-    {"Ab1", 32},
-    {"G#1", 32},
-    {"G1", 31},
-    {"Gb1", 30},
-    {"F#1", 30},
-    {"F1", 29},
-    {"E1", 28},
-    {"Eb1", 27},
-    {"D#1", 27},
-    {"D1", 26},
-    {"Db1", 25},
-    {"C#1", 25},
-    {"C1", 24},
-    {"B0", 23},
-    {"Bb0", 22},
-    {"A#0", 22},
-    {"A0", 21},
-  ]
+  @notes_string_map %{
+    "Ab9" => 128,
+    "G#9" => 128,
+    "G9" => 127,
+    "Gb9" => 126,
+    "F#9" => 126,
+    "F9" => 125,
+    "E9" => 124,
+    "Eb9" => 123,
+    "D#9" => 123,
+    "D9" => 122,
+    "Db9" => 121,
+    "C#9" => 121,
+    "C9" => 120,
+    "B8" => 119,
+    "Bb8" => 118,
+    "A#8" => 118,
+    "A8" => 117,
+    "Ab8" => 116,
+    "G#8" => 116,
+    "G8" => 115,
+    "Gb8" => 114,
+    "F#8" => 114,
+    "F8" => 113,
+    "E8" => 112,
+    "Eb8" => 111,
+    "D#8" => 111,
+    "D8" => 110,
+    "Db8" => 109,
+    "C#8" => 109,
+    "C8" => 108,
+    "B7" => 107,
+    "Bb7" => 106,
+    "A#7" => 106,
+    "A7" => 105,
+    "Ab7" => 104,
+    "G#7" => 104,
+    "G7" => 103,
+    "Gb7" => 102,
+    "F#7" => 102,
+    "F7" => 101,
+    "E7" => 100,
+    "Eb7" => 99,
+    "D#7" => 99,
+    "D7" => 98,
+    "Db7" => 97,
+    "C#7" => 97,
+    "C7" => 96,
+    "B6" => 95,
+    "Bb6" => 94,
+    "A#6" => 94,
+    "A6" => 93,
+    "Ab6" => 92,
+    "G#6" => 92,
+    "G6" => 91,
+    "Gb6" => 90,
+    "F#6" => 90,
+    "F6" => 89,
+    "E6" => 88,
+    "Eb6" => 87,
+    "D#6" => 87,
+    "D6" => 86,
+    "Db6" => 85,
+    "C#6" => 85,
+    "C6" => 84,
+    "B5" => 83,
+    "Bb5" => 82,
+    "A#5" => 82,
+    "A5" => 81,
+    "Ab5" => 80,
+    "G#5" => 80,
+    "G5" => 79,
+    "Gb5" => 78,
+    "F#5" => 78,
+    "F5" => 77,
+    "E5" => 76,
+    "Eb5" => 75,
+    "D#5" => 75,
+    "D5" => 74,
+    "Db5" => 73,
+    "C#5" => 73,
+    "C5" => 72,
+    "B4" => 71,
+    "Bb4" => 70,
+    "A#4" => 70,
+    "A4" => 69,
+    "Ab4" => 68,
+    "G#4" => 68,
+    "G4" => 67,
+    "Gb4" => 66,
+    "F#4" => 66,
+    "F4" => 65,
+    "E4" => 64,
+    "Eb4" => 63,
+    "D#4" => 63,
+    "D4" => 62,
+    "Db4" => 61,
+    "C#4" => 61,
+    "MiddleC" => 60,
+    "C4" => 60,
+    "B3" => 59,
+    "Bb3" => 58,
+    "A#3" => 58,
+    "A3" => 57,
+    "Ab3" => 56,
+    "G#3" => 56,
+    "G3" => 55,
+    "Gb3" => 54,
+    "F#3" => 54,
+    "F3" => 53,
+    "E3" => 52,
+    "Eb3" => 51,
+    "D#3" => 51,
+    "D3" => 50,
+    "Db3" => 49,
+    "C#3" => 49,
+    "C3" => 48,
+    "B2" => 47,
+    "Bb2" => 46,
+    "A#2" => 46,
+    "A2" => 45,
+    "Ab2" => 44,
+    "G#2" => 44,
+    "G2" => 43,
+    "Gb2" => 42,
+    "F#2" => 42,
+    "F2" => 41,
+    "E2" => 40,
+    "Eb2" => 39,
+    "D#2" => 39,
+    "D2" => 38,
+    "Db2" => 37,
+    "C#2" => 37,
+    "C2" => 36,
+    "B1" => 35,
+    "Bb1" => 34,
+    "A#1" => 34,
+    "A1" => 33,
+    "Ab1" => 32,
+    "G#1" => 32,
+    "G1" => 31,
+    "Gb1" => 30,
+    "F#1" => 30,
+    "F1" => 29,
+    "E1" => 28,
+    "Eb1" => 27,
+    "D#1" => 27,
+    "D1" => 26,
+    "Db1" => 25,
+    "C#1" => 25,
+    "C1" => 24,
+    "B0" => 23,
+    "Bb0" => 22,
+    "A#0" => 22,
+    "A0" => 21
+  }
 
-  @notes_atom_list [
+  @notes_atom_map %{
     Ab9: 128,
     Gs9: 128,
     G9: 127,
@@ -405,8 +403,8 @@ defmodule Midiex.Message do
     B0: 23,
     Bb0: 22,
     As0: 22,
-    A0: 21,
-  ]
+    A0: 21
+  }
 
   @note_on <<0x9::4>>
   @note_off <<0x8::4>>
@@ -434,13 +432,13 @@ defmodule Midiex.Message do
   ```
   """
   def note(num_note) when is_number(num_note), do: num_note
+
   def note(text_note) when is_binary(text_note) do
-    {_, note} = Enum.find(@notes_string_list, fn {note, _midi_num} -> note == text_note end)
-    note
+    Map.get(@notes_string_map, text_note)
   end
+
   def note(atom_note) when is_atom(atom_note) do
-    {_, note} = Enum.find(@notes_atom_list, fn {note, _midi_num} -> note == atom_note end)
-    note
+    Map.get(@notes_atom_map, atom_note)
   end
 
   @doc section: :channel_voice
@@ -453,7 +451,7 @@ defmodule Midiex.Message do
   2. velocity: a number between 0 and 127 representing how hard (or loud) a key was pressed. By defaut 127 is used.
 
   The following options can be passed:
-  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 0 is used.
+  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 1 is used.
 
   Note that MIDI channels are in the range 0 - 15. But in MIDI software and hardware it may be offset by +1, so MIDI channel 0 might be called MIDI channel 1 and so on to channel 16.
 
@@ -467,7 +465,7 @@ defmodule Midiex.Message do
   # Note-on message for middle-C on channel 2 with a velocity of 40
   Midiex.Message.note_on(:C4, 40, channel: 2)
 
-  # Returns: <<146, 60, 40>>
+  # Returns: <<145, 60, 40>>
   ```
 
   These can be sent to a connection using `Midiex.send_msg/2`, for example:
@@ -477,7 +475,7 @@ defmodule Midiex.Message do
   ```
   """
   def note_on(note, velocity \\ 127, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     <<@note_on, channel::4, note(note), velocity>>
   end
 
@@ -490,7 +488,7 @@ defmodule Midiex.Message do
   2. velocity: a number between 0 and 127 representing how hard (or loud) a key was pressed. By defaut 127 is used.
 
   The following options can be passed:
-  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 0 is used.
+  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 1 is used.
 
   All notes can be switched off with `Message.all_notes_off/1`.
 
@@ -499,11 +497,11 @@ defmodule Midiex.Message do
   # Note-off for middle-C
   Message.note_off(:C4)
 
-  # Returns: <<128, 60, 127>>
+  # Returns: <<128, 60, 123>>
   ```
   """
   def note_off(note, velocity \\ 123, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     <<@note_off, channel::4, note(note), velocity>>
   end
 
@@ -520,7 +518,7 @@ defmodule Midiex.Message do
   2. pressure: a number between 0 and 127 representing the pressure on the key. By defaut 127 is used.
 
   The following options can be passed:
-  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 0 is used.
+  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 1 is used.
 
   ## Example
   ```
@@ -531,9 +529,9 @@ defmodule Midiex.Message do
   |> Enum.map(fn pressure -> Message.polyphonic_aftertouch(:C4, pressure) end)
   ```
   """
-  def polyphonic_aftertouch(note, pressure, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
-    <<0xA, channel::4, note(note), pressure>>
+  def polyphonic_aftertouch(note, pressure \\ 127, opts \\ []) do
+    channel = get_channel(opts)
+    <<0xA::4, channel::4, note(note), pressure>>
   end
 
   @doc section: :channel_voice
@@ -548,24 +546,23 @@ defmodule Midiex.Message do
   Therefore channel aftertouch is independent of which key or how many keys are held. `polyphonic_aftertouch` is specific to each key however.
 
   This function takes as it's parameters:
-  1. note: a note as a string (e.g. "C4"), atom (e.g. :C4) or number (e.g. 60) as the first parameter
-  2. pressure: a number between 0 and 127 representing the pressure on the key. By defaut 127 is used.
+  1. pressure: a number between 0 and 127 representing the pressure on the key. By defaut 127 is used.
 
   The following option can also be passed:
-  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 0 is used.
+  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 1 is used.
 
   ## Example
   ```
   alias Midiex.Message
 
-  # Create a series of aftertouch messages from 0 to 127 for the note middle-C (C4)
+  # Create a series of aftertouch messages from 0 to 127 for channel 1
   0..127//1
-  |> Enum.map(fn pressure -> Message.channel_aftertouch(:C4, pressure: pressure) end)
+  |> Enum.map(fn pressure -> Message.channel_aftertouch(pressure, channel: 1) end)
   ```
   """
-  def channel_aftertouch(note, pressure, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
-    <<0xD, channel::4, note(note), pressure>>
+  def channel_aftertouch(pressure \\ 127, opts \\ []) do
+    channel = get_channel(opts)
+    <<0xD::4, channel::4, pressure>>
   end
 
   @doc section: :channel_voice
@@ -579,7 +576,7 @@ defmodule Midiex.Message do
   2. value: depends on the control function, but usually is a a number between 0 and 127. See the MIDI 1.0 Control Change Messages Spec or consult the MIDI device manual for specific codes an values.
 
   The following option can be passed:
-  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 0 is used.
+  - channel: the MIDI channel to which the message will be sent (there are 16 channels per MIDI device, in the range 0 to 15). By default channel 1 is used.
 
   ## Example
   The MIDI CC message of `123` equates to "All Notes Off" (a Channel Mode Message), thus stopping all notes being played.
@@ -591,7 +588,12 @@ defmodule Midiex.Message do
   See the official [MIDI 1.0 Control Change Messages Spec](https://www.midi.org/specifications-old/item/table-3-control-change-messages-data-bytes-2).
   """
   def control_change(control_number, value \\ 0, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
+    _control_change(control_number, value, channel)
+  end
+
+  # Private function to create a control change message that doesn't call get_channel/1
+  defp _control_change(control_number, value, channel) do
     <<0xB::4, channel::4, control_number, value>>
   end
 
@@ -607,7 +609,7 @@ defmodule Midiex.Message do
   ```
   """
   def program_change(prog_num, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     <<0xC::4, channel::4, prog_num>>
   end
 
@@ -637,7 +639,7 @@ defmodule Midiex.Message do
   ```
   """
   def pitch_bend(bend, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     <<msb::7, lsb::7>> = <<bend::14>>
     <<0xE::4, channel::4, lsb, msb>>
   end
@@ -651,10 +653,10 @@ defmodule Midiex.Message do
   A channel number can be provided as an option.
   """
   def bank_select(bank, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     <<msb::7, lsb::7>> = <<bank::14>>
-    msb_binary = control_change(0, msb, channel: channel)
-    lsb_binary = control_change(0x20, lsb, channel: channel)
+    msb_binary = _control_change(0, msb, channel)
+    lsb_binary = _control_change(0x20, lsb, channel)
     <<msb_binary::binary, lsb_binary::binary>>
   end
 
@@ -669,10 +671,10 @@ defmodule Midiex.Message do
   A channel number can be provided as an option.
   """
   def mod_wheel(bank, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     <<msb::7, lsb::7>> = <<bank::14>>
-    msb_binary = control_change(1, msb, channel: channel)
-    lsb_binary = control_change(0x21, lsb, channel: channel)
+    msb_binary = _control_change(1, msb, channel)
+    lsb_binary = _control_change(0x21, lsb, channel)
     <<msb_binary::binary, lsb_binary::binary>>
   end
 
@@ -689,10 +691,10 @@ defmodule Midiex.Message do
   A channel number can be provided as an option.
   """
   def breath_controller(value, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     <<msb::7, lsb::7>> = <<value::14>>
-    msb_binary = control_change(2, msb, channel: channel)
-    lsb_binary = control_change(0x22, lsb, channel: channel)
+    msb_binary = _control_change(2, msb, channel)
+    lsb_binary = _control_change(0x22, lsb, channel)
     <<msb_binary::binary, lsb_binary::binary>>
   end
 
@@ -705,10 +707,10 @@ defmodule Midiex.Message do
   A channel number can be provided as an option.
   """
   def foot_controller(value, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     <<msb::7, lsb::7>> = <<value::14>>
-    msb_binary = control_change(4, msb, channel: channel)
-    lsb_binary = control_change(0x24, lsb, channel: channel)
+    msb_binary = _control_change(4, msb, channel)
+    lsb_binary = _control_change(0x24, lsb, channel)
     <<msb_binary::binary, lsb_binary::binary>>
   end
 
@@ -723,10 +725,10 @@ defmodule Midiex.Message do
   A channel number can be provided as an option.
   """
   def portamento(value, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     <<msb::7, lsb::7>> = <<value::14>>
-    msb_binary = control_change(5, msb, channel: channel)
-    lsb_binary = control_change(0x25, lsb, channel: channel)
+    msb_binary = _control_change(5, msb, channel)
+    lsb_binary = _control_change(0x25, lsb, channel)
     <<msb_binary::binary, lsb_binary::binary>>
   end
 
@@ -741,11 +743,10 @@ defmodule Midiex.Message do
   A channel number can be provided as an option.
   """
   def data_entry_msb(value, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
-    # control_change(7, volume_num, channel: channel)
+    channel = get_channel(opts)
     <<msb::7, lsb::7>> = <<value::14>>
-    msb_binary = control_change(6, msb, channel: channel)
-    lsb_binary = control_change(0x26, lsb, channel: channel)
+    msb_binary = _control_change(6, msb, channel)
+    lsb_binary = _control_change(0x26, lsb, channel)
     <<msb_binary::binary, lsb_binary::binary>>
   end
 
@@ -774,16 +775,17 @@ defmodule Midiex.Message do
   A channel number can be provided as an option.
   """
   def volume(volume_num, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     high_res = Keyword.get(opts, :high_res, false)
+
     if high_res do
       # High-res (14 bit version)
       <<msb::7, lsb::7>> = <<volume_num::14>>
-      msb_binary = control_change(7, msb, channel: channel)
-      lsb_binary = control_change(0x27, lsb, channel: channel)
+      msb_binary = _control_change(7, msb, channel)
+      lsb_binary = _control_change(0x27, lsb, channel)
       <<msb_binary::binary, lsb_binary::binary>>
     else
-      control_change(7, volume_num, channel: channel)
+      _control_change(7, volume_num, channel)
     end
   end
 
@@ -811,17 +813,17 @@ defmodule Midiex.Message do
   ```
   """
   def balance(value, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     high_res = Keyword.get(opts, :high_res, false)
 
     if high_res do
-       # High-res (14 bit version)
-       <<msb::7, lsb::7>> = <<value::14>>
-       msb_binary = control_change(8, msb, channel: channel)
-       lsb_binary = control_change(0x28, lsb, channel: channel)
-       <<msb_binary::binary, lsb_binary::binary>>
+      # High-res (14 bit version)
+      <<msb::7, lsb::7>> = <<value::14>>
+      msb_binary = _control_change(8, msb, channel)
+      lsb_binary = _control_change(0x28, lsb, channel)
+      <<msb_binary::binary, lsb_binary::binary>>
     else
-      control_change(8, value, channel: channel)
+      _control_change(8, value, channel)
     end
   end
 
@@ -847,17 +849,17 @@ defmodule Midiex.Message do
   ```
   """
   def pan(pan, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
     high_res = Keyword.get(opts, :high_res, false)
 
     if high_res do
       # High-res (14 bit version)
       <<msb::7, lsb::7>> = <<pan::14>>
-      msb_binary = control_change(8, msb, channel: channel)
-      lsb_binary = control_change(42, lsb, channel: channel)
+      msb_binary = _control_change(8, msb, channel)
+      lsb_binary = _control_change(42, lsb, channel)
       <<msb_binary::binary, lsb_binary::binary>>
     else
-      control_change(10, pan, channel: channel)
+      _control_change(10, pan, channel)
     end
   end
 
@@ -866,8 +868,8 @@ defmodule Midiex.Message do
   Creates an all sound off message. This mutes all sound regardless of release time or sustain.
   """
   def sound_off(opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
-    control_change(120, 0, channel: channel)
+    channel = get_channel(opts)
+    _control_change(120, 0, channel)
   end
 
   @doc section: :channel_mode
@@ -879,8 +881,8 @@ defmodule Midiex.Message do
   Notes held by sustain will not turn off until sustain pedal is depressed.
   """
   def all_notes_off(opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
-    control_change(123, 0, channel: channel)
+    channel = get_channel(opts)
+    _control_change(123, 0, channel)
   end
 
   @doc section: :channel_mode
@@ -888,23 +890,24 @@ defmodule Midiex.Message do
   Creates a message that will reset all controllers to their default.
   """
   def reset_controllers(opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
-    control_change(121, 0 ,channel: channel)
+    channel = get_channel(opts)
+    _control_change(121, 0, channel)
   end
 
   @doc section: :channel_mode
   @doc """
   Sets Omni mode on or off.
 
-  The first parameter takes one of the following booleans:
+  The first parameter_ takes one of the following booleans:
   - `true` to switch Omni mode on
   - `false` to swithc Omni mode off
   """
   def omni_mode(true_or_false \\ true, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
+
     case true_or_false do
-      true -> control_change(125, 0, channel: channel)
-      false -> control_change(124, 0, channel: channel)
+      true -> _control_change(125, 0, channel)
+      false -> _control_change(124, 0, channel)
     end
   end
 
@@ -924,10 +927,11 @@ defmodule Midiex.Message do
   ```
   """
   def poly_mode(true_or_false \\ true, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
+
     case true_or_false do
-      true -> control_change(127, 0, channel: channel)
-      false -> control_change(126, 0, channel: channel)
+      true -> _control_change(127, 0, channel)
+      false -> _control_change(126, 0, channel)
     end
   end
 
@@ -950,9 +954,10 @@ defmodule Midiex.Message do
   """
   @spec mono_mode(boolean, any, keyword) :: <<_::24>>
   def mono_mode(true_or_false \\ true, number_of_channels \\ 0, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
+
     case true_or_false do
-      true -> control_change(126, number_of_channels, channel: channel)
+      true -> _control_change(126, number_of_channels, channel)
       false -> poly_mode(true, opts)
     end
   end
@@ -968,13 +973,13 @@ defmodule Midiex.Message do
   More information at: https://electronicmusic.fandom.com/wiki/Local_control
   """
   def local_control(true_or_false \\ true, opts \\ []) do
-    channel = Keyword.get(opts, :channel, 0)
+    channel = get_channel(opts)
+
     case true_or_false do
-      true -> control_change(122, 127, channel: channel)
-      false -> control_change(122	, 0, channel: channel)
+      true -> _control_change(122, 127, channel)
+      false -> _control_change(122, 0, channel)
     end
   end
-
 
   @doc section: :system
   @doc """
@@ -1038,31 +1043,33 @@ defmodule Midiex.Message do
 
   def timecode(timecode_string) when is_binary(timecode_string) do
     %{"frame" => frame, "hour" => hour, "minute" => minute, "second" => second} =
-      Regex.named_captures(~r/(?<hour>\d\d)[:](?<minute>\d\d)[:](?<second>\d\d)[:](?<frame>\d\d)/i, timecode_string)
+      Regex.named_captures(
+        ~r/(?<hour>\d\d)[:](?<minute>\d\d)[:](?<second>\d\d)[:](?<frame>\d\d)/i,
+        timecode_string
+      )
 
-      {frame_msb, frame_lsb}    = String.to_integer(frame)  |> to_nibble()
-      {hour_msb, hour_lsb}      = String.to_integer(hour)   |> to_nibble()
-      {minute_msb, minute_lsb}  = String.to_integer(minute) |> to_nibble()
-      {second_msb, second_lsb}  = String.to_integer(second) |> to_nibble()
+    {frame_msb, frame_lsb} = String.to_integer(frame) |> to_nibble()
+    {hour_msb, hour_lsb} = String.to_integer(hour) |> to_nibble()
+    {minute_msb, minute_lsb} = String.to_integer(minute) |> to_nibble()
+    {second_msb, second_lsb} = String.to_integer(second) |> to_nibble()
 
-      [
-        (0 <<< 4) + frame_lsb,
-        (1 <<< 4) + frame_msb,
-        (2 <<< 4) + second_lsb,
-        (3 <<< 4) + second_msb,
-        (4 <<< 4) + minute_lsb,
-        (5 <<< 4) + minute_msb,
-        (6 <<< 4) + hour_lsb,
-        (7 <<< 4) + hour_msb
-      ]
-      |> Enum.map(fn time_data -> quarter_frame(time_data) end)
-      |> Enum.join(<<>>)
+    [
+      (0 <<< 4) + frame_lsb,
+      (1 <<< 4) + frame_msb,
+      (2 <<< 4) + second_lsb,
+      (3 <<< 4) + second_msb,
+      (4 <<< 4) + minute_lsb,
+      (5 <<< 4) + minute_msb,
+      (6 <<< 4) + hour_lsb,
+      (7 <<< 4) + hour_msb
+    ]
+    |> Enum.map(fn time_data -> quarter_frame(time_data) end)
+    |> Enum.join(<<>>)
   end
 
   defp to_nibble(value) do
     {value >>> 4, band(value, 0b00001111)}
   end
-
 
   @doc section: :system
   @doc """
@@ -1096,7 +1103,6 @@ defmodule Midiex.Message do
   """
   def stop(), do: <<0xFC>>
 
-
   @doc section: :system
   @doc """
   Creates a MIDI active sense message.
@@ -1120,4 +1126,8 @@ defmodule Midiex.Message do
   """
   def reset(), do: <<0xFF>>
 
+  ## Helpers
+  defp get_channel(opts) do
+    Keyword.get(opts, :channel, 1) - 1
+  end
 end

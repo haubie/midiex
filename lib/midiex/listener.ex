@@ -52,7 +52,7 @@ defmodule Midiex.Listener do
   end
 
   @impl true
-  def handle_cast({:subscribe, midi_input_port}, state) do
+  def handle_cast({:subscribe, midi_input_port}, %__MODULE__{} = state) do
     Midiex.subscribe(midi_input_port)
     midi_input_port = if is_list(midi_input_port), do: midi_input_port, else: [midi_input_port]
     new_state = %__MODULE__{state | port: midi_input_port ++ []}
@@ -60,14 +60,14 @@ defmodule Midiex.Listener do
   end
 
   @impl true
-  def handle_cast({:add_handler, handler_fn}, state) do
+  def handle_cast({:add_handler, handler_fn}, %__MODULE__{} = state) do
     handler_fn = if is_list(handler_fn), do: handler_fn, else: [handler_fn]
     new_state = %__MODULE__{state | callback: handler_fn ++ state.callback}
     {:noreply, new_state}
   end
 
   @impl true
-  def handle_cast({:unsubscribe, midi_input_port}, state) do
+  def handle_cast({:unsubscribe, midi_input_port}, %__MODULE__{} = state) do
     Midiex.unsubscribe(midi_input_port)
     port = Enum.reject(state.port, fn port -> ports_equal?(port, midi_input_port) end)
     new_state = %__MODULE__{state | port: port}
@@ -75,14 +75,14 @@ defmodule Midiex.Listener do
   end
 
   @impl true
-  def handle_cast(:unsubscribe_all, state) do
+  def handle_cast(:unsubscribe_all, %__MODULE__{} = state) do
     Midiex.unsubscribe(state.callback)
     new_state = %__MODULE__{state | callback: []}
     {:noreply, new_state}
   end
 
   @impl true
-  def handle_call(:state, _from, state) do
+  def handle_call(:state, _from, %__MODULE__{} = state) do
     {:reply, state, state}
   end
 
@@ -125,7 +125,6 @@ defmodule Midiex.Listener do
 
     %__MODULE__{port: port, callback: callback}
   end
-
 
   @spec start_link(keyword) :: :ignore | {:error, any} | {:ok, pid}
   @doc """
@@ -188,7 +187,13 @@ defmodule Midiex.Listener do
     GenServer.cast(pid, {:add_handler, handler_fn})
   end
 
-  @spec unsubscribe(pid(), %Midiex.MidiPort{direction: :input} | %Midiex.VirtualMidiPort{} | [%Midiex.MidiPort{direction: :input} | %Midiex.VirtualMidiPort{}] | :all) :: :ok
+  @spec unsubscribe(
+          pid(),
+          %Midiex.MidiPort{direction: :input}
+          | %Midiex.VirtualMidiPort{}
+          | [%Midiex.MidiPort{direction: :input} | %Midiex.VirtualMidiPort{}]
+          | :all
+        ) :: :ok
   @doc """
   Stops listening to the MIDI input port by unsubscribing to it.
 
@@ -207,14 +212,21 @@ defmodule Midiex.Listener do
   def unsubscribe(pid, :all) do
     GenServer.cast(pid, :unsubscribe_all)
   end
+
   def unsubscribe(pid, midi_input_ports) when is_list(midi_input_ports) do
     Enum.each(midi_input_ports, fn midi_input_port -> unsubscribe(pid, midi_input_port) end)
   end
+
   def unsubscribe(pid, midi_input_port) do
     GenServer.cast(pid, {:unsubscribe, midi_input_port})
   end
 
-  @spec subscribe(pid(), %Midiex.MidiPort{direction: :input} | %Midiex.VirtualMidiPort{} | [%Midiex.MidiPort{direction: :input} | %Midiex.VirtualMidiPort{}] ) :: :ok
+  @spec subscribe(
+          pid(),
+          %Midiex.MidiPort{direction: :input}
+          | %Midiex.VirtualMidiPort{}
+          | [%Midiex.MidiPort{direction: :input} | %Midiex.VirtualMidiPort{}]
+        ) :: :ok
   @doc """
   Subscribe to one or more MIDI input ports.
 
@@ -264,10 +276,6 @@ defmodule Midiex.Listener do
   # ----------------
   # Helper functions
   # ----------------
-  defp ports_equal?(port_one, port_two), do: (port_one.name == port_two.name) && (port_one.num == port_two.num)
-
-
-
-
-
+  defp ports_equal?(port_one, port_two),
+    do: port_one.name == port_two.name && port_one.num == port_two.num
 end

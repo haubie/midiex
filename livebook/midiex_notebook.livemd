@@ -1,74 +1,12 @@
-<!-- livebook:{"persist_outputs":true} -->
+<!-- livebook:{"file_entries":[{"name":"MIDI_destination_01.png","type":"attachment"},{"name":"MIDI_input_02.png","type":"attachment"},{"name":"grokking_midi.png","type":"attachment"}],"persist_outputs":true} -->
 
 # MIDIex notebook
 
 ```elixir
-Mix.install([{:midiex, "~> 0.6.3"}])
-```
-
-<!-- livebook:{"output":true} -->
-
-```
-* Getting midiex (https://github.com/haubie/midiex.git)
-remote: Enumerating objects: 717, done.
-remote: Counting objects: 100% (174/174), done.
-remote: Compressing objects: 100% (87/87), done.
-remote: Total 717 (delta 79), reused 139 (delta 52), pack-reused 543
-origin/HEAD set to main
-Resolving Hex dependencies...
-Resolution completed in 0.257s
-New:
-  jason 1.4.1
-  rustler 0.26.0
-  toml 0.7.0
-* Getting rustler (Hex package)
-* Getting jason (Hex package)
-* Getting toml (Hex package)
-==> toml
-Compiling 10 files (.ex)
-Generated toml app
-==> jason
-Compiling 10 files (.ex)
-Generated jason app
-==> rustler
-Compiling 7 files (.ex)
-Generated rustler app
-==> midiex
-Compiling 10 files (.ex)
-Compiling crate midiex in release mode (native/midiex)
-   Compiling memchr v2.5.0
-   Compiling core-foundation-sys v0.8.3
-   Compiling libc v0.2.138
-   Compiling proc-macro2 v1.0.63
-   Compiling unicode-ident v1.0.5
-   Compiling coremidi-sys v3.1.0
-   Compiling quote v1.0.28
-   Compiling regex-syntax v0.6.28
-   Compiling void v1.0.2
-   Compiling heck v0.4.0
-   Compiling rustler v0.29.0
-   Compiling lazy_static v1.4.0
-   Compiling unreachable v1.0.0
-   Compiling block v0.1.6
-   Compiling bitflags v1.3.2
-   Compiling aho-corasick v0.7.20
-   Compiling regex v1.7.0
-   Compiling rustler_sys v2.3.0
-   Compiling core-foundation v0.9.3
-   Compiling coremidi v0.6.0
-   Compiling coremidi v0.7.0
-   Compiling midir v0.9.1
-   Compiling syn v2.0.22
-   Compiling rustler_codegen v0.29.0
-   Compiling midiex v0.1.0 (/Users/haubie/Library/Caches/mix/installs/elixir-1.15.2-erts-14.0.2/56c7aef4f3fb67cf9f7eb75d4a18b401/deps/midiex/native/midiex)
-    Finished release [optimized] target(s) in 6.13s
-Generated midiex app
-```
-
-<!-- livebook:{"output":true} -->
-
-```
-:ok
+Mix.install([
+  {:midiex, "~> 0.6.4"},
+  {:kino, "~> 0.19.0"}
+])
 ```
 
 ## Introduction
@@ -89,6 +27,7 @@ Midiex function names have been kept compact as possible with live-music coding 
 
 ```elixir
 alias Midiex.Listener
+alias Midiex.Notifier
 alias Midiex.Message, as: M
 ```
 
@@ -110,11 +49,17 @@ At it's most basic, MIDI consists of:
 
 <!-- livebook:{"break_markdown":true} -->
 
-![](images/grokking_midi.png)
+![](files/grokking_midi.png)
 
-## Finding devices (ports)
+<!-- livebook:{"branch_parent_index":0} -->
 
-Note that on Apple Mac, you may wish to call `Midiex.hotplug()` first so that Midiex will be able to see devices plugged in or removed.
+## Finding MIDI devices (ports)
+
+### Hot plugging (Apple)
+
+Note that on **Apple Mac**, you may wish to call `Midiex.hotplug()` first so that Midiex will be able to see devices plugged in or removed. Skip this for all other platforms.
+
+MIDI hot plugging refers to the system's ability to instantly recognise MIDI hardware upon connection via USB or Bluetooth, as well as safely detach it upon removal, without requiring a system reboot or restarting active digital audio workstations (DAWs).
 
 ```elixir
 Midiex.hotplug()
@@ -126,7 +71,9 @@ Midiex.hotplug()
 :ok
 ```
 
-### How many ports are there?
+### How many MIDI ports are there?
+
+To get a simple count of MIDI ports, calling `Midiex.port_count()` will return a map of input and output (e.g. `%{input: 3, output: 3}`) ports:
 
 ```elixir
 Midiex.port_count()
@@ -138,7 +85,9 @@ Midiex.port_count()
 %{input: 4, output: 3}
 ```
 
-### List devices (ports)
+### Listing all MIDI ports
+
+Without any parameters `Midiex.ports()` lists all discoverable MIDI ports (device or virtual).
 
 ```elixir
 ports = Midiex.ports()
@@ -152,48 +101,60 @@ ports = Midiex.ports()
     direction: :input,
     name: "IAC Driver Bus 1",
     num: 0,
-    port_ref: #Reference<0.34604515.3318349847.1170>
+    port_ref: #Reference<0.1738503359.1908539416.122396>
   },
   %Midiex.MidiPort{
     direction: :input,
     name: "IAC Driver Bus 2",
     num: 1,
-    port_ref: #Reference<0.34604515.3318349847.1171>
+    port_ref: #Reference<0.1738503359.1908539416.122397>
   },
   %Midiex.MidiPort{
     direction: :input,
     name: "IAC Driver Bus 3",
     num: 2,
-    port_ref: #Reference<0.34604515.3318349847.1172>
+    port_ref: #Reference<0.1738503359.1908539416.122398>
   },
   %Midiex.MidiPort{
     direction: :input,
-    name: "My Out",
+    name: "MidiKeys",
     num: 3,
-    port_ref: #Reference<0.34604515.3318349847.1173>
+    port_ref: #Reference<0.1738503359.1908539416.122399>
   },
   %Midiex.MidiPort{
     direction: :output,
     name: "IAC Driver Bus 1",
     num: 0,
-    port_ref: #Reference<0.34604515.3318349847.1174>
+    port_ref: #Reference<0.1738503359.1908539416.122400>
   },
   %Midiex.MidiPort{
     direction: :output,
     name: "IAC Driver Bus 2",
     num: 1,
-    port_ref: #Reference<0.34604515.3318349847.1175>
+    port_ref: #Reference<0.1738503359.1908539416.122401>
   },
   %Midiex.MidiPort{
     direction: :output,
     name: "IAC Driver Bus 3",
     num: 2,
-    port_ref: #Reference<0.34604515.3318349847.1176>
+    port_ref: #Reference<0.1738503359.1908539416.122402>
   }
 ]
 ```
 
-### Filter to show input or output ports
+### Filtering and queries
+
+The `Midiex.ports()` function can filter the available MIDI ports in a number of ways:
+
+* **Direction:** which can be either an `:input` or `:output` port
+* **Query:** using a regular expression of the port name
+* **Name:** a string of the name of the port
+
+... or even a combination of the above (see below).
+
+#### Filter to show input or output ports
+
+Provide the atoms `:input` or `:output` to filter by direction:
 
 ```elixir
 Midiex.ports(:input)
@@ -207,25 +168,25 @@ Midiex.ports(:input)
     direction: :input,
     name: "IAC Driver Bus 1",
     num: 0,
-    port_ref: #Reference<0.34604515.3318349847.1177>
+    port_ref: #Reference<0.1738503359.1908539416.122403>
   },
   %Midiex.MidiPort{
     direction: :input,
     name: "IAC Driver Bus 2",
     num: 1,
-    port_ref: #Reference<0.34604515.3318349847.1178>
+    port_ref: #Reference<0.1738503359.1908539416.122404>
   },
   %Midiex.MidiPort{
     direction: :input,
     name: "IAC Driver Bus 3",
     num: 2,
-    port_ref: #Reference<0.34604515.3318349847.1179>
+    port_ref: #Reference<0.1738503359.1908539416.122405>
   },
   %Midiex.MidiPort{
     direction: :input,
-    name: "My Out",
+    name: "MidiKeys",
     num: 3,
-    port_ref: #Reference<0.34604515.3318349847.1180>
+    port_ref: #Reference<0.1738503359.1908539416.122406>
   }
 ]
 ```
@@ -242,28 +203,32 @@ Midiex.ports(:output)
     direction: :output,
     name: "IAC Driver Bus 1",
     num: 0,
-    port_ref: #Reference<0.34604515.3318349847.1188>
+    port_ref: #Reference<0.1738503359.1908539416.122414>
   },
   %Midiex.MidiPort{
     direction: :output,
     name: "IAC Driver Bus 2",
     num: 1,
-    port_ref: #Reference<0.34604515.3318349847.1189>
+    port_ref: #Reference<0.1738503359.1908539416.122415>
   },
   %Midiex.MidiPort{
     direction: :output,
     name: "IAC Driver Bus 3",
     num: 2,
-    port_ref: #Reference<0.34604515.3318349847.1190>
+    port_ref: #Reference<0.1738503359.1908539416.122416>
   }
 ]
 ```
 
-### Filtering ports by name
+#### Dynamic port filtering by regex or string
 
-You can include a regular expression as the first parameter to search for matching ports.
+You can include a regular expression as the first parameter to search for matching ports by their name or description.
 
-For example, to get the output ports from any Arturia device plugged into your system, you could do the following:
+Optionally, you can provide a `:input` or :`ouput` direction atom as the last parameter.
+
+> ⚠️ **Note that port naming conventions may differ by platform (Mac, Linux and Windows) and underlying technology.** For example, ALSA on Linux lists ports using the "Client:Port" format, which includes the dynamic ID numbers followed by their human-readable device names and port descriptions, where as Mac just lists their human-readable names.
+
+To get the output ports from any 'Arturia' device plugged into your system, you could do the following:
 
 ```elixir
 Midiex.ports(~r/Arturia/, :output)
@@ -272,7 +237,14 @@ Midiex.ports(~r/Arturia/, :output)
 <!-- livebook:{"output":true} -->
 
 ```
-[]
+[
+  %Midiex.MidiPort{
+    direction: :output,
+    name: "Arturia MicroFreak",
+    num: 3,
+    port_ref: #Reference<0.1738503359.1908539416.122425>
+  }
+]
 ```
 
 If you know the name of the port, you can pass it as a string as the first parameter:
@@ -289,29 +261,50 @@ Midiex.ports("IAC Driver Bus 1", :input)
     direction: :input,
     name: "IAC Driver Bus 1",
     num: 0,
-    port_ref: #Reference<0.34604515.3318349847.1198>
+    port_ref: #Reference<0.1738503359.1908539416.122426>
   }
 ]
 ```
 
-## Connecting to output devices
+<!-- livebook:{"branch_parent_index":0} -->
+
+## Sending MIDI messages via output connections
+
+Sending MIDI messages to an output device requires an active connection. As with other I/O, you can open and close these connections using `Midiex.open/1` and `Midiex.close/1`.
+
+### Connecting to output devices
 
 If you wanted to connect to the first Arturia output port on your system you could:
 
 ```elixir
-# Get the port
+# Get the port - feel free to change this to a device listed on your system!
 out_port = Midiex.ports(~r/Arturia/, :output) |> List.first()
 ```
 
 <!-- livebook:{"output":true} -->
 
 ```
-nil
+%Midiex.MidiPort{
+  direction: :output,
+  name: "Arturia MicroFreak",
+  num: 3,
+  port_ref: #Reference<0.1738503359.1908539416.122443>
+}
 ```
 
 ```elixir
 # Make a connection
 out_conn = Midiex.open(out_port)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Midiex.OutConn{
+  conn_ref: #Reference<0.1738503359.1908539395.124097>,
+  name: "Arturia MicroFreak",
+  port_num: 3
+}
 ```
 
 You can now send a message to the device via the output connection, for example:
@@ -323,37 +316,415 @@ Midiex.send_msg(out_conn, <<0x90, 60, 127>>)
 <!-- livebook:{"output":true} -->
 
 ```
-error: undefined variable "out_conn"
-  livebook/midiex_notebook.livemd#cell:752gysgdtdthfmkq2ehlkt5iw5bnzkyw:1
-
+%Midiex.OutConn{
+  conn_ref: #Reference<0.1738503359.1908539395.124097>,
+  name: "Arturia MicroFreak",
+  port_num: 3
+}
 ```
 
-## Virtual devices
+Note the binary MIDI message format above: `<<0x90, 60, 127>>`.
 
-A virtual output creates an output connection you can send messages to, but to other devices on your system, it wll appear as a MIDI input connection they can consume.
+> #### New to MIDI messages?
+> 
+> A MIDI message is a digital, **binary-coded** instruction that acts as a piece of a music description language. Instead of transmitting actual audio, it communicates performance events, such as triggering a note, adjusting volume or changing instrument sounds between electronic musical instruments and devices.
+> The general shape and size of a standard MIDI message is highly compact and follows this structure:
+> 
+> * **Status byte**: Every message begins with an eight-bit (1-byte) status byte. This byte identifies the specific command being sent (like a "Note On" signal) and often specifies which of the 16 MIDI channels it applies to.
+> * **Data bytes**: The status byte is generally followed by one or two data bytes. These bytes provide the exact details or values for the command, such as which musical key was pressed and how hard it was struck (velocity).
 
-For example, you might have a software synth installed on your PC that can consume these MIDI messages.
+For more information, see:
+
+* Midiex.Message: https://midiex.hexdocs.pm/Midiex.Message.html
+* MIDI Association - About MIDI-Part 3 - MIDI Messages: https://midi.org/about-midi-part-3midi-messages
+* MIDI Association - Reference tables: https://midi.org/spec-detail
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Helpers to build MIDI messages
+
+So that you don't have to remember all the MIDI message codes, The `Midiex.Message` module has a large range of functions to create the required binary packets, so you don't have to memorise status bytes or hex codes.
+
+> ⚠️ Use of `Midiex.Message` is a completely optional convenience, and you can instead build your own MIDI messages using Elixir binaries (as above).
+
+See the [Midiex.Message](https://midiex.hexdocs.pm/Midiex.Message.html) docs for details.
+
+Some MIDI message construction examples are below.
+
+#### Symbolic notes
+
+Functions accepting notes (pitch) as an input, will allow you do define it using integers, strings or atoms! In the example below, they all are equivalent and resolve to MIDI note number 60 (Middle C):
 
 ```elixir
-virtual_conn = Midiex.create_virtual_output("My Virtual Connection")
+note_atom     = M.note_on(:C4)       # <<144, 60, 127>>
+note_integer  = M.note_on(60)        # <<144, 60, 127>>
+note_string   = M.note_on("C4")      # <<144, 60, 127>>
+note_string_m = M.note_on("MiddleC") # <<144, 60, 127>>
+ 
+IO.inspect({note_atom, note_integer, note_string, note_string_m }, label: "Note-on message:")
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+Note-on message:: {<<144, 60, 127>>, <<144, 60, 127>>, <<144, 60, 127>>, <<144, 60, 127>>}
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{<<144, 60, 127>>, <<144, 60, 127>>, <<144, 60, 127>>, <<144, 60, 127>>}
+```
+
+#### Routing and velocity
+
+You can also control volume/intensity with velocity (0-127) and target specific MIDI channels.
+
+> ⚠️ **Note on MIDI channels when using `Midiex.Message` helpers:** While raw MIDI binaries are 0-indexed (0 to 15), `Midiex.Message` handles this conversion for you automatically. When using the `channel:` option, **use standard natural channel numbers (1 to 16)** directly.
+
+```elixir
+funky_bass = M.note_on(:C2, 105, channel: 3) # Velocity: 105, Channel: 3
+
+IO.inspect(funky_bass, label: "Channel 3 bass note")
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+Channel 3 bass note: <<146, 36, 105>>
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+<<146, 36, 105>>
+```
+
+### Sequencing and modulation exercise
+
+Let's put those messages to work. In this exercise, we will:
+
+1. Play a step-by-step major scale arpeggio.
+2. Trigger a long, sustained note and actively modulate its Pan, Pitch Bend, and Volume.
+3. Safeguard our ears by cleaning up with `all_notes_off/1`.
+
+Note the example below assumes you have opened connection on `out_conn`.
+
+<!-- livebook:{"break_markdown":true} -->
+
+#### STEP 1: Play a C-major scale step-by-step
+
+```elixir
+channel_num = 3 # Set the channel number of your device here. Use 1 for default.
+scale = [:C4, :D4, :E4, :F4, :G4, :A4, :B4, :C5]
+
+Enum.each(scale, fn note ->
+  # Send note on
+  Midiex.send_msg(out_conn, M.note_on(note, 90, channel: channel_num))
+  :timer.sleep(200)
+
+  # Send note off to keep it clean
+  Midiex.send_msg(out_conn, M.note_off(note))
+end)
+
+:timer.sleep(500)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+#### STEP 2: Play and modulate an expressive note
+
+```elixir
+# Trigger a long, sustained note on G4
+Midiex.send_msg(out_conn, M.note_on(:G4, 100, channel: channel_num))
+
+# A. Sweep the Panoramic Stereo Field from Left to Right
+# Uses pan/2 (0 = Hard Left, 64 = Center, 127 = Hard Right)
+for p <- 0..127 do
+  Midiex.send_msg(out_conn, M.pan(p, channel: channel_num))
+  :timer.sleep(10)
+end
+
+# B. Push the Pitch Bend Up and Down
+# Uses pitch_bend/2 (8192 is center/unbent)
+for bend <- 8192..13000//100 do
+  Midiex.send_msg(out_conn, M.pitch_bend(bend, channel: channel_num))
+  :timer.sleep(10)
+end
+
+for bend <- 13000..8192//-100 do
+  Midiex.send_msg(out_conn, M.pitch_bend(bend, channel: channel_num))
+  :timer.sleep(10)
+end
+
+# C. Slowly Fade the Volume to Zero
+# Uses volume/2 (0-127)
+for v <- 127..0//-3 do
+  Midiex.send_msg(out_conn, M.volume(v, channel: channel_num))
+  :timer.sleep(20)
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[:ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok,
+ :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok, :ok,
+ :ok, :ok, :ok]
+```
+
+#### STEP 3: Clean up
+
+```elixir
+# Call this to stop any hanging notes.
+Midiex.send_msg(out_conn, M.all_notes_off())
+
+# Restore default pan and volume for subsequent runs
+Midiex.send_msg(out_conn, M.pan(64, channel: channel_num))
+Midiex.send_msg(out_conn, M.volume(100, channel: channel_num))
 ```
 
 <!-- livebook:{"output":true} -->
 
 ```
 %Midiex.OutConn{
-  conn_ref: #Reference<0.34604515.3318349831.2664>,
-  name: "My Virtual Connection",
-  port_num: 4
+  conn_ref: #Reference<0.1738503359.1908539395.124097>,
+  name: "Arturia MicroFreak",
+  port_num: 3
 }
 ```
 
-Note that although you've created this virtual output, on your system it will appear as an import port to be discoverable by other MIDI software or devices.
+##### ⚠️ Troubleshooting
+
+Note that some MIDI device's firmware lack support for standard channel mode messages like CC 123 (all notes off) and CC 120 (all sound off). When sent, it ignores those commands entirely.
+
+In those situations, you could either send a program change message (`Midiex.Message.program_change/2` which will stop the current program on the device):
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+Midiex.send_msg(out_conn, M.program_change(3, channel: channel_num))
+```
+
+Or 'brute force' stopping all notes, as below:
+
+```elixir
+# Sends an individual Note Off message for every single key (0 to 127) 
+# on a specified MIDI channel to clear out non-responsive hardware.
+
+channel_num = 3
+
+for note <- 0..127 do
+    message = M.note_off(note, _velocity=0, channel: channel_num)
+    Midiex.send_msg(out_conn, message)
+end
+
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  %Midiex.OutConn{
+    conn_ref: #Reference<0.1738503359.1908539395.124097>,
+    name: "Arturia MicroFreak",
+    port_num: 3
+  },
+  ...
+]
+```
+
+<!-- livebook:{"branch_parent_index":0} -->
+
+## Virtual devices
+
+A virtual MIDI device is software that acts like a physical MIDI equipment.
+
+By using virtual ports, your Elixir application can act as a standalone software MIDI device. This lets you pass MIDI data seamlessly back and forth between Elixir and external software like Ableton Live, Logic Pro or GarageBand without needing physical hardware cables.
+
+> **⚠️ Platform note:** Virtual ports are supported on MacOS and Linux, but are currently unavailable on Windows due to OS-level limitations.
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Virtual outputs
+
+A virtual output creates an **output connection** you can send messages to from Elixir, but to other devices on your system, it will appear as a **MIDI input** they can consume.
+
+```mermaid
+graph LR
+    subgraph ElixirApp [Elixir Application]
+        A[Elixir Code]
+    end
+
+    subgraph MIDI_Bridge [OS MIDI Subsystem]
+        B(("Virtual MIDI Port<br/>(Created as 'Output')"))
+    end
+
+    subgraph SystemDevices [Other Apps / Hardware]
+        C["MIDI Input Consumer<br/>(e.g. Ableton, Logic, Synth)"]
+    end
+
+    A -->|Sends messages OUT| B
+    B -->|Exposed as MIDI IN| C
+
+    %% Styling
+    style B fill:#ffd27f,stroke:#e67e22,stroke-width:2px
+```
+
+For example, you might have a software synth installed on your PC that can consume these MIDI messages.
+
+`Midiex.create_virtual_output/1` takes a string as its first paramater, representing the name of the port:
+
+```elixir
+virtual_conn = Midiex.create_virtual_output("My Virtual Output")
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Midiex.OutConn{
+  conn_ref: #Reference<0.1738503359.1908539395.124260>,
+  name: "My Virtual Output",
+  port_num: 5
+}
+```
+
+Note that although you've created this **virtual output**, for other MIDI software or devices it will appear as an **input to listen to** e.g.:
+
+<!-- livebook:{"break_markdown":true} -->
+
+![](files/MIDI_input_02.png)
+
+<!-- livebook:{"break_markdown":true} -->
 
 If you call `Midiex.ports/1` you'll see it as an input:
 
 ```elixir
-ports = Midiex.ports(:input)
+ports = Midiex.ports(~r/My Virtual Output/)
 ```
 
 <!-- livebook:{"output":true} -->
@@ -362,33 +733,603 @@ ports = Midiex.ports(:input)
 [
   %Midiex.MidiPort{
     direction: :input,
-    name: "IAC Driver Bus 1",
-    num: 0,
-    port_ref: #Reference<0.34604515.3318349847.1212>
-  },
-  %Midiex.MidiPort{
-    direction: :input,
-    name: "IAC Driver Bus 2",
-    num: 1,
-    port_ref: #Reference<0.34604515.3318349847.1213>
-  },
-  %Midiex.MidiPort{
-    direction: :input,
-    name: "IAC Driver Bus 3",
-    num: 2,
-    port_ref: #Reference<0.34604515.3318349847.1214>
-  },
-  %Midiex.MidiPort{
-    direction: :input,
-    name: "My Out",
-    num: 3,
-    port_ref: #Reference<0.34604515.3318349847.1215>
-  },
-  %Midiex.MidiPort{
-    direction: :input,
-    name: "My Virtual Connection",
-    num: 4,
-    port_ref: #Reference<0.34604515.3318349847.1216>
+    name: "My Virtual Output",
+    num: 5,
+    port_ref: #Reference<0.1738503359.1908539415.122401>
   }
 ]
+```
+
+### Virtual inputs
+
+A virtual input creates an input connection you can receive messages from in Elixir, but to other devices on your system, it will appear as a MIDI output (destination) they can send to:
+
+```mermaid
+graph LR
+    subgraph SystemDevices [Other Apps / Hardware]
+        A["MIDI Output Producer<br/>(e.g. Ableton, Keyboard)"]
+    end
+
+    subgraph MIDI_Bridge [OS MIDI Subsystem]
+        B(("Virtual MIDI Port<br/>(Created as 'Input')"))
+    end
+
+    subgraph ElixirApp [Elixir Application]
+        C[Elixir Code]
+    end
+
+    A -->|Sends messages OUT| B
+    B -->|Delivers messages IN| C
+
+    %% Styling
+    style B fill:#a8dadc,stroke:#457b9d,stroke-width:2px
+```
+
+```elixir
+my_elixir_instrument = Midiex.create_virtual_input("My Elixir Instrument")
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Midiex.VirtualMidiPort{direction: :input, name: "My Elixir Instrument", num: 1}
+```
+
+Note that you **subscribe** to the port for it to become visible to other MIDI software.
+
+To do this, you can pass the `%Midiex.VirtualMidiPort{}` struct to one of the MIDI input port listener functions, such as:
+
+* `Midiex.subscribe(my_elixir_instrument)`
+* If using a Listener GenServer, one of the following:
+  * `Midiex.Listener.start_link(port: my_elixir_instrument)`
+  * `Midiex.Listener.subscribe(listener, my_elixir_instrument)`
+
+Likewise, once subscribed to, the virtual input port can be unsubscribed to:
+
+* `Midiex.unsubscribe(my_elixir_instrument)`
+* If using a Listener GenServer: `Midiex.Listener.unsubscribe(listener, my_elixir_instrument)`
+
+```elixir
+# Start the listener and subscribe to the virtual input port
+{:ok, listener} = Listener.start_link(port: my_elixir_instrument)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:ok, #PID<0.315.0>}
+```
+
+It will now be visible as a destination MIDI device in software, for example:
+
+<!-- livebook:{"break_markdown":true} -->
+
+![](files/MIDI_destination_01.png)
+
+<!-- livebook:{"break_markdown":true} -->
+
+And as an `:output` port when listing ports:
+
+```elixir
+Midiex.ports(~r/My Elixir Instrument/)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[
+  %Midiex.MidiPort{
+    direction: :output,
+    name: "My Elixir Instrument",
+    num: 4,
+    port_ref: #Reference<0.1738503359.1908539415.122416>
+  }
+]
+```
+
+<!-- livebook:{"branch_parent_index":0} -->
+
+## Receiving MIDI messages (inputs and listeners)
+
+Receiving MIDI messages in Midiex involves listening to an `:input` port and handling the data it broadcasts.
+
+Midiex provides two ways of doing this:
+
+1. through a low-level `Midiex.subscribe/1` approach where your current process catches messages directly in a receive block
+2. using the `Midiex.Listener` GenServer to route messages to callback functions.
+
+When subscribing, they can take either a single input port or a multiple in a list `[]`.
+
+See the [Midiex.subscribe/1](https://midiex.hexdocs.pm/Midiex.html#subscribe/1) and [Midiex.Listener](https://midiex.hexdocs.pm/Midiex.Listener.html) docs for details.
+
+Below is an example using the `Midiex.Listener` GenServer.
+
+<!-- livebook:{"break_markdown":true} -->
+
+#### Step 1: Start the Listener GenServer
+
+Using the Kino supervisor to start it below in Live Book.
+
+```elixir
+{:ok, listener} = Kino.start_child(Listener)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:ok, #PID<0.320.0>}
+```
+
+#### Step 2: Add handler callback functions
+
+```elixir
+Listener.add_handler(listener, fn msg ->
+  IO.inspect(msg, label: "🎵 MIDI Message Received")
+end)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+#### Step 3: Find or create input port(s)
+
+This can be a physical or virtual port.
+
+```elixir
+# Physical / OS port - getting the first port
+input_port = Midiex.ports(:input) |> List.first()
+
+# Alternatively, you could create a virtual input port:
+# input_port = Midiex.create_virtual_input("Livebook Listener")
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%Midiex.MidiPort{
+  direction: :input,
+  name: "IAC Driver Bus 1",
+  num: 0,
+  port_ref: #Reference<0.1738503359.1908539415.122417>
+}
+```
+
+#### Step 4: Subscribe to the input port(s)
+
+```elixir
+Listener.subscribe(listener, input_port)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<144, 48, 95>>,
+  timestamp: 710407307842
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<208, 0>>,
+  timestamp: 710407352795
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<208, 1>>,
+  timestamp: 710407376795
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<128, 48, 0>>,
+  timestamp: 710407382140
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<144, 50, 95>>,
+  timestamp: 710407382171
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<208, 2>>,
+  timestamp: 710407400717
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<128, 50, 0>>,
+  timestamp: 710407411093
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<144, 52, 95>>,
+  timestamp: 710407411109
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<208, 3>>,
+  timestamp: 710407424613
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<128, 52, 0>>,
+  timestamp: 710407435978
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<144, 53, 95>>,
+  timestamp: 710407435994
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<208, 4>>,
+  timestamp: 710407456591
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<128, 53, 0>>,
+  timestamp: 710407461481
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<144, 55, 95>>,
+  timestamp: 710407461489
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<128, 55, 0>>,
+  timestamp: 710407485878
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<144, 57, 95>>,
+  timestamp: 710407485887
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<208, 5>>,
+  timestamp: 710407512963
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<128, 57, 0>>,
+  timestamp: 710407515177
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<144, 59, 95>>,
+  timestamp: 710407515202
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<128, 59, 0>>,
+  timestamp: 710407565279
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<144, 60, 95>>,
+  timestamp: 710407565337
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<208, 6>>,
+  timestamp: 710407592800
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<128, 60, 0>>,
+  timestamp: 710407637315
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<144, 62, 95>>,
+  timestamp: 710407637355
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<208, 5>>,
+  timestamp: 710407688689
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<208, 4>>,
+  timestamp: 710407736843
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<208, 3>>,
+  timestamp: 710407784661
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<128, 62, 0>>,
+  timestamp: 710407794511
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<144, 64, 95>>,
+  timestamp: 710407794546
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<208, 0>>,
+  timestamp: 710407806314
+}
+🎵 MIDI Message Received: %Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.1738503359.1908539415.122417>
+  },
+  data: <<128, 64, 0>>,
+  timestamp: 710407812169
+}
+```
+
+Notice that the MidiMessage struct includes the MIDI **port**, MIDI binary **data** and **timestamp**.
+
+The port field makes it easy to pattern match against - for example, if you're want to process ports differently in the one GenServer (or you can have multiple GenServers, one for each device, etc.):
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+%Midiex.MidiMessage{
+  port: %Midiex.MidiPort{
+    direction: :input,
+    name: "IAC Driver Bus 1",
+    num: 0,
+    port_ref: #Reference<0.3368456952.827457560.19372>
+  },
+  data: <<128, 50, 0>>,
+  timestamp: 708101269796
+}
+```
+
+#### Step 5: Unsubscribe to clean-up
+
+Simply pass the input port struct you whish to unsubscribe from as follows:
+
+```elixir
+Listener.unsubscribe(listener, input_port)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+<!-- livebook:{"branch_parent_index":0} -->
+
+## Device hotplug monitoring and notifications
+
+Musicians constantly plug in keyboards, unplug synths and power cycle controllers mid-performance. To prevent your application from losing track of the system's state, Midiex provides a dedicated monitoring service to detect these changes.
+
+Just like handling MIDI input subscriptions, there are two ways to listen for system events:
+
+* Low-level subscription via `Midiex.notifications/0` (which sends raw events to your current process)
+* High-level `Midiex.Notifier` GenServer.
+
+In this section, we will use the `Midiex.Notifier` GenServer to monitor our system. It listens directly to OS-level MIDI changes, captures connect and disconnect events and broadcasts a clean `%Midiex.MidiNotification{}` struct to your registered handlers, allowing your application to dynamically adapt to hardware changes on the fly.
+
+> ⚠️ **Platform support:** Notification messages and hot-plugging detection are currently implemented on macOS only. If you are running this on Linux or Windows, these specific notification APIs will not capture hardware changes.
+
+See the [Notifications and hot plugging](https://midiex.hexdocs.pm/Midiex.html#notifications-hot-plugging) and [Midiex.Notifier](https://midiex.hexdocs.pm/Midiex.Notifier.html) docs for more information.
+
+<!-- livebook:{"break_markdown":true} -->
+
+#### Step 1: Start the supervised notifier
+
+```elixir
+{:ok, notifier} = Kino.start_child(Notifier)
+# Midiex.hotplug()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:ok, #PID<0.328.0>}
+```
+
+#### Step 2: Register a live notification handler
+
+Below we're attaching a handler to print clean, human-readable messages to the Livebook console whenever a MIDI port is added or removed from the system.
+
+```elixir
+# Add a handler that matches on the incoming %Midiex.MidiNotification{} struct
+Notifier.add_handler(notifier, fn notification ->
+  case notification do
+    %Midiex.MidiNotification{notification_type: :added, name: name} ->
+      IO.puts("🔌 Device Added: #{name}")
+
+    %Midiex.MidiNotification{notification_type: :removed, name: name} ->
+      IO.puts("❌ Device Removed: #{name}")
+
+    other ->
+      IO.puts("ℹ️ MIDI System Event: #{inspect(other)}")
+  end
+end)
+
+IO.puts("📢 Hotplug monitoring active! Try plugging or unplugging a USB MIDI device now.")
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+📢 Hotplug monitoring active! Try plugging or unplugging a USB MIDI device now.
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+❌ Device Removed: Arturia MicroFreak
+❌ Device Removed: Arturia MicroFreak
+🔌 Device Added: Arturia MicroFreak
+🔌 Device Added: Arturia MicroFreak
+❌ Device Removed: Arturia MicroFreak
+❌ Device Removed: Arturia MicroFreak
 ```

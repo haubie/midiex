@@ -1,4 +1,110 @@
 [build.env]
 passthrough = [
-  "RUSTLER_NIF_VERSION"
+  "RUSTLER_NIF_VERSION",
+  "PKG_CONFIG_ALLOW_CROSS"
 ]
+
+# 1. Standard x86_64 Linux (GLIBC)
+[target.x86_64-unknown-linux-gnu]
+image = "ghcr.io/cross-rs/x86_64-unknown-linux-gnu:edge"
+pre-build = [
+  "apt-get update && apt-get install -y alsa-utils alsa-tools libasound2-dev libudev-dev pkg-config portaudio19-dev build-essential libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang"
+]
+
+# 2. ARM64 Linux (GLIBC)
+[target.aarch64-unknown-linux-gnu]
+image = "ghcr.io/cross-rs/aarch64-unknown-linux-gnu:edge"
+pre-build = [
+  "dpkg --add-architecture arm64",
+  "apt-get update && apt-get install -y libasound2-dev:arm64 libudev-dev:arm64 portaudio19-dev:arm64 libpulse-dev:arm64 libdbus-1-dev:arm64 pkg-config build-essential"
+]
+
+# 3. RISC-V 64 Linux (GLIBC) - Compilers are pre-baked into this image
+# [target.riscv64gc-unknown-linux-gnu]
+# image = "ghcr.io/cross-rs/riscv64gc-unknown-linux-gnu:edge"
+# pre-build = [
+#   "dpkg --add-architecture riscv64",
+#   "apt-get update && apt-get install -y crossbuild-essential-riscv64 libasound2-dev:riscv64 libudev-dev:riscv64 pkg-config"
+# ]
+
+[target.riscv64gc-unknown-linux-gnu]
+image = "ghcr.io/cross-rs/riscv64gc-unknown-linux-gnu:edge"
+pre-build = [
+  "dpkg --add-architecture riscv64",
+  "echo 'deb [arch=riscv64] http://ports.ubuntu.com/ubuntu-ports noble main restricted universe multiverse' > /etc/apt/sources.list.d/riscv64.list",
+  "echo 'deb [arch=riscv64] http://ports.ubuntu.com/ubuntu-ports noble-updates main restricted universe multiverse' >> /etc/apt/sources.list.d/riscv64.list",
+  "echo 'deb [arch=riscv64] http://ports.ubuntu.com/ubuntu-ports noble-security main restricted universe multiverse' >> /etc/apt/sources.list.d/riscv64.list",
+  "apt-get update && apt-get install -y crossbuild-essential-riscv64 libasound2-dev:riscv64 libudev-dev:riscv64 pkg-config"
+]
+
+# # 4. x86_64 Linux (MUSL)
+# [target.x86_64-unknown-linux-musl]
+# image = "ghcr.io/cross-rs/x86_64-unknown-linux-musl:edge"
+# pre-build = [
+#   "export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" --no-install-recommends musl-tools pkg-config build-essential libasound2-dev libudev-dev"
+# ]
+
+# # 5. ARM64 Linux (MUSL)
+# [target.aarch64-unknown-linux-musl]
+# image = "ghcr.io/cross-rs/aarch64-unknown-linux-musl:edge"
+# pre-build = [
+#   "dpkg --add-architecture arm64",
+#   "export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" --no-install-recommends musl-tools pkg-config gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libasound2-dev:arm64 libudev-dev:arm64"
+# ]
+
+# 4. x86_64 Linux (MUSL) - Compiling static ALSA with unversioned symbols
+[target.x86_64-unknown-linux-musl]
+image = "ghcr.io/cross-rs/x86_64-unknown-linux-musl:edge"
+pre-build = [
+  "apt-get update && apt-get install -y wget bzip2 make build-essential pkg-config",
+  "wget https://www.alsa-project.org/files/pub/lib/alsa-lib-1.2.11.tar.bz2 && tar -xf alsa-lib-1.2.11.tar.bz2",
+  "cd alsa-lib-1.2.11 && CC=x86_64-linux-musl-gcc CFLAGS=\"-fPIC\" ./configure --host=x86_64-linux-musl --enable-static --disable-shared --with-pic --with-versioned=no --prefix=/usr/local && make && make install"
+]
+
+# 5. ARM64 Linux (MUSL) - Cross-compiling static ALSA with unversioned symbols
+[target.aarch64-unknown-linux-musl]
+image = "ghcr.io/cross-rs/aarch64-unknown-linux-musl:edge"
+pre-build = [
+  "apt-get update && apt-get install -y wget bzip2 make build-essential pkg-config",
+  "wget https://www.alsa-project.org/files/pub/lib/alsa-lib-1.2.11.tar.bz2 && tar -xf alsa-lib-1.2.11.tar.bz2",
+  "cd alsa-lib-1.2.11 && CC=aarch64-linux-musl-gcc CFLAGS=\"-fPIC\" ./configure --host=aarch64-linux-musl --enable-static --disable-shared --with-pic --with-versioned=no --prefix=/usr/local && make && make install"
+]
+
+# OLD CROSS FILE BELOW
+# [build.env]
+# passthrough = [
+#   "RUSTLER_NIF_VERSION"
+# ]
+
+# # 1. Standard x86_64 Linux (no extra architecture needed)
+# [target.x86_64-unknown-linux-gnu]
+# pre-build = [
+#   "apt-get update && apt-get install -y musl-tools alsa-utils alsa-tools libasound2-dev libudev-dev pkg-config portaudio19-dev build-essential libpulse-dev libdbus-1-dev llvm-dev libclang-dev clang"
+# ]
+
+# # 3. ARM64 GNU
+# [target.aarch64-unknown-linux-gnu]
+# pre-build = [
+#   "dpkg --add-architecture arm64",
+#   "apt-get update",
+#   "apt-get install -y libasound2-dev:arm64 pkg-config"
+# ]
+
+# # 5. RISC-V 64 GNU
+# [target.riscv64gc-unknown-linux-gnu]
+# dockerfile = "Dockerfile.riscv64gc-unknown-linux-gnu-custom"
+# pre-build = [
+#   "dpkg --add-architecture riscv64",
+#   "apt-get update",
+#   "apt-get install -y wget gcc-riscv64-linux-gnu libc6-riscv64-cross crossbuild-essential-riscv64 libasound2-dev:riscv64 pkg-config"
+# ]
+
+# [target.x86_64-unknown-linux-musl]
+# pre-build = [
+#   "export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y --no-install-recommends musl-tools pkg-config build-essential"
+# ]
+
+# [target.aarch64-unknown-linux-musl]
+# pre-build = [
+#   "export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y --no-install-recommends musl-tools pkg-config gcc-aarch64-linux-gnu g++-aarch64-linux-gnu"
+# ]

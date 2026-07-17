@@ -61,10 +61,15 @@ defmodule Midiex do
   alias Midiex.Backend
 
   defguardp is_output_conn(midi_conn) when is_struct(midi_conn, Midiex.OutConn)
-  defguardp is_output_port(midi_port) when is_struct(midi_port, Midiex.MidiPort) and midi_port.direction == :output
-  defguardp is_input_port(midi_port) when is_struct(midi_port, Midiex.MidiPort) and midi_port.direction == :input
-  defguardp is_virtual_input_port(midi_port) when is_struct(midi_port, Midiex.VirtualMidiPort) and midi_port.direction == :input
 
+  defguardp is_output_port(midi_port)
+            when is_struct(midi_port, Midiex.MidiPort) and midi_port.direction == :output
+
+  defguardp is_input_port(midi_port)
+            when is_struct(midi_port, Midiex.MidiPort) and midi_port.direction == :input
+
+  defguardp is_virtual_input_port(midi_port)
+            when is_struct(midi_port, Midiex.VirtualMidiPort) and midi_port.direction == :input
 
   # ##########
   # NATIVE API
@@ -133,7 +138,7 @@ defmodule Midiex do
   def ports(direction) when is_atom(direction), do: filter_port_direction(ports(), direction)
 
   @doc section: :ports
-  @spec ports(binary | map, (:input | :output)|nil) :: [%Midiex.MidiPort{}]
+  @spec ports(binary | map, (:input | :output) | nil) :: [%Midiex.MidiPort{}]
   @doc """
   Lists MIDI ports matching the name. This can be either a string match or a regex pattern.
 
@@ -158,7 +163,8 @@ defmodule Midiex do
   Midiex.ports("Arturia MicroFreak", :output)
   ```
   """
-  def ports(name_or_pattern, direction \\ nil) when is_binary(name_or_pattern) or is_struct(name_or_pattern) do
+  def ports(name_or_pattern, direction \\ nil)
+      when is_binary(name_or_pattern) or is_struct(name_or_pattern) do
     filter_port_name(ports(), name_or_pattern, direction: direction)
   end
 
@@ -176,7 +182,8 @@ defmodule Midiex do
   def port_count(), do: Backend.count_ports()
 
   @doc section: :connections
-  @spec open(%Midiex.MidiPort{direction: :output} | [%Midiex.MidiPort{direction: :output}]) :: %Midiex.OutConn{} | [%Midiex.OutConn{}]
+  @spec open(%Midiex.MidiPort{direction: :output} | [%Midiex.MidiPort{direction: :output}]) ::
+          %Midiex.OutConn{} | [%Midiex.OutConn{}]
   @doc """
   Creates a connection to the MIDI port.
 
@@ -265,11 +272,13 @@ defmodule Midiex do
   ```
   """
   def open([midi_output_port | rest_ports]) when is_output_port(midi_output_port) do
-    ([Backend.connect(midi_output_port)] ++ open(rest_ports))
+    [Backend.connect(midi_output_port)] ++ open(rest_ports)
   end
-  def open([]), do: []
-  def open(midi_output_port) when is_output_port(midi_output_port), do: Backend.connect(midi_output_port)
 
+  def open([]), do: []
+
+  def open(midi_output_port) when is_output_port(midi_output_port),
+    do: Backend.connect(midi_output_port)
 
   @doc section: :connections
   @spec close(%Midiex.OutConn{} | [%Midiex.OutConn{}]) :: any
@@ -291,8 +300,9 @@ defmodule Midiex do
   ```
   """
   def close([out_conn | rest_conns]) do
-    ([Backend.close_out_conn(out_conn)] ++ close(rest_conns))
+    [Backend.close_out_conn(out_conn)] ++ close(rest_conns)
   end
+
   def close([]), do: []
   def close(out_conn), do: Backend.close_out_conn(out_conn)
 
@@ -361,19 +371,20 @@ defmodule Midiex do
   The `%Midiex.VirtualMidiPort{}` struct can then be passed to MIDI input port listener functions, such as:
   - `Midiex.subscribe(my_virtual_in)`
   - If using a Listener GenServer:
-    - `Midiex.Listener.start_link(port: my_virtual_in)`
-    - `Midiex.Listener.subscribe(listener, my_virtual_in)`
+    - `{:ok, listener_pid} = Midiex.Listener.start_link(port: my_virtual_in)`
+    - `Midiex.Listener.subscribe(listener_pid, my_virtual_in)`
 
   Likewise, once subscribed to, the virtual input port can be unsubscribed to:
   - `Midiex.unsubscribe(my_virtual_in)`
-  - If using a Listener GenServer: `Midiex.Listener.unsubscribe(my_virtual_in)`
+  - If using a Listener GenServer: `Midiex.Listener.unsubscribe(listener_pid, my_virtual_in)`
   """
   def create_virtual_input(name), do: Backend.create_virtual_input(name)
 
   # MIDI messaging functions
 
   @doc section: :messages
-  @spec send_msg(%Midiex.OutConn{} | [%Midiex.OutConn{}], binary) :: %Midiex.OutConn{} | [%Midiex.OutConn{}]
+  @spec send_msg(%Midiex.OutConn{} | [%Midiex.OutConn{}], binary) ::
+          %Midiex.OutConn{} | [%Midiex.OutConn{}]
   @doc """
   Sends a binary MIDI message to one or more output connection(s).
 
@@ -413,9 +424,11 @@ defmodule Midiex do
   def send_msg([out_port_conn | rest_conn], midi_msg) when is_output_conn(out_port_conn) do
     [Backend.send_msg(out_port_conn, midi_msg)] ++ send_msg(rest_conn, midi_msg)
   end
-  def send_msg([], _midi_msg), do: []
-  def send_msg(out_port_conn, midi_msg) when is_output_conn(out_port_conn), do: Backend.send_msg(out_port_conn, midi_msg)
 
+  def send_msg([], _midi_msg), do: []
+
+  def send_msg(out_port_conn, midi_msg) when is_output_conn(out_port_conn),
+    do: Backend.send_msg(out_port_conn, midi_msg)
 
   @doc section: :messages
   # Midiex callback functions
@@ -487,12 +500,16 @@ defmodule Midiex do
   # Msg received: [146, 84, 30]
   ```
   """
-  def subscribe([midi_port | rest_ports]) when is_input_port(midi_port) or is_virtual_input_port(midi_port) do
+  def subscribe([midi_port | rest_ports])
+      when is_input_port(midi_port) or is_virtual_input_port(midi_port) do
     if rest_ports != [], do: subscribe(rest_ports)
     subscribe(midi_port)
   end
+
   def subscribe(midi_port) when is_input_port(midi_port), do: Backend.subscribe(midi_port)
-  def subscribe(midi_port) when is_virtual_input_port(midi_port), do: Backend.subscribe_virtual_input(midi_port)
+
+  def subscribe(midi_port) when is_virtual_input_port(midi_port),
+    do: Backend.subscribe_virtual_input(midi_port)
 
   @doc section: :messages
   @doc """
@@ -515,19 +532,25 @@ defmodule Midiex do
   Midiex.unsubscribe(:all, :virtual)
   ```
   """
-  def unsubscribe(midi_port) when is_input_port(midi_port), do: Backend.unsubscribe_port(midi_port)
-  def unsubscribe(midi_port) when is_virtual_input_port(midi_port), do: Backend.unsubscribe_virtual_port(midi_port)
-  def unsubscribe([midi_port | rest_ports]) when is_input_port(midi_port) or is_virtual_input_port(midi_port) do
+  def unsubscribe(midi_port) when is_input_port(midi_port),
+    do: Backend.unsubscribe_port(midi_port)
+
+  def unsubscribe(midi_port) when is_virtual_input_port(midi_port),
+    do: Backend.unsubscribe_virtual_port(midi_port)
+
+  def unsubscribe([midi_port | rest_ports])
+      when is_input_port(midi_port) or is_virtual_input_port(midi_port) do
     if rest_ports != [], do: unsubscribe(rest_ports)
     unsubscribe(midi_port)
   end
+
   def unsubscribe(:all) do
     Backend.unsubscribe_all_ports()
     Backend.unsubscribe_all_virtual_ports()
   end
+
   def unsubscribe(index) when is_integer(index), do: Backend.unsubscribe_port_by_index(index)
   @doc section: :messages
-
 
   @doc false
   @spec unsubscribe(:all, :virtual) :: any
@@ -560,7 +583,8 @@ defmodule Midiex do
   ```
   """
   @spec subscribed_ports :: []
-  def subscribed_ports(), do: Backend.get_subscribed_ports() ++ Backend.get_subscribed_virtual_ports()
+  def subscribed_ports(),
+    do: Backend.get_subscribed_ports() ++ Backend.get_subscribed_virtual_ports()
 
   @doc section: :notifications
   @doc """
@@ -606,16 +630,19 @@ defmodule Midiex do
 
   defp filter_port_name(ports_list, comparison_name_or_pattern, opts) do
     direction = Keyword.get(opts, :direction, nil)
+
     ports_list
     |> Enum.filter(fn port -> port_name_matches?(port.name, comparison_name_or_pattern) end)
     |> filter_port_direction(direction)
   end
 
-  defp port_name_matches?(port_name, comparison_name_or_pattern) when is_binary(comparison_name_or_pattern) do
+  defp port_name_matches?(port_name, comparison_name_or_pattern)
+       when is_binary(comparison_name_or_pattern) do
     String.equivalent?(port_name, comparison_name_or_pattern)
   end
 
-  defp port_name_matches?(port_name, comparison_name_or_pattern) when is_struct(comparison_name_or_pattern) do
+  defp port_name_matches?(port_name, comparison_name_or_pattern)
+       when is_struct(comparison_name_or_pattern) do
     String.match?(port_name, comparison_name_or_pattern)
   end
 
@@ -625,5 +652,4 @@ defmodule Midiex do
     ports_list
     |> Enum.filter(fn port -> port.direction == direction end)
   end
-
 end

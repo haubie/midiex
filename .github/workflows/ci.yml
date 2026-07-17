@@ -1,0 +1,104 @@
+name: Elixir CI
+
+on:
+  push:
+    branches:
+      - main
+      - "feature/**"
+      - "bugfix/**"
+    paths-ignore:
+      - "*.md"
+      - "assets/**"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Test & Lint (Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }})
+    runs-on: ubuntu-24.04
+
+    strategy:
+      matrix:
+        # Define stable, core versions matching your production runtime
+        elixir: ["1.18"]
+        otp: ["27"]
+
+    env:
+      MIX_ENV: test
+      # Forces Rustler to compile the local Rust code on the runner
+      # rather than looking for a remote precompiled archive
+      MIDIEX_BUILD: "true"
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      # 1. Install system dependencies required for native Linux ALSA compilation
+      - name: Install Linux audio development libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev pkg-config build-essential
+
+      # Load ALSA dummy/virtual MIDI kernel modules
+      - name: Load ALSA dummy kernel modules
+        run: |
+          sudo modprobe snd-dummy
+          sudo modprobe snd-seq-device
+          sudo modprobe snd-seq-midi
+          sudo modprobe snd-seq
+          # Verify that the sequencer device now exists
+          ls -la /dev/snd/
+
+      # 2. Setup the BEAM (Erlang/Elixir) runtime environment
+      - name: Set up Elixir and Erlang
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+
+      # 3. Setup the host Rust compiler toolchain
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      # 4. Cache Elixir build assets and dependencies to ensure rapid execution
+      - name: Cache Mix dependencies & build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-${{ matrix.otp }}-${{ matrix.elixir }}-
+
+      # 5. Cache Cargo dependencies for fast Rust validation rounds
+      - name: Cache Cargo build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            native/midiex/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      # 6. Fetch Elixir packages
+      - name: Install Elixir dependencies
+        run: mix deps.get
+
+      # 7. Code Quality Gates (Fail early if styling/formatting rules are broken)
+      # - name: Check Elixir code formatting
+      #   run: mix format --check-formatted
+
+      - name: Compile codebase (Strict Mode)
+        run: mix compile --warnings-as-errors
+
+      # 8. Test Execution
+      - name: Run test suite
+        run: mix test

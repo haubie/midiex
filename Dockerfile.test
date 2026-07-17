@@ -1,0 +1,23 @@
+# 1. Start from Elixir 1.18 base image
+FROM elixir:1.18
+
+# 2. Install Linux compilation and ALSA audio development libraries
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    pkg-config \
+    libasound2-dev \
+    curl
+
+# 3. Install the Rust Toolchain (Cargo & Rustc) via official Rustup
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# 4. Set the working directory inside the container
+WORKDIR /app
+
+# 5. Pre-configure Hex and Rebar (Elixir build tools)
+RUN mix local.hex --force && \
+    mix local.rebar --force
+
+# By default, when we run the container, run the tests
+CMD ["mix", "test"]

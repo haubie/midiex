@@ -1,7 +1,7 @@
 defmodule Midiex.MixProject do
   use Mix.Project
 
-  @version "0.6.3"
+  @version "0.6.4"
   @dev? String.ends_with?(@version, "-dev")
   @force_build? System.get_env("MIDIEX_BUILD") in ["1", "true"]
 
@@ -9,7 +9,8 @@ defmodule Midiex.MixProject do
     [
       app: :midiex,
       name: "Midiex",
-      description: "A cross-platform, realtime MIDI processing in Elixir library which wraps the midir Rust library.",
+      description:
+        "A cross-platform, realtime MIDI processing in Elixir library which wraps the midir Rust library.",
       version: @version,
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
@@ -20,13 +21,13 @@ defmodule Midiex.MixProject do
         source_url: "https://github.com/haubie/midiex",
         homepage_url: "https://github.com/haubie/midiex",
         logo: "logo-hexdoc.png",
-        assets: "assets",
+        assets: %{"assets" => "assets"},
         extras: [
           "README.md",
           "CHANGELOG.md",
           "BUILDING.md",
           "livebook/midiex_notebook.livemd",
-          {:"LICENSE", [title: "License (MIT)"]},
+          {:LICENSE, [title: "License (MIT)"]}
         ],
         groups_for_modules: [
           Main: [
@@ -42,7 +43,7 @@ defmodule Midiex.MixProject do
             Midiex.MidiPort,
             Midiex.VirtualMidiPort,
             Midiex.MidiNotification,
-            Midiex.MidiMessage,
+            Midiex.MidiMessage
           ],
           Backend: [
             Midiex.Backend
@@ -57,7 +58,7 @@ defmodule Midiex.MixProject do
           "Channel voice messages": &(&1[:section] == :channel_voice),
           "Channel change messages": &(&1[:section] == :control_change),
           "Channel mode messages": &(&1[:section] == :channel_mode),
-          "System messages": &(&1[:section] == :system),
+          "System messages": &(&1[:section] == :system)
         ]
       ]
     ]
@@ -73,8 +74,8 @@ defmodule Midiex.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:rustler_precompiled, "~> 0.6"},
-      {:rustler, "~> 0.29.0", optional: not (@dev? or @force_build?)},
+      {:rustler, "~> 0.38", optional: not (@dev? or @force_build?)},
+      {:rustler_precompiled, "~> 0.9"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
@@ -88,16 +89,15 @@ defmodule Midiex.MixProject do
         "README.md",
         "BUILDING.md",
         "LICENSE",
-        "checksum-Elixir.Midiex.Backend.exs",
+        "checksum-Elixir.Midiex.Backend.exs"
       ],
       licenses: ["MIT"],
       links: %{
         "GitHub" => "https://github.com/haubie/midiex",
         "midir" => "https://github.com/Boddlnagg/midir",
         "coremidi" => "https://github.com/chris-zen/coremidi"
-        },
+      },
       maintainers: ["David Haubenschild"]
     ]
   end
-
 end
