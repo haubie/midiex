@@ -176,6 +176,9 @@ defmodule MidiexTest do
     output_port = wait_for_port(~r/#{port_name}/, :output)
     assert is_struct(output_port, Midiex.MidiPort), "expected a %Midiex.MidiPort{} struct"
 
+    # Give the thread-local MIDI clients 50ms to synchronize port counts
+    :timer.sleep(50)
+
     assert output_port.name =~ port_name,
            "expected %Midiex.MidiPort{} name to be \"#{port_name}\""
 
