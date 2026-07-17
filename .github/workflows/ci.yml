@@ -40,6 +40,16 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libasound2-dev pkg-config build-essential
 
+      # Load ALSA dummy/virtual MIDI kernel modules
+      - name: Load ALSA dummy kernel modules
+        run: |
+          sudo modprobe snd-dummy
+          sudo modprobe snd-seq-device
+          sudo modprobe snd-seq-midi
+          sudo modprobe snd-seq
+          # Verify that the sequencer device now exists
+          ls -la /dev/snd/
+
       # 2. Setup the BEAM (Erlang/Elixir) runtime environment
       - name: Set up Elixir and Erlang
         uses: erlef/setup-beam@v1
