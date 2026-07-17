@@ -105,6 +105,6 @@ jobs:
       - name: Compile codebase (Strict Mode)
         run: mix compile --warnings-as-errors
 
-      # 8. Test Execution
+      # 8. Test Execution - the Azure machines don't have a soundcard!
       - name: Run test suite
-        run: mix test
+        run: mix test --exclude virtual_ports
