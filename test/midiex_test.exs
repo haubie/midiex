@@ -69,8 +69,10 @@ defmodule MidiexTest do
     end
 
     test "control_change/3 and program_change/2 create correct binaries" do
-      assert M.control_change(7, 100) == <<176, 7, 100>> # Volume on channel 0
-      assert M.control_change(10, 64, channel: 2) == <<177, 10, 64>> # Pan on channel 1 (base 0)
+      # Volume on channel 0
+      assert M.control_change(7, 100) == <<176, 7, 100>>
+      # Pan on channel 1 (base 0)
+      assert M.control_change(10, 64, channel: 2) == <<177, 10, 64>>
 
       assert M.program_change(5) == <<192, 5>>
       assert M.program_change(12, channel: 11) == <<202, 12>>
@@ -98,7 +100,8 @@ defmodule MidiexTest do
 
     test "pitch_bend/2 creates correct binary" do
       # Pitch bend uses 14-bit value where 8192 is center
-      assert M.pitch_bend(8192) == <<224, 0, 64>> # LSB 0, MSB 64
+      # LSB 0, MSB 64
+      assert M.pitch_bend(8192) == <<224, 0, 64>>
       assert M.pitch_bend(0) == <<224, 0, 0>>
       assert M.pitch_bend(16383, channel: 3) == <<226, 127, 127>>
     end
@@ -230,7 +233,10 @@ defmodule MidiexTest do
     # Subscribe to the virtual input port using a listener
     test_pid = self()
     {:ok, listener_pid} = Midiex.Listener.start_link(port: virtual_in_port)
-    Midiex.Listener.add_handler(listener_pid, fn msg -> send(test_pid, {:virtual_msg, msg.data}) end)
+
+    Midiex.Listener.add_handler(listener_pid, fn msg ->
+      send(test_pid, {:virtual_msg, msg.data})
+    end)
 
     # Find the corresponding OS-visible output port
     output_port = wait_for_port(~r/#{port_name}/, :output)
@@ -308,7 +314,9 @@ defmodule MidiexTest do
 
   defp wait_for_port(name, direction, retries \\ 20) do
     case Midiex.ports(name, direction) do
-      [port | _] -> port
+      [port | _] ->
+        port
+
       [] ->
         if retries > 0 do
           :timer.sleep(10)

@@ -37,6 +37,7 @@ test-elixir:
     @echo "==> Testing Elixir codebase..."
     mix deps.get
     mix test
+    mix format --check-formatted
 
 # Test for linux platforms - requires building a test image
 # Build the test container

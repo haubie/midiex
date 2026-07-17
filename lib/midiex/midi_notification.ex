@@ -61,5 +61,4 @@ defmodule Midiex.MidiNotification do
   ```
   """
   defstruct ~w/notification_type parent_name parent_id parent_type name native_id direction/a
-
 end
